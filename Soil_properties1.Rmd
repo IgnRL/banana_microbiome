@@ -1,0 +1,208 @@
+---
+title: "banana_amf"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+```{r, include=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(ggpubr)
+library(gridExtra)
+library(corrplot)
+library(agricolae)
+library(emmeans)
+library(multcomp)
+library(multcompView)
+library(data.table)
+library(tidyverse)
+library(phyloseq)
+library(vegan)
+library(ape)
+library(here)
+library(readxl)
+library(ggpubr)
+library(geomtextpath)
+library(knitr)
+library(gridExtra)
+library(Biostrings)
+library(seqinr)
+library(FSA)
+library(agricolae)
+library(MASS)
+library(grid)
+library(gridExtra)
+library(emmeans)
+library(multcomp)
+library(broom)
+library(viridis)
+library(ALDEx2)
+library(FactoMineR)
+library(factoextra)
+library(kableExtra)
+library(scales)
+library(dunn.test)
+library(car)
+library(corrplot)
+library(eulerr)
+library(ggforce)
+library(ggrepel)
+```
+
+
+# Analisis de datos octubre 2023
+
+## Propidedades del suelo
+
+Esto se ha hecho para cargar el Excel de los datos iniciales, y para hacer la media de cada tratamiento, ya que de cada tratamiento hay 3 repeticiones. El simbolo %>% se llaman tuberias (the pipe) vienen de la libreria (tinyverse) (esta libreria sirve para mantener R más ordenado). Las tuberias funcionan usando el resultado de una operación(out) y convirtiendolo en el imput de otra. En el caso del codigo  "soil.summ <- soil_prop %>% group_by(treatment,  time) %>% summarise(across(.cols=everything(), .fns=mean),.groups = "drop")" quiere decir lo siguiente: hemos creado un objeto nuevo que es soil.summ, que es_ el archivo de excel soil_prop el que hacemos una serie de operaciones en cadena (tuberia) donde agrupamos solamente por tratamiento y tiempo (group_by,) y en ese agrupamiento queremos de todas las columnas, .cols=every, que haga la funcion de la media (fns=mean). NULL significa que no tenga en cuenta esas columnas. $ es para seleccionar cosas especificas. 
+```{r Import, include=TRUE}
+soil_prop <- readxl::read_excel("C:/Users/Raquel/Desktop/R/soil_prop_2.xlsx")
+
+soil.summ <- soil_prop %>% group_by(treatment,  time) %>% 
+  summarise(across(.cols=everything(), .fns=mean),.groups = "drop")
+
+soil.summ
+
+soil.summ$rep <- NULL
+soil.summ$soil.id <- NULL
+```
+
+### Evolucion de cada parametros en los distintos muestreos del experimento
+
+En este codigo veremos la evolucion de los distintos parametros en el tiempo. 
+La función "aes" sirve para indicar en un grafico cual es tu X,y. Debes indicar en texto quien es quien.Toda la información de los datos referido al grafico es lo que va dentro del parentesis. Los adornos van fuera con el signo de +. La funcion "geom_line" sirve para elegir el tipo de grafico que quieres. 
+
+```{r Materia organica plot, include= TRUE}
+org.mat.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= org.matter, col= treatment))+
+  geom_line()+
+  geom_point()
+org.mat.plot
+ggsave(org.mat.plot, file= "c:/Users/Raquel/Desktop/R/plots/org.mat.plot.png")
+```
+![Figure 1: organic matter over time in diffrerent treatments.](c:/Users/Raquel/Desktop/R/plots/org.mat.plot.png)
+
+```{r Fosforo plot, include=TRUE}
+phosp.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= phosphorus, col= treatment))+
+  geom_line()+
+  geom_point()
+
+phosp.plot
+
+```
+![Figure 2: phosphorous over time in different treatments]
+
+```{r Calcium plot, include=TRUE}
+calcium.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= calcium, col= treatment))+
+  geom_line()+
+  geom_point()
+calcium.plot
+
+```
+![Figure 3. calcium over time in different treatments]
+
+```{r sodium plot, include=TRUE}
+sodium.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= sodium, col= treatment))+
+  geom_line()+
+  geom_point()
+sodium.plot
+```
+![Figure 4: sodium over time in different treatments]
+
+
+```{r postassium plot, include=TRUE}
+potassium.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= potassium, col= treatment))+
+  geom_line()+
+  geom_point()
+potassium.plot
+```
+![Figure 5: potassium over time in different treatments]
+
+
+```{r pH agua plot, include=TRUE}
+pH_water.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= ph.water, col= treatment))+
+  geom_line()+
+  geom_point()
+pH_water.plot
+```
+![Figure 6: pH water over time in different treatments]
+
+```{r conductivity plot, include=TRUE}
+conductivity.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= conductivity, col= treatment))+
+  geom_line()+
+  geom_point()
+conductivity.plot
+```
+![Figure 7: conductivity over time in different treatments]
+
+```{r nitrogen plot, include=TRUE}
+
+nitrogen.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= nitrogen, col= treatment))+
+  geom_line()+
+  geom_point()
+nitrogen.plot
+
+```
+Figure 8: nitrogen over time in different treatments
+
+```{r Materia organica stats, include=FALSE}
+soilt0 <- subset(soil_prop, soil_prop$time== "t0")
+
+lm.t0.mat.org <- lm(org.matter~ treatment, data= soilt0)
+anova.t0.org <- aov(lm.t0.mat.org)
+summary(anova.t0.org)
+shapiro.test(anova.t0.org$residuals)
+hist(lm.t0.mat.org$residuals)
+plot(lm.t0.mat.org, which= 2)
+## org.matter follows a normal distribution according to shapiro's test
+
+#### hsd tuckey from agricolae::
+hsd.t0.org <- HSD.test(anova.t0.org, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+class(hsd.t0.org)
+
+```
+
+
+```{r plot org t0}
+
+avg <- aggregate(org.matter~ treatment, data= soilt0, FUN= mean)
+plot.org.t0 <- soilt0 %>% ggplot(aes(x= treatment, y= org.matter))+
+  geom_point()+
+  stat_summary(fun=mean, aes(x= treatment, y= org.matter),
+               geom= "crossbar", data=avg)+
+  geom_text(data=hsd.t0.org,aes(x=treatment, y= org.matter, label= groups), nudge_x= 0.2, nudge_y= 0.2)
+
+
+plot.org.t0
+```
+
+
+```{r Phos, echo= FALSE}
+phos.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= phosphorus, col= treatment))+
+  geom_line()+
+  geom_point()
+phos.plot
+```
+
+```{r Calc, echo= FALSE}
+calc.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= calcium, col= treatment))+
+  geom_line()+
+  geom_point()
+calc.plot
+```
+
+
+```{r Correlogram, echo=FALSE}
+soil_prop_cor <- soil_prop
+soil_prop_cor$rep <- NULL
+soil_prop_cor$soil.id <- NULL
+soil_prop_cor$treatment <- NULL
+soil_prop_cor$time <- NULL
+cor.matrix <- soil_prop_cor %>% cor()
+
+cor.mat.test <- cor.mtest(cor.matrix)
+
+corrplot(cor.matrix, p.mat=cor.mat.test$p, sig.level = 0.05, order= "hclust", type= "upper", method= "number", insig = "pch", pch=4,number.cex = 0.75)
+```
+
+The most interesing variables seem to be pH.water, organic matter, conductivity and NPKCa values. The rest could be omitted. 
+
