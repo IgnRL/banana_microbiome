@@ -1,5 +1,5 @@
 ---
-title: "banana_amf"
+title: "Banana project, organic matter-microbiome"
 output: html_document
 date: "`r Sys.Date()`"
 ---
@@ -59,12 +59,13 @@ Esto se ha hecho para cargar el Excel de los datos iniciales (ojo, para poner el
 soil_prop <- readxl::read_excel("C:/Users/raquel.correa/Documents/banana_microbiome/raw_files/soil_prop_2.xlsx")
 
 soil.summ <- soil_prop %>% group_by(treatment,  time) %>% 
-  summarise(across(.cols=everything(), .fns=mean),.groups = "drop")
+  summarise(across(.cols=everything(),.fns=mean),.groups = "drop")
 
 soil.summ
 
 soil.summ$rep <- NULL
 soil.summ$soil.id <- NULL
+
 ```
 
 ### Evolucion de cada parametros en los distintos muestreos del experimento
@@ -77,6 +78,14 @@ org.mat.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= org.matter,
   geom_line()+
   geom_point()
 org.mat.plot
+
+org.mat.plotsd <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= org.matter, col= treatment))+
+  geom_line()+
+  geom_point()+
+  geom_errorbar(aes(ymin=org.matter, ymax=org.matter), width=0.2)+
+  scale_colour_brewer(palette = "Paired")
+org.mat.plotsd
+#preguntar a ignacio si esta si esta bien standar desviation 
 
 ```
 ![Figure 1: organic matter over time in diffrerent treatments.]
@@ -192,6 +201,7 @@ hsd.t0.org #preguntar ignacio como ver los resultados en un grafico
 ```
 
 
+##Phosphorus
 
 ```{r plot org t0}
 #crear un grafico con la media de la los valores de materia organica de t0, y la letra de HSDTukey)
