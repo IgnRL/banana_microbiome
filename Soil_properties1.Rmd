@@ -146,6 +146,8 @@ Figure 8: nitrogen over time in different treatments
 
 
 ### Analisis estadistico.
+
+##Materia organica 
 Para comprobar si hay diferencias significativas o no. 
 1.Dif. entre tratamientos y tiempos. 
 2.Dif. entre 1 tratamiento a lo largo del tiempo. 
