@@ -79,7 +79,7 @@ org.mat.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= org.matter,
 org.mat.plot
 
 ```
-![Figure 1: organic matter over time in diffrerent treatments.](c:/Users/Raquel/Desktop/R/plots/org.mat.plot.png)
+![Figure 1: organic matter over time in diffrerent treatments.]
 
 ```{r Fosforo plot, include=TRUE}
 phosp.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= phosphorus, col= treatment))+
@@ -147,25 +147,39 @@ Figure 8: nitrogen over time in different treatments
 
 ### Analisis estadistico.
 Para comprobar si hay diferencias significativas o no. 
--Dif. entre tratamientos y tiempos. 
--Dif. entre 1 tratamiento a lo largo del tiempo. 
+1.Dif. entre tratamientos y tiempos. 
+2.Dif. entre 1 tratamiento a lo largo del tiempo. 
+Vamos analizar diferencias en el primer muestreo (to), por ello usamos la funcion subset que es un condicional como ($) para elegir determinadas variables dentro de un objeto, subset(soil_prop, soil_prop$time== "t0") significa solo analizar del archivo soil_prop, la columan soil_prop$time que sea igual a t0)
+Le hacemos un modelo de regresion lineal, o se puede analizar directamnte con anova. 
 
 
-
-```{r Materia organica stats, include=FALSE}
+```{r Materia organica stats, include=TRUE}
 soilt0 <- subset(soil_prop, soil_prop$time== "t0")
-
-lm.t0.mat.org <- lm(org.matter~ treatment, data= soilt0)
-anova.t0.org <- aov(lm.t0.mat.org)
-summary(anova.t0.org)
-shapiro.test(anova.t0.org$residuals)
+anova.org.matter.t0 <- aov(org.matter~ treatment, data=soilt0)
+summary(anova.org.matter.t0)
+#ahora vamos a comprobar la normalidad de los datos 
+shapiro.test(anova.org.matter.t0$residuals)
+## el p valor es 0.1294, mayor que  0.05 por lo que los datos son normales. Comprobamos ademas con grafico de histograma y qqplot.(este ultimo grafico es mejor que se haga con el lm)
+par(mfrow=c(2,2), cex.axis=1.5, lwd=2, font.lab=1.5) #para que los graficos se vean juntos duda
+plot(anova.org.matter.t0) #se ven todos los graficos
+hist(anova.org.matter.t0$residuals)
+lm.t0.mat.org <- lm(org.matter~ treatment, data= soilt0) #hacer el modelo de regresion
+anova.t0.org.matter.para.grafico <- aov(lm.t0.mat.org)
+summary(anova.t0.org.matter.para.grafico)
+par(mfrow=c(2,2), cex.axis=1.5, lwd=2, font.lab=1.5) #para que los graficos se vean juntos
 hist(lm.t0.mat.org$residuals)
 plot(lm.t0.mat.org, which= 2)
-## org.matter follows a normal distribution according to shapiro's test
+#test de Levene para el analisis de la varianza
+leveneTest(org.matter~ treatment, data=soilt0)
+## el valor de p es mayor que 0.05, se cumple el supuesto de homogenicidad de varianzas.
+#Puesto que hay direferencias sig. vamos a comprobar entre que tratamientos. POST-HOC.
 
 #### hsd tuckey from agricolae::
-hsd.t0.org <- HSD.test(anova.t0.org, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+hsd.t0.org <- HSD.test(anova.t0.org.matter.para.grafico, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 class(hsd.t0.org)
+hsd.t0.org #preguntar ignacio como ver los resultados en un grafico
+
+
 
 ```
 
