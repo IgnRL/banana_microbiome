@@ -149,7 +149,7 @@ Figure 8: nitrogen over time in different treatments
 Para comprobar si hay diferencias significativas o no. 
 1.Dif. entre tratamientos y tiempos. 
 2.Dif. entre 1 tratamiento a lo largo del tiempo. 
-Vamos analizar diferencias en el primer muestreo (to), por ello usamos la funcion subset que es un condicional como ($) para elegir determinadas variables dentro de un objeto, subset(soil_prop, soil_prop$time== "t0") significa solo analizar del archivo soil_prop, la columan soil_prop$time que sea igual a t0)
+Vamos analizar diferencias en el primer muestreo (to), por ello usamos la funcion subset que es un condicional como simbolo de dolar o funcion subset, para elegir determinadas variables dentro de un objeto,  significa solo analizar del archivo soil_prop, la columan soil_prop$time que sea igual a t0)
 Le hacemos un modelo de regresion lineal, o se puede analizar directamnte con anova. 
 
 
@@ -162,30 +162,37 @@ shapiro.test(anova.org.matter.t0$residuals)
 ## el p valor es 0.1294, mayor que  0.05 por lo que los datos son normales. Comprobamos ademas con grafico de histograma y qqplot.(este ultimo grafico es mejor que se haga con el lm)
 par(mfrow=c(2,2), cex.axis=1.5, lwd=2, font.lab=1.5) #para que los graficos se vean juntos duda
 plot(anova.org.matter.t0) #se ven todos los graficos
-hist(anova.org.matter.t0$residuals)
+
 lm.t0.mat.org <- lm(org.matter~ treatment, data= soilt0) #hacer el modelo de regresion
 anova.t0.org.matter.para.grafico <- aov(lm.t0.mat.org)
 summary(anova.t0.org.matter.para.grafico)
-par(mfrow=c(2,2), cex.axis=1.5, lwd=2, font.lab=1.5) #para que los graficos se vean juntos
+
 hist(lm.t0.mat.org$residuals)
-plot(lm.t0.mat.org, which= 2)
+plot(lm.t0.mat.org, which= 2)#pra ver normalidad
+
 #test de Levene para el analisis de la varianza
 leveneTest(org.matter~ treatment, data=soilt0)
 ## el valor de p es mayor que 0.05, se cumple el supuesto de homogenicidad de varianzas.
-#Puesto que hay direferencias sig. vamos a comprobar entre que tratamientos. POST-HOC.
-
-#### hsd tuckey from agricolae::
-hsd.t0.org <- HSD.test(anova.t0.org.matter.para.grafico, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-class(hsd.t0.org)
-hsd.t0.org #preguntar ignacio como ver los resultados en un grafico
-
 
 
 ```
 
 
-```{r plot org t0}
+```{r Materia organica stats POST-HOC, include=TRUE}
 
+#Puesto que hay direferencias sig. vamos a comprobar entre que tratamientos. POST-HOC.
+
+#### hsd tuckey from agricolae::
+hsd.t0.org <- HSD.test(anova.t0.org.matter.para.grafico, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+
+hsd.t0.org #preguntar ignacio como ver los resultados en un grafico
+
+```
+
+
+
+```{r plot org t0}
+#crear un grafico con la media de la los valores de materia organica de t0, y la letra de HSDTukey)
 avg <- aggregate(org.matter~ treatment, data= soilt0, FUN= mean)
 plot.org.t0 <- soilt0 %>% ggplot(aes(x= treatment, y= org.matter))+
   geom_point()+
@@ -196,20 +203,51 @@ plot.org.t0 <- soilt0 %>% ggplot(aes(x= treatment, y= org.matter))+
 
 plot.org.t0
 ```
+Figura X. Diferencias significativas entre tratamientos en t0 para materia organica
 
+```{r Phosphorous stats, include=TRUE}
+soilt0
+lm.t0.phosphorous <- lm(phosphorus~ treatment, data= soilt0)
+anova.lm.t0.pho <- aov(lm.t0.phosphorous)
+summary(anova.lm.t0.pho)
 
-```{r Phos, echo= FALSE}
-phos.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= phosphorus, col= treatment))+
-  geom_line()+
-  geom_point()
-phos.plot
+shapiro.test(soilt0$phosphorus) #LOS DATOS NO SON NORMALES. preguntar ignacio mejor forma para normalizar datos
+ks.test(soilt0$phosphorus, pnorm)
+             
+             
+par(mfrow=c(2,2), cex.axis=1.5, lwd=2, font.lab=1.5)
+plot(anova.lm.t0.pho)
+
+hist(anova.lm.t0.pho$residuals)
+plot(anova.lm.t0.pho, which=2)
+
+leveneTest(phosphorus~ treatment, data= soilt0)
+# el valor de p es mayor que 0.05, se cumple el supuesto de homogenicidad de varianzas.
+```
+```{r Phosphorus POST-HOC, include=TRUE}
+
+#Puesto que hay direferencias sig. vamos a comprobar entre que tratamientos. POST-HOC.
+
+#### hsd tuckey from agricolae::
+hsd.t0.pho <- HSD.test(anova.lm.t0.pho, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+
+hsd.t0.pho
+
 ```
 
-```{r Calc, echo= FALSE}
-calc.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= calcium, col= treatment))+
-  geom_line()+
-  geom_point()
-calc.plot
+```{r plot phosphorus t0}
+
+avg <- aggregate(phosphorus~ treatment, data= soilt0, FUN= mean)
+avg
+plot.pho.t0 <- soilt0 %>% ggplot(aes(x= treatment, y= phosphorus))+
+  geom_point()+
+  stat_summary(fun=mean, aes(x= treatment, y= phosphorus),
+               geom= "crossbar", data=avg)+
+  geom_text(data=hsd.t0.pho,aes(x=treatment, y= phosphorus, label= groups), nudge_x= 0.2, nudge_y= 0.2)
+
+
+plot.pho.t0
+```
 ```
 
 
