@@ -54,9 +54,9 @@ library(ggrepel)
 
 ## Propidedades del suelo
 
-Esto se ha hecho para cargar el Excel de los datos iniciales, y para hacer la media de cada tratamiento, ya que de cada tratamiento hay 3 repeticiones. El simbolo %>% se llaman tuberias (the pipe) vienen de la libreria (tinyverse) (esta libreria sirve para mantener R más ordenado). Las tuberias funcionan usando el resultado de una operación(out) y convirtiendolo en el imput de otra. En el caso del codigo  "soil.summ <- soil_prop %>% group_by(treatment,  time) %>% summarise(across(.cols=everything(), .fns=mean),.groups = "drop")" quiere decir lo siguiente: hemos creado un objeto nuevo que es soil.summ, que es_ el archivo de excel soil_prop el que hacemos una serie de operaciones en cadena (tuberia) donde agrupamos solamente por tratamiento y tiempo (group_by,) y en ese agrupamiento queremos de todas las columnas, .cols=every, que haga la funcion de la media (fns=mean). NULL significa que no tenga en cuenta esas columnas. $ es para seleccionar cosas especificas. 
+Esto se ha hecho para cargar el Excel de los datos iniciales (ojo, para poner el directorio de donde esta tu archivo excel, se tiene que cambiar \, por /), y para hacer la media de cada tratamiento, ya que de cada tratamiento hay 3 repeticiones. El simbolo %>% se llaman tuberias (the pipe) vienen de la libreria (tinyverse) (esta libreria sirve para mantener R más ordenado). Las tuberias funcionan usando el resultado de una operación(out) y convirtiendolo en el imput de otra. En el caso del codigo  "soil.summ <- soil_prop %>% group_by(treatment,  time) %>% summarise(across(.cols=everything(), .fns=mean),.groups = "drop")" quiere decir lo siguiente: hemos creado un objeto nuevo que es soil.summ, que es_ el archivo de excel soil_prop el que hacemos una serie de operaciones en cadena (tuberia) donde agrupamos solamente por tratamiento y tiempo (group_by,) y en ese agrupamiento queremos de todas las columnas, .cols=every, que haga la funcion de la media (fns=mean). NULL significa que no tenga en cuenta esas columnas. $ es para seleccionar cosas especificas. 
 ```{r Import, include=TRUE}
-soil_prop <- readxl::read_excel("C:/Users/Raquel/Desktop/R/soil_prop_2.xlsx")
+soil_prop <- readxl::read_excel("C:/Users/raquel.correa/Documents/banana_microbiome/raw_files/soil_prop_2.xlsx")
 
 soil.summ <- soil_prop %>% group_by(treatment,  time) %>% 
   summarise(across(.cols=everything(), .fns=mean),.groups = "drop")
@@ -77,7 +77,7 @@ org.mat.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= org.matter,
   geom_line()+
   geom_point()
 org.mat.plot
-ggsave(org.mat.plot, file= "c:/Users/Raquel/Desktop/R/plots/org.mat.plot.png")
+
 ```
 ![Figure 1: organic matter over time in diffrerent treatments.](c:/Users/Raquel/Desktop/R/plots/org.mat.plot.png)
 
@@ -143,6 +143,14 @@ nitrogen.plot
 
 ```
 Figure 8: nitrogen over time in different treatments
+
+
+### Analisis estadistico.
+Para comprobar si hay diferencias significativas o no. 
+-Dif. entre tratamientos y tiempos. 
+-Dif. entre 1 tratamiento a lo largo del tiempo. 
+
+
 
 ```{r Materia organica stats, include=FALSE}
 soilt0 <- subset(soil_prop, soil_prop$time== "t0")
