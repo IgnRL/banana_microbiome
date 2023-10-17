@@ -52,6 +52,39 @@ library(ggrepel)
 
 # Analisis de datos octubre 2023
 
+
+```{r Palette, include= FALSE}
+
+banana.paleta = list(
+  paleta.treat = c("#FFC125", "#8B7D6B", "#81bc1f", "#ddec76",
+                 "#a4e361", "#27408B", "#EE5C42"),
+  my_favourite_colours = c("#702963", "#637029",    "#296370"))
+
+
+banana.paleta.f = function(name, n, all_palettes = banana.paleta, type = c("discrete", "continuous")) {
+  palette = all_palettes[[name]]
+  if (missing(n)) {
+    n = length(palette)
+  }
+  type = match.arg(type)
+  out = switch(type,
+               continuous = grDevices::colorRampPalette(palette)(n),
+               discrete = palette[1:n] )
+  structure(out, name = name, class = "palette")
+}
+banana.paleta.f("paleta.treat", all_palettes = banana.paleta, type= "discrete")
+
+scale_colour_banana_disc = function(name) {
+  ggplot2::scale_colour_manual(values = banana.paleta.f(name, type = "discrete"))
+}
+
+scale_fill_banana_disc = function(name) {
+  ggplot2::scale_fill_manual(values = banana.paleta.f(name,
+                                                     type = "discrete"))
+}
+
+```
+
 ## Propidedades del suelo
 
 Esto se ha hecho para cargar el Excel de los datos iniciales (ojo, para poner el directorio de donde esta tu archivo excel, se tiene que cambiar \, por /), y para hacer la media de cada tratamiento, ya que de cada tratamiento hay 3 repeticiones. El simbolo %>% se llaman tuberias (the pipe) vienen de la libreria (tinyverse) (esta libreria sirve para mantener R más ordenado). Las tuberias funcionan usando el resultado de una operación(out) y convirtiendolo en el imput de otra. En el caso del codigo  "soil.summ <- soil_prop %>% group_by(treatment,  time) %>% summarise(across(.cols=everything(), .fns=mean),.groups = "drop")" quiere decir lo siguiente: hemos creado un objeto nuevo que es soil.summ, que es_ el archivo de excel soil_prop el que hacemos una serie de operaciones en cadena (tuberia) donde agrupamos solamente por tratamiento y tiempo (group_by,) y en ese agrupamiento queremos de todas las columnas, .cols=every, que haga la funcion de la media (fns=mean). NULL significa que no tenga en cuenta esas columnas. $ es para seleccionar cosas especificas. 
@@ -74,89 +107,112 @@ En este codigo veremos la evolucion de los distintos parametros en el tiempo.
 La función "aes" sirve para indicar en un grafico cual es tu X,y. Debes indicar en texto quien es quien.Toda la información de los datos referido al grafico es lo que va dentro del parentesis. Los adornos van fuera con el signo de +. La funcion "geom_line" sirve para elegir el tipo de grafico que quieres. 
 
 ```{r Materia organica plot, include= TRUE}
-org.mat.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= org.matter, col= treatment))+
+org.mat.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= org.matter_mean))+
   geom_line()+
-  geom_point()
-org.mat.plot
-
-org.mat.plotsd <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= org.matter, col= treatment))+
-  geom_line()+
+  scale_colour_banana_disc("paleta.treat")+
   geom_point()+
-  geom_errorbar(aes(ymin=org.matter, ymax=org.matter), width=0.2)+
-  scale_colour_brewer(palette = "Paired")
+  geom_errorbar(aes(ymin=org.matter_mean-org.matter_sd, ymax=org.matter_mean+org.matter_sd), width=0.2)
 org.mat.plotsd
-#preguntar a ignacio si esta si esta bien standar desviation 
+ 
 
 ```
 ![Figure 1: organic matter over time in diffrerent treatments.]
 
-```{r Fosforo plot, include=TRUE}
-phosp.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= phosphorus, col= treatment))+
+```{r Fosforo plot, include=FALSE}
+phosp.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y=phosphorus_mean))+
   geom_line()+
-  geom_point()
+  scale_colour_banana_disc("paleta.treat")+
+  geom_point()+
+  geom_errorbar(aes(ymin=phosphorus_mean-phosphorus_sd, ymax=phosphorus_mean+phosphorus_sd), width=0.2)
 
-phosp.plot
+phosp.plotsd
 
 ```
-![Figure 2: phosphorous over time in different treatments]
+![Figure 2: phosphorous over time in different treatments.]
 
-```{r Calcium plot, include=TRUE}
-calcium.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= calcium, col= treatment))+
+```{r Calcium plot, include=FALSE}
+
+calcium.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= calcium_mean))+
   geom_line()+
-  geom_point()
-calcium.plot
+  scale_colour_banana_disc("paleta.treat")+
+  geom_point()+
+  geom_errorbar(aes(ymin=calcium_mean-calcium_sd, ymax=calcium_mean+calcium_sd), width=0.2)
+
+calcium.plotsd
+
+
+
 
 ```
-![Figure 3. calcium over time in different treatments]
+![Figure 3. calcium over time in different treatments.]
 
-```{r sodium plot, include=TRUE}
-sodium.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= sodium, col= treatment))+
+```{r sodium plot, include=FALSE}
+
+sodium.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= sodium_mean))+
   geom_line()+
-  geom_point()
-sodium.plot
+  scale_colour_banana_disc("paleta.treat")+
+  geom_point()+
+  geom_errorbar(aes(ymin=sodium_mean-sodium_sd, ymax=sodium_mean+sodium_sd), width=0.2)
+
+sodium.plotsd
 ```
-![Figure 4: sodium over time in different treatments]
+![Figure 4: sodium over time in different treatments.]
 
 
-```{r postassium plot, include=TRUE}
-potassium.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= potassium, col= treatment))+
+```{r postassium plot, include=FALSE}
+potassium.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= potassium_mean))+
   geom_line()+
-  geom_point()
-potassium.plot
-```
-![Figure 5: potassium over time in different treatments]
+  scale_colour_banana_disc("paleta.treat")+
+  geom_point()+
+  geom_errorbar(aes(ymin=potassium_mean-potassium_sd, ymax=potassium_mean+potassium_sd), width=0.2)
 
-
-```{r pH agua plot, include=TRUE}
-pH_water.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= ph.water, col= treatment))+
-  geom_line()+
-  geom_point()
-pH_water.plot
-```
-![Figure 6: pH water over time in different treatments]
-
-```{r conductivity plot, include=TRUE}
-conductivity.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= conductivity, col= treatment))+
-  geom_line()+
-  geom_point()
-conductivity.plot
-```
-![Figure 7: conductivity over time in different treatments]
-
-```{r nitrogen plot, include=TRUE}
-
-nitrogen.plot <- soil.summ%>% ggplot(aes(x=time, group= treatment, y= nitrogen, col= treatment))+
-  geom_line()+
-  geom_point()
-nitrogen.plot
+potassium.plotsd
 
 ```
-Figure 8: nitrogen over time in different treatments
+![Figure 5: potassium over time in different treatments.]
+
+
+```{r pH agua plot, include=FALSE}
+
+pH_water.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= ph.water_mean))+
+  geom_line()+
+  scale_colour_banana_disc("paleta.treat")+
+  geom_point()+
+  geom_errorbar(aes(ymin=ph.water_mean-ph.water_sd, ymax=ph.water_mean+ph.water_sd), width=0.2)
+
+pH_water.plotsd
+
+```
+![Figure 6: pH water over time in different treatments.]
+
+```{r conductivity plot, include=FALSE}
+conductivity.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= conductivity_mean))+
+  geom_line()+
+  scale_colour_banana_disc("paleta.treat")+
+  geom_point()+
+  geom_errorbar(aes(ymin=conductivity_mean-conductivity_sd, ymax=conductivity_mean+conductivity_sd), width=0.2)
+
+conductivity.plotsd
+
+```
+![Figure 7: conductivity over time in different treatments.]
+
+```{r nitrogen plot, include=FALSE}
+nitrogen.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= nitrogen_mean))+
+  geom_line()+
+  scale_colour_banana_disc("paleta.treat")+
+  geom_point()+
+  geom_errorbar(aes(ymin=nitrogen_mean-nitrogen_sd, ymax=nitrogen_mean+nitrogen_sd), width=0.2)
+
+nitrogen.plotsd
+
+```
+![Figure 8: nitrogen over time in different treatments.]
 
 
 ### Analisis estadistico.
 
-##Materia organica 
+## Materia organica 
 
 Para comprobar si hay diferencias significativas o no. 
 1.Dif. entre tratamientos y tiempos. 
@@ -167,23 +223,21 @@ Le hacemos un modelo de regresion lineal, o se puede analizar directamnte con an
 
 ```{r Materia organica stats, include=TRUE}
 soilt0 <- subset(soil_prop, soil_prop$time== "t0")
-anova.org.matter.t0 <- aov(org.matter~ treatment, data=soilt0)
+
+
+shapiro.test(soilt0$org.matter)#ahora vamos a comprobar la normalidad de los datos. Los datos no son normales. Hay que transformarlos. Lo haremos con log.
+
+soilt0$trans.org <- log(soilt0$org.matter)
+
+shapiro.test(soilt0$trans.org)#ahora si son normales. 
+hist(soilt0$trans.org) #comprobamos con grafico
+plot(soilt0$trans.org)
+anova.org.matter.t0 <- aov(soilt0$trans.org~ treatment, data=soilt0)
 summary(anova.org.matter.t0)
-#ahora vamos a comprobar la normalidad de los datos 
-shapiro.test(anova.org.matter.t0$residuals)
-## el p valor es 0.1294, mayor que  0.05 por lo que los datos son normales. Comprobamos ademas con grafico de histograma y qqplot.(este ultimo grafico es mejor que se haga con el lm)
-par(mfrow=c(2,2), cex.axis=1.5, lwd=2, font.lab=1.5) #para que los graficos se vean juntos duda
-plot(anova.org.matter.t0) #se ven todos los graficos
-
-lm.t0.mat.org <- lm(org.matter~ treatment, data= soilt0) #hacer el modelo de regresion
-anova.t0.org.matter.para.grafico <- aov(lm.t0.mat.org)
-summary(anova.t0.org.matter.para.grafico)
-
-hist(lm.t0.mat.org$residuals)
-plot(lm.t0.mat.org, which= 2)#pra ver normalidad
+plot(anova.org.matter.t0, which=2)
 
 #test de Levene para el analisis de la varianza
-leveneTest(org.matter~ treatment, data=soilt0)
+leveneTest(soilt0$trans.org~ treatment, data=soilt0)
 ## el valor de p es mayor que 0.05, se cumple el supuesto de homogenicidad de varianzas.
 
 
@@ -195,11 +249,13 @@ leveneTest(org.matter~ treatment, data=soilt0)
 #Puesto que hay direferencias sig. vamos a comprobar entre que tratamientos. POST-HOC.
 
 #### hsd tuckey from agricolae::
-hsd.t0.org <- HSD.test(anova.t0.org.matter.para.grafico, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+hsd.t0.org <- HSD.test(anova.org.matter.t0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 
 hsd.t0.org #preguntar ignacio como ver los resultados en un grafico
 
 ```
+[!Diferencias sig. entre tratamients para t0. Los datos estan transformados con logaritmo]
+
 
 
 ```{r plot org t0}
@@ -226,8 +282,8 @@ summary(anova.lm.t0.pho)
 
 shapiro.test(soilt0$phosphorus) #LOS DATOS NO SON NORMALES. preguntar ignacio mejor forma para normalizar datos
 ks.test(soilt0$phosphorus, pnorm)
-             
-             
+soilt0$trans.phospo <- log(soilt0$phosphorus)             
+shapiro.test(soilt0$trans.phospo)            
 par(mfrow=c(2,2), cex.axis=1.5, lwd=2, font.lab=1.5)
 plot(anova.lm.t0.pho)
 
@@ -237,6 +293,8 @@ plot(anova.lm.t0.pho, which=2)
 leveneTest(phosphorus~ treatment, data= soilt0)
 # el valor de p es mayor que 0.05, se cumple el supuesto de homogenicidad de varianzas.
 ```
+
+
 ```{r Phosphorus POST-HOC, include=TRUE}
 
 #Puesto que hay direferencias sig. vamos a comprobar entre que tratamientos. POST-HOC.
