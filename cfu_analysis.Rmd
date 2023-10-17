@@ -1,0 +1,75 @@
+---
+title: "CFU data"
+author: "Ignacio Romero"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r libraries, include=FALSE}
+library(readxl)
+library(agricolae)
+library(tidyr)
+library(tidyverse)
+library(ggpubr)
+library(rstatix)
+```
+
+
+# Analysis of the cfu counted
+
+## Experimental design
+
+Must complete
+
+## Method
+
+### Spore trap
+
+### Counting
+
+# About the data
+
+```{r Load data}
+cfu_data <- read_xlsx("raw_files/cfu_data.xlsx")
+head(cfu_data, 6)
+str(cfu_data)
+cfu_data$pot <- as.character(cfu_data$pot)
+```
+
+```{r Subset by treatment}
+cfu_actino <- subset(cfu_data, cfu_data$org== "actinobacteria")
+cfu_bact <- subset(cfu_data, cfu_data$org== "bacteria")
+cfu_fungi<- subset(cfu_data, cfu_data$org== "fungi")
+```
+
+
+# My research question:
+
+**How has the cfu of each organism changed through the different time points?**
+
+Repeated measure ANOVA with cfu as dependent variable and time and group as independent for each organism independently.   
+
+**How did it change according to each treatment?**
+
+
+
+# CFU variation over time
+
+```{r ANOVA cfu actino}
+
+summary(aov(cfu_g_soil ~ time*treatment+ Error(pot), data= cfu_actino))
+
+Anova()
+
+cfu_actino %>%
+  group_by(time) %>%
+  shapiro_test(cfu_g_soil)
+
+```
+
+
+
