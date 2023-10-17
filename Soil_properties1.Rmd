@@ -157,6 +157,7 @@ Figure 8: nitrogen over time in different treatments
 ### Analisis estadistico.
 
 ##Materia organica 
+
 Para comprobar si hay diferencias significativas o no. 
 1.Dif. entre tratamientos y tiempos. 
 2.Dif. entre 1 tratamiento a lo largo del tiempo. 
@@ -201,15 +202,13 @@ hsd.t0.org #preguntar ignacio como ver los resultados en un grafico
 ```
 
 
-##Phosphorus
-
 ```{r plot org t0}
 #crear un grafico con la media de la los valores de materia organica de t0, y la letra de HSDTukey)
-avg <- aggregate(org.matter~ treatment, data= soilt0, FUN= mean)
+avgm <- aggregate(org.matter~ treatment, data= soilt0, FUN= mean)
 plot.org.t0 <- soilt0 %>% ggplot(aes(x= treatment, y= org.matter))+
   geom_point()+
   stat_summary(fun=mean, aes(x= treatment, y= org.matter),
-               geom= "crossbar", data=avg)+
+               geom= "crossbar", data=avgm)+
   geom_text(data=hsd.t0.org,aes(x=treatment, y= org.matter, label= groups), nudge_x= 0.2, nudge_y= 0.2)
 
 
@@ -217,6 +216,8 @@ plot.org.t0
 ```
 Figura X. Diferencias significativas entre tratamientos en t0 para materia organica
 
+
+###Phosphorus
 ```{r Phosphorous stats, include=TRUE}
 soilt0
 lm.t0.phosphorous <- lm(phosphorus~ treatment, data= soilt0)
@@ -249,17 +250,93 @@ hsd.t0.pho
 
 ```{r plot phosphorus t0}
 
-avg <- aggregate(phosphorus~ treatment, data= soilt0, FUN= mean)
-avg
+avgpho <- aggregate(phosphorus~ treatment, data= soilt0, FUN= mean)
 plot.pho.t0 <- soilt0 %>% ggplot(aes(x= treatment, y= phosphorus))+
   geom_point()+
   stat_summary(fun=mean, aes(x= treatment, y= phosphorus),
-               geom= "crossbar", data=avg)+
+               geom= "crossbar", data=avgpho)+
   geom_text(data=hsd.t0.pho,aes(x=treatment, y= phosphorus, label= groups), nudge_x= 0.2, nudge_y= 0.2)
 
 
 plot.pho.t0
 ```
+###ph water
+
+
+```{r ph water stast, include=TRUE}
+lm.t0.ph <- lm(ph.water~ treatment, data= soilt0)
+anova.lm.t0.ph <- aov(lm.t0.ph)
+summary(anova.lm.t0.ph)
+
+shapiro.test(soilt0$ph.water) ##datos no normales xq sin hacer el anova, salen no normales y con el lm salen normales
+ks.test(soilt0$ph.water, pnorm)
+shapiro.test(anova.lm.t0.ph$residuals)
+hist(soilt0$ph.water)
+plot(soilt0$ph.water)
+
+leveneTest(ph.water ~ treatment, data= soilt0) #varianzas diferentes
+
+```
+
+```{r Ph POST-HOC, include=TRUE}
+#### hsd tuckey from agricolae::
+
+hsd.t0.ph <- HSD.test(anova.lm.t0.ph, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+
+hsd.t0.ph
+```
+
+```{r plot ph_water t0, include=TRUE}
+avgphwater <- aggregate(ph.water ~ treatment, data= soilt0, FUN= mean)
+
+plot.phwater.t0 <- soilt0 %>% ggplot(aes(x= treatment, y=ph.water))+
+  geom_point()+
+  stat_summary(fun=mean, aes(x= treatment, y= ph.water),
+               geom= "crossbar", data=avgphwater)+
+  geom_text(data=hsd.t0.ph,aes(x=treatment, y= ph.water, label= groups), nudge_x= 0.2, nudge_y= 0.2)
+
+plot.phwater.t0
+```
+
+###Conductivity
+
+```{r conductivity stats, include=TRUE}
+soilt0
+lm.t0.conduc <- lm(conductivity~ treatment, data= soilt0)
+anova.lm.t0.conduc <- aov(lm.t0.conduc)
+summary(anova.lm.t0.conduc)
+
+shapiro.test(soilt0$conductivity) #datos no normales
+ks.test(soilt0$conductivity, pnorm)
+             
+
+hist(anova.lm.t0.conduc$residuals)
+plot(anova.lm.t0.conduc, which=2)
+
+leveneTest(conductivity~ treatment, data= soilt0)
+# el valor de p es mayor que 0.05, se cumple el supuesto de homogenicidad de varianzas.}
+
+```
+
+```{r conductivity POST-HOC, include=TRUE}
+#### hsd tuckey from agricolae::
+
+hsd.t0.conduc <- HSD.test(anova.lm.t0.conduc, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+
+hsd.t0.conduc
+
+```
+
+```{r plot conductivity, include=TRUE}
+avgconduc <- aggregate(conductivity ~ treatment, data= soilt0, FUN= mean)
+
+plot.conduc.t0 <- soilt0 %>% ggplot(aes(x= treatment, y=conductivity))+
+  geom_point()+
+  stat_summary(fun=mean, aes(x= treatment, y= conductivity),
+               geom= "crossbar", data=avgconduc)+
+  geom_text(data=hsd.t0.conduc,aes(x=treatment, y= conductivity, label= groups), nudge_x= 0.2, nudge_y= 0.2)
+
+plot.conduc.t0
 ```
 
 
