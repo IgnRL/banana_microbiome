@@ -47,6 +47,12 @@ library(corrplot)
 library(eulerr)
 library(ggforce)
 library(ggrepel)
+avgp1 <- rm
+sqrt <- rm
+avg <- rm
+plot.org.t0 <- rm
+
+plot.pho.t01<- rm
 ```
 
 
@@ -94,7 +100,8 @@ soil_prop <- readxl::read_excel("C:/Users/raquel.correa/Documents/banana_microbi
 soil.summ <- soil_prop %>% group_by(treatment,  time) %>% 
   summarise(across(.cols=everything(),.fns=mean),.groups = "drop")
 
-soil.summ
+soil.summ.sd <- soil_prop %>% group_by(treatment,  time) %>% 
+  summarise(across(.cols=everything(),.fns=list(mean = mean, sd = sd)),.groups = "drop")
 
 soil.summ$rep <- NULL
 soil.summ$soil.id <- NULL
@@ -224,10 +231,14 @@ Le hacemos un modelo de regresion lineal, o se puede analizar directamnte con an
 ```{r Materia organica stats, include=TRUE}
 soilt0 <- subset(soil_prop, soil_prop$time== "t0")
 
-
 shapiro.test(soilt0$org.matter)#ahora vamos a comprobar la normalidad de los datos. Los datos no son normales. Hay que transformarlos. Lo haremos con log.
 
+org.trans <- log(soilt0$org.matter)
+
+org.mat.trans <- data.frame(org.trans)
+
 soilt0$trans.org <- log(soilt0$org.matter)
+soilt0$trans.org
 
 shapiro.test(soilt0$trans.org)#ahora si son normales. 
 hist(soilt0$trans.org) #comprobamos con grafico
@@ -260,35 +271,36 @@ hsd.t0.org #preguntar ignacio como ver los resultados en un grafico
 
 ```{r plot org t0}
 #crear un grafico con la media de la los valores de materia organica de t0, y la letra de HSDTukey)
-avgm <- aggregate(org.matter~ treatment, data= soilt0, FUN= mean)
-plot.org.t0 <- soilt0 %>% ggplot(aes(x= treatment, y= org.matter))+
+avgm <- aggregate(soilt0$trans.org ~ treatment, data=soilt0, FUN= mean)
+avgm
+plot.org.t01 <- soilt0 %>% ggplot(aes(x= treatment, y= org.mat.trans))+
   geom_point()+
-  stat_summary(fun=mean, aes(x= treatment, y= org.matter),
+  stat_summary(fun=mean, aes(x= treatment, y= org.mat.trans),
                geom= "crossbar", data=avgm)+
-  geom_text(data=hsd.t0.org,aes(x=treatment, y= org.matter, label= groups), nudge_x= 0.2, nudge_y= 0.2)
+  geom_text(data=hsd.t0.org, aes(x=treatment, y=org.mat.trans, label= groups), nudge_x= 0.2, nudge_y= 3)
+plot.org.t01
 
 
-plot.org.t0
+
 ```
-Figura X. Diferencias significativas entre tratamientos en t0 para materia organica
+Figura X. Diferencias significativas entre tratamientos en t0 para materia organica. 
 
 
-###Phosphorus
+## Phosphorus
+
 ```{r Phosphorous stats, include=TRUE}
 soilt0
-lm.t0.phosphorous <- lm(phosphorus~ treatment, data= soilt0)
-anova.lm.t0.pho <- aov(lm.t0.phosphorous)
-summary(anova.lm.t0.pho)
 
 shapiro.test(soilt0$phosphorus) #LOS DATOS NO SON NORMALES. preguntar ignacio mejor forma para normalizar datos
 ks.test(soilt0$phosphorus, pnorm)
 soilt0$trans.phospo <- log(soilt0$phosphorus)             
 shapiro.test(soilt0$trans.phospo)            
 par(mfrow=c(2,2), cex.axis=1.5, lwd=2, font.lab=1.5)
-plot(anova.lm.t0.pho)
 
-hist(anova.lm.t0.pho$residuals)
-plot(anova.lm.t0.pho, which=2)
+anova.pho.to.trans <- aov(soilt0$trans.phospo~ treatment, data=soilt0)
+summary(anova.pho.to.trans)
+
+plot(anova.pho.to.trans, which=2)
 
 leveneTest(phosphorus~ treatment, data= soilt0)
 # el valor de p es mayor que 0.05, se cumple el supuesto de homogenicidad de varianzas.
@@ -300,49 +312,54 @@ leveneTest(phosphorus~ treatment, data= soilt0)
 #Puesto que hay direferencias sig. vamos a comprobar entre que tratamientos. POST-HOC.
 
 #### hsd tuckey from agricolae::
-hsd.t0.pho <- HSD.test(anova.lm.t0.pho, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+hsd.t0.pho <- HSD.test(anova.pho.to.trans, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 
 hsd.t0.pho
 
 ```
+![Diferencias sig.entre tratamientos de phosphorus en t0. datos transformados.]
 
 ```{r plot phosphorus t0}
 
-avgpho <- aggregate(phosphorus~ treatment, data= soilt0, FUN= mean)
-plot.pho.t0 <- soilt0 %>% ggplot(aes(x= treatment, y= phosphorus))+
+avgpho <- aggregate(trans.phospo~ treatment, data= soilt0, FUN= mean)
+avgpho
+plot.pho.t0 <- soilt0 %>% ggplot(aes(x= treatment, y= trans.phospo))+
   geom_point()+
-  stat_summary(fun=mean, aes(x= treatment, y= phosphorus),
+  stat_summary(fun=mean, aes(x= treatment, y= trans.phospo),
                geom= "crossbar", data=avgpho)+
-  geom_text(data=hsd.t0.pho,aes(x=treatment, y= phosphorus, label= groups), nudge_x= 0.2, nudge_y= 0.2)
+  geom_text(data=hsd.t0.pho,aes(x=treatment, y= trans.phospo, label= groups), nudge_x= 0.2, nudge_y= 0.2)
 
 
 plot.pho.t0
 ```
-###ph water
+## ph water
 
 
 ```{r ph water stast, include=TRUE}
-lm.t0.ph <- lm(ph.water~ treatment, data= soilt0)
-anova.lm.t0.ph <- aov(lm.t0.ph)
-summary(anova.lm.t0.ph)
-
-shapiro.test(soilt0$ph.water) ##datos no normales xq sin hacer el anova, salen no normales y con el lm salen normales
-ks.test(soilt0$ph.water, pnorm)
-shapiro.test(anova.lm.t0.ph$residuals)
+lm.t0.ph <- rm
+shapiro.test(soilt0$ph.water)
 hist(soilt0$ph.water)
-plot(soilt0$ph.water)
 
-leveneTest(ph.water ~ treatment, data= soilt0) #varianzas diferentes
+soilt0$trans.phwater <- log(soilt0$ph.water)
+
+hist(soilt0$trans.phwater)
+shapiro.test(soilt0$trans.phwater)#no son normales dps de transformar
+
+anova.phwater.to.trans <- aov(soilt0$trans.phwater ~ treatment, data = soilt0)
+summary(anova.phwater.to.trans)
+
+leveneTest(soilt0$trans.phwater ~ treatment, data= soilt0) 
 
 ```
 
-```{r Ph POST-HOC, include=TRUE}
+```{r Phwater POST-HOC, echo=FALSE}
 #### hsd tuckey from agricolae::
 
-hsd.t0.ph <- HSD.test(anova.lm.t0.ph, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+hsd.t0.phwater <- HSD.test(anova.phwater.to.trans, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 
-hsd.t0.ph
+hsd.t0.phwater
 ```
+![Diferencias sig.entre tratamientos de phwater en t0. datos transformados.ojo la distribucion no es normal]
 
 ```{r plot ph_water t0, include=TRUE}
 avgphwater <- aggregate(ph.water ~ treatment, data= soilt0, FUN= mean)
@@ -356,34 +373,32 @@ plot.phwater.t0 <- soilt0 %>% ggplot(aes(x= treatment, y=ph.water))+
 plot.phwater.t0
 ```
 
-###Conductivity
+## Conductivity
 
 ```{r conductivity stats, include=TRUE}
-soilt0
-lm.t0.conduc <- lm(conductivity~ treatment, data= soilt0)
-anova.lm.t0.conduc <- aov(lm.t0.conduc)
-summary(anova.lm.t0.conduc)
+shapiro.test(soilt0$conductivity)
+hist(soilt0$conductivity)
 
-shapiro.test(soilt0$conductivity) #datos no normales
-ks.test(soilt0$conductivity, pnorm)
-             
+soilt0$trans.conduc <- log(soilt0$conductivity)
+hist(soilt0$trans.conduc) #datos no normales
 
-hist(anova.lm.t0.conduc$residuals)
-plot(anova.lm.t0.conduc, which=2)
+anova.conduc.t0.trans <- aov(soilt0$trans.conduc ~ treatment, data = soilt0)
+summary(anova.conduc.t0.trans)
 
-leveneTest(conductivity~ treatment, data= soilt0)
-# el valor de p es mayor que 0.05, se cumple el supuesto de homogenicidad de varianzas.}
+leveneTest(soilt0$trans.conduc~ treatment, data= soilt0) 
+# el valor de p es mayor que 0.05, se cumple el supuesto de homogenicidad de varianzas.
 
 ```
 
-```{r conductivity POST-HOC, include=TRUE}
+```{r conductivity POST-HOC, echo=FALSE}
 #### hsd tuckey from agricolae::
 
-hsd.t0.conduc <- HSD.test(anova.lm.t0.conduc, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+hsd.t0.conduc <- HSD.test(anova.conduc.t0.trans, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 
 hsd.t0.conduc
 
 ```
+![Diferencias sig.entre tratamientos de phwater en t0. datos transformados. ojo la distribucion no es normal]
 
 ```{r plot conductivity, include=TRUE}
 avgconduc <- aggregate(conductivity ~ treatment, data= soilt0, FUN= mean)
@@ -397,6 +412,95 @@ plot.conduc.t0 <- soilt0 %>% ggplot(aes(x= treatment, y=conductivity))+
 plot.conduc.t0
 ```
 
+## Calcium
+
+
+```{r stats calcium, include=FALSE}
+shapiro.test(soilt0$calcium)
+hist(soilt0$calcium)
+
+anova.calcium.to <- aov(calcium ~ treatment, data = soilt0)#datos normales
+summary(anova.calcium.to)
+
+leveneTest(calcium ~ treatment, data= soilt0)
+# el valor de p es mayor que 0.05, se cumple el supuesto de homogenicidad de varianzas.
+
+```
+
+```{r calcium post-hoc, include=FALSE}
+
+
+hsd.t0.calcium <- HSD.test(anova.calcium.to, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+hsd.t0.calcium
+
+```
+![Diferencias sig.entre tratamientos de calcium en t0.]
+
+## Sodium
+
+```{r stats sodium, include=TRUE}
+
+shapiro.test(soilt0$sodium)
+hist(soilt0$sodium)
+
+anova.sodium.to <- aov(sodium ~ treatment, data = soilt0)#datos normales
+summary(anova.sodium.to)
+
+leveneTest(sodium ~ treatment, data= soilt0)
+# el valor de p es mayor que 0.05, se cumple el supuesto de homogenicidad de varianzas.
+```
+
+
+```{r sodium post-hoc, include=TRUE}
+
+hsd.t0.sodium <- HSD.test(anova.sodium.to, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+hsd.t0.sodium
+
+```
+![no hay diferencias sig. en el t0 entre tratamientos para el sodio]
+
+## Potassium
+
+```{r stats potassium, include=TRUE}
+shapiro.test(soilt0$potassium)
+hist(soilt0$potassium)
+
+anova.potassium.to <- aov(potassium ~ treatment, data = soilt0)#datos normales
+summary(anova.potassium.to)
+
+leveneTest(potassium ~ treatment, data= soilt0)
+```
+
+
+```{r potassium post-hoc, include=TRUE}
+hsd.t0.potassium <- HSD.test(anova.potassium.to, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+hsd.t0.potassium
+
+```
+![Diferencias sig.entre tratamientos de potassium en t0.]
+
+## Nitrogen
+
+```{r stats nitrogen, include=TRUE}
+
+shapiro.test(soilt0$nitrogen)
+hist(soilt0$nitrogen)
+soilt0$trans.nitrogen <- log(soilt0$nitrogen)
+shapiro.test(soilt0$trans.nitrogen)
+hist(soilt0$trans.nitrogen)
+
+anova.nitrogen.to.trans <- aov(soilt0$trans.nitrogen ~ treatment, data = soilt0)#datos normales
+summary(anova.potassium.to)
+
+leveneTest(soilt0$trans.nitrogen ~ treatment, data= soilt0)
+
+```
+```{r nitrogen post-hoc, include=TRUE}
+hsd.t0.nitrogen <- HSD.test(anova.nitrogen.to.trans, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+hsd.t0.nitrogen
+
+```
+![Diferencias sig.entre tratamientos nitrogen en t0.]
 
 ```{r Correlogram, echo=FALSE}
 soil_prop_cor <- soil_prop
