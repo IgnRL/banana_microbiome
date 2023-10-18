@@ -94,7 +94,7 @@ scale_fill_banana_disc = function(name) {
 ## Propidedades del suelo
 
 Esto se ha hecho para cargar el Excel de los datos iniciales (ojo, para poner el directorio de donde esta tu archivo excel, se tiene que cambiar \, por /), y para hacer la media de cada tratamiento, ya que de cada tratamiento hay 3 repeticiones. El simbolo %>% se llaman tuberias (the pipe) vienen de la libreria (tinyverse) (esta libreria sirve para mantener R más ordenado). Las tuberias funcionan usando el resultado de una operación(out) y convirtiendolo en el imput de otra. En el caso del codigo  "soil.summ <- soil_prop %>% group_by(treatment,  time) %>% summarise(across(.cols=everything(), .fns=mean),.groups = "drop")" quiere decir lo siguiente: hemos creado un objeto nuevo que es soil.summ, que es_ el archivo de excel soil_prop el que hacemos una serie de operaciones en cadena (tuberia) donde agrupamos solamente por tratamiento y tiempo (group_by,) y en ese agrupamiento queremos de todas las columnas, .cols=every, que haga la funcion de la media (fns=mean). NULL significa que no tenga en cuenta esas columnas. $ es para seleccionar cosas especificas. 
-```{r Import, include=TRUE}
+```{r Import, include=FALSE}
 soil_prop <- readxl::read_excel("C:/Users/raquel.correa/Documents/banana_microbiome/raw_files/soil_prop_2.xlsx")
 
 soil.summ <- soil_prop %>% group_by(treatment,  time) %>% 
@@ -125,7 +125,7 @@ org.mat.plotsd
 ```
 ![Figure 1: organic matter over time in diffrerent treatments.]
 
-```{r Fosforo plot, include=FALSE}
+```{r Fosforo plot, echo=FALSE}
 phosp.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y=phosphorus_mean))+
   geom_line()+
   scale_colour_banana_disc("paleta.treat")+
@@ -137,7 +137,7 @@ phosp.plotsd
 ```
 ![Figure 2: phosphorous over time in different treatments.]
 
-```{r Calcium plot, include=FALSE}
+```{r Calcium plot, echo=FALSE}
 
 calcium.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= calcium_mean))+
   geom_line()+
@@ -147,13 +147,10 @@ calcium.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= trea
 
 calcium.plotsd
 
-
-
-
 ```
 ![Figure 3. calcium over time in different treatments.]
 
-```{r sodium plot, include=FALSE}
+```{r sodium plot, echo=FALSE}
 
 sodium.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= sodium_mean))+
   geom_line()+
@@ -166,7 +163,7 @@ sodium.plotsd
 ![Figure 4: sodium over time in different treatments.]
 
 
-```{r postassium plot, include=FALSE}
+```{r postassium plot, echo=FALSE}
 potassium.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= potassium_mean))+
   geom_line()+
   scale_colour_banana_disc("paleta.treat")+
@@ -179,7 +176,7 @@ potassium.plotsd
 ![Figure 5: potassium over time in different treatments.]
 
 
-```{r pH agua plot, include=FALSE}
+```{r pH agua plot, echo=FALSE}
 
 pH_water.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= ph.water_mean))+
   geom_line()+
@@ -192,7 +189,7 @@ pH_water.plotsd
 ```
 ![Figure 6: pH water over time in different treatments.]
 
-```{r conductivity plot, include=FALSE}
+```{r conductivity plot, echo=FALSE}
 conductivity.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= conductivity_mean))+
   geom_line()+
   scale_colour_banana_disc("paleta.treat")+
@@ -204,7 +201,7 @@ conductivity.plotsd
 ```
 ![Figure 7: conductivity over time in different treatments.]
 
-```{r nitrogen plot, include=FALSE}
+```{r nitrogen plot, echo=FALSE}
 nitrogen.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= nitrogen_mean))+
   geom_line()+
   scale_colour_banana_disc("paleta.treat")+
@@ -268,24 +265,6 @@ hsd.t0.org #preguntar ignacio como ver los resultados en un grafico
 [!Diferencias sig. entre tratamients para t0. Los datos estan transformados con logaritmo]
 
 
-
-```{r plot org t0}
-#crear un grafico con la media de la los valores de materia organica de t0, y la letra de HSDTukey)
-avgm <- aggregate(soilt0$trans.org ~ treatment, data=soilt0, FUN= mean)
-avgm
-plot.org.t01 <- soilt0 %>% ggplot(aes(x= treatment, y= org.mat.trans))+
-  geom_point()+
-  stat_summary(fun=mean, aes(x= treatment, y= org.mat.trans),
-               geom= "crossbar", data=avgm)+
-  geom_text(data=hsd.t0.org, aes(x=treatment, y=org.mat.trans, label= groups), nudge_x= 0.2, nudge_y= 3)
-plot.org.t01
-
-
-
-```
-Figura X. Diferencias significativas entre tratamientos en t0 para materia organica. 
-
-
 ## Phosphorus
 
 ```{r Phosphorous stats, include=TRUE}
@@ -319,19 +298,6 @@ hsd.t0.pho
 ```
 ![Diferencias sig.entre tratamientos de phosphorus en t0. datos transformados.]
 
-```{r plot phosphorus t0}
-
-avgpho <- aggregate(trans.phospo~ treatment, data= soilt0, FUN= mean)
-avgpho
-plot.pho.t0 <- soilt0 %>% ggplot(aes(x= treatment, y= trans.phospo))+
-  geom_point()+
-  stat_summary(fun=mean, aes(x= treatment, y= trans.phospo),
-               geom= "crossbar", data=avgpho)+
-  geom_text(data=hsd.t0.pho,aes(x=treatment, y= trans.phospo, label= groups), nudge_x= 0.2, nudge_y= 0.2)
-
-
-plot.pho.t0
-```
 ## ph water
 
 
@@ -361,17 +327,6 @@ hsd.t0.phwater
 ```
 ![Diferencias sig.entre tratamientos de phwater en t0. datos transformados.ojo la distribucion no es normal]
 
-```{r plot ph_water t0, include=TRUE}
-avgphwater <- aggregate(ph.water ~ treatment, data= soilt0, FUN= mean)
-
-plot.phwater.t0 <- soilt0 %>% ggplot(aes(x= treatment, y=ph.water))+
-  geom_point()+
-  stat_summary(fun=mean, aes(x= treatment, y= ph.water),
-               geom= "crossbar", data=avgphwater)+
-  geom_text(data=hsd.t0.ph,aes(x=treatment, y= ph.water, label= groups), nudge_x= 0.2, nudge_y= 0.2)
-
-plot.phwater.t0
-```
 
 ## Conductivity
 
@@ -400,17 +355,6 @@ hsd.t0.conduc
 ```
 ![Diferencias sig.entre tratamientos de phwater en t0. datos transformados. ojo la distribucion no es normal]
 
-```{r plot conductivity, include=TRUE}
-avgconduc <- aggregate(conductivity ~ treatment, data= soilt0, FUN= mean)
-
-plot.conduc.t0 <- soilt0 %>% ggplot(aes(x= treatment, y=conductivity))+
-  geom_point()+
-  stat_summary(fun=mean, aes(x= treatment, y= conductivity),
-               geom= "crossbar", data=avgconduc)+
-  geom_text(data=hsd.t0.conduc,aes(x=treatment, y= conductivity, label= groups), nudge_x= 0.2, nudge_y= 0.2)
-
-plot.conduc.t0
-```
 
 ## Calcium
 
