@@ -16,6 +16,8 @@ library(tidyr)
 library(tidyverse)
 library(ggpubr)
 library(rstatix)
+library(MASS)
+library(dplyr)
 ```
 
 
@@ -41,6 +43,11 @@ cfu_data$pot <- as.character(cfu_data$pot)
 ```
 
 ```{r Subset by treatment}
+#create a transformation of cfu_g_soil before subsetting to save work
+cfu_data$log_cfu <- log2(cfu_data$cfu_g_soil)
+cfu_data$sqr_cfu <- sqrt(cfu_data$cfu_g_soil)
+cfu_data$inv_cfu <- 1/(cfu_data$cfu_g_soil)
+#Subset
 cfu_actino <- subset(cfu_data, cfu_data$org== "actinobacteria")
 cfu_bact <- subset(cfu_data, cfu_data$org== "bacteria")
 cfu_fungi<- subset(cfu_data, cfu_data$org== "fungi")
@@ -60,14 +67,254 @@ Repeated measure ANOVA with cfu as dependent variable and time and group as inde
 # CFU variation over time
 
 ```{r ANOVA cfu actino}
-
 summary(aov(cfu_g_soil ~ time*treatment+ Error(pot), data= cfu_actino))
 
-Anova()
-
+#Shapiro on untransformed data
 cfu_actino %>%
   group_by(time) %>%
-  shapiro_test(cfu_g_soil)
+  shapiro_test(cfu_g_soil) 
+ggqqplot(data=cfu_actino, "cfu_g_soil", facet.by = "time")# Not normal
+
+cfu_actino %>%
+  group_by(treatment) %>%
+  shapiro_test(cfu_g_soil) 
+ggqqplot(data=cfu_actino, "cfu_g_soil", facet.by = "treatment")# Not normal
+
+cfu_actino$cfu_g_soil %>% shapiro.test() # Not normal
+
+hist(cfu_actino$cfu_g_soil)# Not normal
+
+
+#Shapiro on log transformed data
+cfu_actino %>%
+  group_by(time) %>%
+  shapiro_test(log_cfu) 
+ggqqplot(data=cfu_actino, "log_cfu", facet.by = "time")# Not normal
+
+cfu_actino %>%
+  group_by(treatment) %>%
+  shapiro_test(log_cfu) 
+ggqqplot(data=cfu_actino, "log_cfu", facet.by = "treatment")# Not normal
+
+cfu_actino$log_cfu %>% shapiro.test() # Not normal
+
+hist(cfu_actino$log_cfu)# Not normal
+
+#Shapiro on square root transformed data
+cfu_actino %>%
+  group_by(time) %>%
+  shapiro_test(sqr_cfu) 
+ggqqplot(data=cfu_actino, "sqr_cfu", facet.by = "time")# Not normal
+
+cfu_actino %>%
+  group_by(treatment) %>%
+  shapiro_test(sqr_cfu) 
+ggqqplot(data=cfu_actino, "sqr_cfu", facet.by = "treatment")# Not normal
+
+cfu_actino$sqr_cfu %>% shapiro.test() # Not normal
+
+hist(cfu_actino$sqr_cfu)# Not normal
+
+#Shapiro on inverse transformed data
+cfu_actino %>%
+  group_by(time) %>%
+  shapiro_test(inv_cfu) 
+ggqqplot(data=cfu_actino, "inv_cfu", facet.by = "time")# Not normal
+
+
+
+cfu_actino %>%
+  group_by(treatment) %>%
+  shapiro_test(inv_cfu) 
+ggqqplot(data=cfu_actino, "inv_cfu", facet.by = "treatment")# Not normal
+
+cfu_actino$inv_cfu %>% shapiro.test() # Not normal
+
+hist(cfu_actino$inv_cfu)# Not normal
+
+
+###### BOX -COX transformation
+
+bc <- boxcox(aov(cfu_g_soil ~ time*treatment, data= cfu_actino))
+lambda <- bc$x[which.max(bc$y)] 
+cfu_actino$bc_cfu <- (cfu_actino$cfu_g_soil ^ lambda - 1) / lambda
+cfu_actino %>%  shapiro_test(bc_cfu)
+hist(cfu_actino$bc_cfu)
+ggqqplot(data= cfu_actino, "bc_cfu", facet.by = "time")
+
+```
+
+
+```{r ANOVA cfu bact}
+summary(aov(cfu_g_soil ~ time*treatment+ Error(pot), data= cfu_bact))
+
+#Shapiro on untransformed data
+cfu_bact %>%
+  group_by(time) %>%
+  shapiro_test(cfu_g_soil) 
+ggqqplot(data=cfu_bact, "cfu_g_soil", facet.by = "time")# Not normal
+
+cfu_bact %>%
+  group_by(treatment) %>%
+  shapiro_test(cfu_g_soil) 
+ggqqplot(data=cfu_bact, "cfu_g_soil", facet.by = "treatment")# Not normal
+
+cfu_bact$cfu_g_soil %>% shapiro.test() # Not normal
+
+hist(cfu_bact$cfu_g_soil)# Not normal
+
+
+#Shapiro on log transformed data
+cfu_bact %>%
+  group_by(time) %>%
+  shapiro_test(log_cfu) 
+ggqqplot(data=cfu_bact, "log_cfu", facet.by = "time")# Not normal
+
+cfu_bact %>%
+  group_by(treatment) %>%
+  shapiro_test(log_cfu) 
+ggqqplot(data=cfu_bact, "log_cfu", facet.by = "treatment")# Not normal
+
+cfu_bact$log_cfu %>% shapiro.test() # Not normal
+
+hist(cfu_bact$log_cfu)# Not normal
+
+#Shapiro on square root transformed data
+cfu_bact %>%
+  group_by(time) %>%
+  shapiro_test(sqr_cfu) 
+ggqqplot(data=cfu_bact, "sqr_cfu", facet.by = "time")# Not normal
+
+cfu_bact %>%
+  group_by(treatment) %>%
+  shapiro_test(sqr_cfu) 
+ggqqplot(data=cfu_bact, "sqr_cfu", facet.by = "treatment")# Not normal
+
+cfu_bact$sqr_cfu %>% shapiro.test() # Not normal
+
+hist(cfu_bact$sqr_cfu)# Not normal
+
+#Shapiro on inverse transformed data
+cfu_bact %>%
+  group_by(time) %>%
+  shapiro_test(inv_cfu) 
+ggqqplot(data=cfu_bact, "inv_cfu", facet.by = "time")# Not normal
+
+cfu_bact %>%
+  group_by(treatment) %>%
+  shapiro_test(inv_cfu) 
+ggqqplot(data=cfu_bact, "inv_cfu", facet.by = "treatment")# Not normal
+
+cfu_bact$inv_cfu %>% shapiro.test() # Not normal
+
+hist(cfu_bact$inv_cfu)# Not normal
+
+
+###### BOX -COX transformation
+
+bc <- boxcox(aov(cfu_g_soil ~ time*treatment, data= cfu_bact))
+lambda <- bc$x[which.max(bc$y)] 
+cfu_bact$bc_cfu <- (cfu_bact$cfu_g_soil ^ lambda - 1) / lambda
+cfu_bact %>%  shapiro_test(bc_cfu)
+hist(cfu_bact$bc_cfu)
+ggqqplot(data= cfu_bact, "bc_cfu", facet.by = "time")
+
+```
+
+
+```{r ANOVA cfu fungi}
+summary(aov(cfu_g_soil ~ time*treatment+ Error(pot), data= cfu_fungi))
+
+#Shapiro on untransformed data
+cfu_fungi %>%
+  group_by(time) %>%
+  shapiro_test(cfu_g_soil) 
+ggqqplot(data=cfu_fungi, "cfu_g_soil", facet.by = "time")# Not normal
+
+cfu_fungi %>%
+  group_by(treatment) %>%
+  shapiro_test(cfu_g_soil) 
+ggqqplot(data=cfu_fungi, "cfu_g_soil", facet.by = "treatment")# Not normal
+
+cfu_fungi$cfu_g_soil %>% shapiro.test() # Not normal
+
+hist(cfu_fungi$cfu_g_soil)# Not normal
+
+
+#Shapiro on log transformed data
+cfu_fungi %>%
+  group_by(time) %>%
+  shapiro_test(log_cfu) 
+ggqqplot(data=cfu_fungi, "log_cfu", facet.by = "time")# Not normal
+
+cfu_fungi %>%
+  group_by(treatment) %>%
+  shapiro_test(log_cfu) 
+ggqqplot(data=cfu_fungi, "log_cfu", facet.by = "treatment")# Not normal
+
+cfu_fungi$log_cfu %>% shapiro.test() # Not normal
+
+hist(cfu_fungi$log_cfu)# Not normal
+
+#Shapiro on square root transformed data
+cfu_fungi %>%
+  group_by(time) %>%
+  shapiro_test(sqr_cfu) 
+ggqqplot(data=cfu_fungi, "sqr_cfu", facet.by = "time")# Not normal
+
+cfu_fungi %>%
+  group_by(treatment) %>%
+  shapiro_test(sqr_cfu) 
+ggqqplot(data=cfu_fungi, "sqr_cfu", facet.by = "treatment")# Not normal
+
+cfu_fungi$sqr_cfu %>% shapiro.test() # Not normal
+
+hist(cfu_fungi$sqr_cfu)# Not normal
+
+#Shapiro on inverse transformed data
+cfu_fungi %>%
+  group_by(time) %>%
+  shapiro_test(inv_cfu) 
+ggqqplot(data=cfu_fungi, "inv_cfu", facet.by = "time")# Not normal
+
+cfu_fungi %>%
+  group_by(treatment) %>%
+  shapiro_test(inv_cfu) 
+ggqqplot(data=cfu_fungi, "inv_cfu", facet.by = "treatment")# Not normal
+
+cfu_fungi$inv_cfu %>% shapiro.test() # Not normal
+
+hist(cfu_fungi$inv_cfu)# Not normal
+
+
+###### BOX -COX transformation
+
+bc <- boxcox(aov(cfu_g_soil ~ time*treatment, data= cfu_fungi))
+lambda <- bc$x[which.max(bc$y)] 
+cfu_fungi$bc_cfu <- (cfu_fungi$cfu_g_soil ^ lambda - 1) / lambda
+cfu_fungi %>%  shapiro_test(bc_cfu)
+hist(cfu_fungi$bc_cfu)
+ggqqplot(data= cfu_fungi, "bc_cfu", facet.by = "time")
+```
+
+
+The data does not follow a normal distribution no matter which transformation, a non-parametric test will be done instead a parametric ANOVA.
+
+
+```{r kruskal}
+kruskal.actino.treat <- kruskal(cfu_actino$cfu_g_soil, cfu_actino$treatment , alpha= 0.05, p.adj= "bonferroni", group= TRUE)
+```
+
+Kruskal Wallis' test does not consider repeated measures (time), but Friedman's test can recognize repeated measures and is non parametric. the only problem is that the input is the mean values, losing the variability of the replicates
+
+```{r Friedmann's test}
+ actino<- data.frame("cfu"= cfu_actino$cfu_g_soil, "treatment"= cfu_actino$treatment, "time"= cfu_actino$time)
+
+mean.cfu.actino <- actino %>% group_by(time, treatment) %>% summarise(mean.cfu = mean(cfu))
+mean.cfu.data <- cfu_data %>% group_by(time, treatment, org) %>% summarise(mean.cfu = mean(cfu_g_soil))
+
+friedmann.actino.treat <- friedman.test(mean.cfu ~ treatment| time , data = mean.cfu.actino)
+friedmann.actino.treat$p.value
 
 ```
 
