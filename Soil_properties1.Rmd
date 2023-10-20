@@ -48,11 +48,12 @@ library(eulerr)
 library(ggforce)
 library(ggrepel)
 library(rstatix)
+library(AICcmodavg)
 
 ```
 
 
-# Analisis de datos octubre 2023
+# Data analysis octubre 2023
 
 
 ```{r Palette, include= FALSE}
@@ -87,7 +88,7 @@ scale_fill_banana_disc = function(name) {
 
 ```
 
-## Propidedades del suelo
+## Properties of soil 
 
 
 ```{r Import, include=FALSE}
@@ -108,10 +109,10 @@ soil.summ$soil.id <- NULL
 
 ### Evolucion de cada parametros en los distintos muestreos del experimento
 
-En este codigo veremos la evolucion de los distintos parametros en el tiempo. 
-La función "aes" sirve para indicar en un grafico cual es tu X,y. Debes indicar en texto quien es quien.Toda la información de los datos referido al grafico es lo que va dentro del parentesis. Los adornos van fuera con el signo de +. La funcion "geom_line" sirve para elegir el tipo de grafico que quieres. 
 
-```{r Materia organica plot, include= TRUE}
+```{r Materia organica plot, echo=FALSE}
+#En este codigo veremos la evolucion de los distintos parametros en el tiempo. La función "aes" sirve para indicar en un grafico cual es tu X,y. Debes indicar en texto quien es quien.Toda la información de los datos referido al grafico es lo que va dentro del parentesis. Los adornos van fuera con el signo de +. La funcion "geom_line" sirve para elegir el tipo de grafico que quieres. 
+
 org.mat.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= org.matter_mean))+
   geom_line()+
   scale_colour_banana_disc("paleta.treat")+
@@ -180,7 +181,7 @@ nitrogen.plotsd
 
 ### Analisis estadistico.
 
-## Comprobamos la correlacion entre las variables para analizar las mas interesantes
+### Check the correlation between the variables to analyse the most interesting ones.
 
 ```{r Correlogram, echo=FALSE}
 soil_prop_cor <- soil_prop
@@ -203,7 +204,7 @@ Para comprobar si hay diferencias significativas o no.
 1.Dif. entre tratamientos y tiempos. 
 2.Dif. entre 1 tratamiento a lo largo del tiempo. 
 
-```{r Materia organica stats, include=TRUE}
+```{r Materia organica stats, echo=FALSE}
 
 #Vamos analizar diferencias en el primer muestreo (to), por ello usamos la funcion subset que es un condicional como simbolo de dolar o funcion subset, para elegir determinadas variables dentro de un objeto,  significa solo analizar del archivo soil_prop, la columan soil_prop$time que sea igual a t0). Le hacemos un modelo de regresion lineal, o se puede analizar directamnte con anova. 
 #comprobamos la normalidad de los datos por tratamiento y no entre tratamientos. Los datos al interaccionar entre tratamietnos no son normales, ya que por los procesos biologicos son mas altos en algunos tratamientos que otros. Asumiendo esto, los analisis estadisticos se haran igualmente con aproximacion parametrica. 
@@ -244,15 +245,11 @@ plot_orgmatter_t0
 shapiro.test(soilt0$phosphorus)#ahora vamos a comprobar la normalidad de los datos. Los datos no son normales. 
 soilt0 %>% group_by(treatment) %>% shapiro_test(phosphorus) #aqui comprobamos la normalidad de los datos de phosphorus en cada tratamiento. Todos son normales.OJO aqui si hay un valor que se va
 ggqqplot(data = soil_prop, "phosphorus", facet.by = "treatment")
-
 anova_phosphto <- aov(phosphorus ~ treatment, data=soilt0)
 summary(anova_phosphto)
 plot(anova_phosphto, which=2)
 leveneTest(phosphorus~ treatment, data= soilt0)#se cumple el supuesto de homogenicidad de varianzas.
-
 tukey_phosphorus <- HSD.test(anova_phosphto, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-tukey_phosphorus
-
 avgpho <- aggregate(phosphorus ~ treatment, data=soilt0, FUN= mean)
 plot_phosphorus_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= phosphorus))+
   geom_point()+
@@ -274,8 +271,6 @@ plot(anova_phwatert0, which=2)
 leveneTest(ph.water~ treatment, data= soilt0)#se cumple el supuesto de homogenicidad de varianzas.
 
 tukey_phwater <- HSD.test(anova_phwatert0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-tukey_phwater 
-
 avgphwater <- aggregate(ph.water ~ treatment, data=soilt0, FUN= mean)
 plot_phwater_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= ph.water))+
   geom_point()+
@@ -297,8 +292,6 @@ plot(anova_conductivityt0, which=2)
 leveneTest(conductivity~ treatment, data= soilt0)
 
 tukey_conductivity <- HSD.test(anova_conductivityt0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-tukey_conductivity 
-
 avgconduc <- aggregate(conductivity ~ treatment, data=soilt0, FUN= mean)
 plot_conduc_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= conductivity))+
   geom_point()+
@@ -320,8 +313,6 @@ plot(anova_calciumt0, which=2)
 leveneTest(calcium~ treatment, data= soilt0)
 
 tukey_calcium <- HSD.test(anova_calciumt0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-tukey_calcium
-
 avgcalcium <- aggregate(calcium ~ treatment, data=soilt0, FUN= mean)
 plot_calcium_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= calcium))+
   geom_point()+
@@ -344,8 +335,6 @@ plot(anova_sodiumt0, which=2)
 leveneTest(sodium~ treatment, data= soilt0)
 
 tukey_sodium <- HSD.test(anova_sodiumt0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-tukey_sodium
-
 avgsodium <- aggregate(sodium ~ treatment, data=soilt0, FUN= mean)
 plot_sodium_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= sodium))+
   geom_point()+
@@ -366,8 +355,6 @@ plot(anova_potassiumt0, which=2)
 leveneTest(potassium~ treatment, data= soilt0)
 
 tukey_potassium <- HSD.test(anova_potassiumt0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-tukey_potassium
-
 avgpotassium <- aggregate(potassium ~ treatment, data=soilt0, FUN= mean)
 plot_potassium_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= potassium))+
   geom_point()+
@@ -379,7 +366,7 @@ plot_potassium_t0
 ```
 
 
-```{r stats nitrogen, echo=FALSE}
+```{r stats nitrogent0, echo=FALSE}
 shapiro.test(soilt0$nitrogen)
 soil_prop %>% group_by(treatment) %>% shapiro_test(nitrogen)
 ggqqplot(data = soil_prop, "nitrogen", facet.by = "treatment")
@@ -390,8 +377,6 @@ plot(anova_nitrogen0, which=2)
 leveneTest(nitrogen~ treatment, data= soilt0)
 
 tukey_nitrogen <- HSD.test(anova_nitrogen0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-tukey_nitrogen
-
 avgnitrogen <- aggregate(nitrogen ~ treatment, data=soilt0, FUN= mean)
 plot_nitrogen_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= nitrogen))+
   geom_point()+
@@ -403,7 +388,7 @@ plot_nitrogen_t0
 
 ```
 
-## Differences between treatments at the end of the experiment (t4)
+### Differences between treatments at the end of the experiment (t4)
 
 
 ```{r stats org.matter at the end, inclue=TRUE}
@@ -421,8 +406,6 @@ leveneTest(org.matter~ treatment, data=soilt4) #equal variances
 
 #### hsd tukey from agricolae::
 tukey_orgmattert4 <- HSD.test(anova_orgmattert4, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-tukey_orgmattert4
-
 avgmt4 <- aggregate(org.matter ~ treatment, data=soilt4, FUN= mean)
 plot_orgmatter_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= org.matter))+
   geom_point()+
@@ -446,8 +429,6 @@ leveneTest(phosphorus~ treatment, data=soilt4) #equal variances
 
 #### hsd tukey from agricolae::
 tukey_phosphorust4 <- HSD.test(anova_phosht4, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-tukey_phosphorust4
-
 avgpho4 <- aggregate(phosphorus ~ treatment, data=soilt4, FUN= mean)
 plot_phosphorus_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= phosphorus))+
   geom_point()+
@@ -494,8 +475,6 @@ leveneTest(conductivity~ treatment, data=soilt4) #equal variances
 
 #### hsd tukey from agricolae::
 tukey_conductivityt4 <- HSD.test(anova_conductivityt4, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-tukey_conductivityt4
-
 avgconduct4 <- aggregate(conductivity ~ treatment, data=soilt4, FUN= mean)
 plot_conduc_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= conductivity))+
   geom_point()+
@@ -515,8 +494,6 @@ leveneTest(calcium~ treatment, data=soilt4) # equal variances
 
 #### hsd tukey from agricolae::
 tukey_calciumt4 <- HSD.test(anova_calciumt4, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-tukey_calciumt4
-
 avgcalciumt4 <- aggregate(calcium ~ treatment, data=soilt4, FUN= mean)
 plot_calcium_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= calcium))+
   geom_point()+
@@ -536,8 +513,6 @@ leveneTest(sodium~ treatment, data=soilt4) # equal variances
 
 #### hsd tukey from agricolae::
 tukey_sodiumt4 <- HSD.test(anova_sodiumt4, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-tukey_sodiumt4
-
 avgsodiumt4 <- aggregate(sodium~ treatment, data=soilt4, FUN= mean)
 plot_sodium_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= sodium))+
   geom_point()+
@@ -559,8 +534,6 @@ leveneTest(potassium~ treatment, data=soilt4) # equal variances
 
 #### hsd tukey from agricolae::
 tukey_potassiumt4 <- HSD.test(anova_potassiumt4, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-tukey_potassiumt4
-
 avgpotassiumt4 <- aggregate(potassium~ treatment, data=soilt4, FUN= mean)
 plot_potassium_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= potassium))+
   geom_point()+
@@ -570,7 +543,7 @@ plot_potassium_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= potassium))+
   labs(title = "Figure 7: Differences in potassium at T4.", subtitle = "HSDTukey" , caption = "p-value" )
 plot_potassium_t4
 ```
-```{r stats nitrogen,echo=FALSE}
+```{r stats nitrogent4, echo=FALSE}
 shapiro.test(soilt4$nitrogen) #normal data
 anova_nitrogent4 <- aov(nitrogen ~ treatment, data=soilt4) #sig. different
 summary(anova_nitrogent4)
@@ -579,8 +552,6 @@ leveneTest(nitrogen~ treatment, data=soilt4) # equal variances
 
 #### hsd tukey from agricolae::
 tukey_nitrogent4 <- HSD.test(anova_nitrogent4, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-tukey_nitrogent4
-
 avgnitrogent4 <- aggregate(nitrogen~ treatment, data=soilt4, FUN= mean)
 plot_nitrogen_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= nitrogen))+
   geom_point()+
@@ -602,12 +573,20 @@ soilt0t4
 shapiro.test(soilt0t4$org.matter) #no normal data
 soilt0t4 %>% group_by(treatment) %>% shapiro_test(org.matter) # each treatments are normal 
 ggqqplot(data = soilt0t4, "org.matter", facet.by = "treatment")
-leveneTest(org.matter~ treatment, data=soilt0t4) # no equal variances 
+
 
 anova_orgt0t4 <- aov(org.matter ~ time + treatment, data=soilt0t4) #anova two ways
 summary(anova_orgt0t4)
-#Para controlar el efecto de las diferencias entre repeticiones, añadimos un tercer término, "block"
-anova_orgt0t4int <- aov(org.matter ~ time * treatment, data=soilt0t4) # interaction between them?
+
+anova_orgt0t4int <- aov(org.matter ~ time * treatment + rep, data=soilt0t4) #add rep= "block" To control for the effect of the differences between the 3 replicates # interaction between them?
 summary(anova_orgt0t4int)
+
+leveneTest(org.matter ~ time * treatment, data=soilt0t4) #equal variances 
+
+
+tukey_orgmattert0t4 <- HSD.test(anova_orgt0t4int, "time", alpha = 0.05)$groups %>% rownames_to_column(var = "time:treatment")
+tukey_orgmattert0t4 #preguntar ignacio 
+
+
 ```
 
