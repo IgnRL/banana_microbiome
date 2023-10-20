@@ -282,7 +282,7 @@ plot_phwater_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= ph.water))+
   stat_summary(fun=mean, aes(x= treatment, y = ph.water),
                geom= "crossbar", colour= "orange", data=avgphwater)+
   geom_text(data=tukey_phwater, aes(x=treatment, y = ph.water, label= groups), nudge_x= 0.2, nudge_y= 0.1)+
-  labs(title = "Figure 2: Differences in ph water at T0.", subtitle = "HSDTukey" , caption = "p-value" )
+  labs(title = "Figure 3: Differences in ph water at T0.", subtitle = "HSDTukey" , caption = "p-value" )
 plot_phwater_t0
 ```
 
@@ -305,7 +305,7 @@ plot_conduc_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= conductivity))+
   stat_summary(fun=mean, aes(x= treatment, y = conductivity),
                geom= "crossbar", colour= "orange", data=avgconduc)+
   geom_text(data=tukey_conductivity, aes(x=treatment, y = conductivity, label= groups), nudge_x= 0.2, nudge_y= 0.1)+
-  labs(title = "Figure 2: Differences in conductivity at T0.", subtitle = "HSDTukey" , caption = "p-value, ojo un dato se va" )
+  labs(title = "Figure 4: Differences in conductivity at T0.", subtitle = "HSDTukey" , caption = "p-value, ojo un dato se va" )
 plot_conduc_t0
 ```
 
@@ -328,7 +328,7 @@ plot_calcium_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= calcium))+
   stat_summary(fun=mean, aes(x= treatment, y = calcium),
                geom= "crossbar", colour= "orange", data=avgcalcium)+
   geom_text(data=tukey_calcium, aes(x=treatment, y = calcium, label= groups), nudge_x= 0.2, nudge_y= 0.1)+
-  labs(title = "Figure 2: Differences in calcium at T0.", subtitle = "HSDTukey" , caption = "p-value" )
+  labs(title = "Figure 5: Differences in calcium at T0.", subtitle = "HSDTukey" , caption = "p-value" )
 plot_calcium_t0
 
 ```
@@ -352,7 +352,7 @@ plot_sodium_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= sodium))+
   stat_summary(fun=mean, aes(x= treatment, y = sodium),
                geom= "crossbar", colour= "orange", data=avgsodium)+
   geom_text(data=tukey_sodium, aes(x=treatment, y = sodium, label= groups), nudge_x= 0.2, nudge_y= 0.1)+
-  labs(title = "Figure 2: No Differences in sodium at T0.", subtitle = "HSDTukey" , caption = "p-value" )
+  labs(title = "Figure 6: No Differences in sodium at T0.", subtitle = "HSDTukey" , caption = "p-value" )
 plot_sodium_t0
 ```
 
@@ -374,7 +374,7 @@ plot_potassium_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= potassium))+
   stat_summary(fun=mean, aes(x= treatment, y = potassium),
                geom= "crossbar", colour= "orange", data=avgpotassium)+
   geom_text(data=tukey_potassium, aes(x=treatment, y = potassium, label= groups), nudge_x= 0.2, nudge_y= 0.1)+
-  labs(title = "Figure 2: Differences in potassium at T0.", subtitle = "HSDTukey" , caption = "p-value" )
+  labs(title = "Figure 7: Differences in potassium at T0.", subtitle = "HSDTukey" , caption = "p-value" )
 plot_potassium_t0
 ```
 
@@ -398,7 +398,7 @@ plot_nitrogen_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= nitrogen))+
   stat_summary(fun=mean, aes(x= treatment, y = nitrogen),
                geom= "crossbar", colour= "orange", data=avgnitrogen)+
   geom_text(data=tukey_nitrogen, aes(x=treatment, y = nitrogen, label= groups), nudge_x= 0.2, nudge_y= 0.0)+
-  labs(title = "Figure 2: Differences in nitrogen at T0.", subtitle = "HSDTukey" , caption = "p-value" )
+  labs(title = "Figure 8: Differences in nitrogen at T0.", subtitle = "HSDTukey" , caption = "p-value" )
 plot_nitrogen_t0
 
 ```
@@ -408,7 +408,6 @@ plot_nitrogen_t0
 
 ```{r stats org.matter at the end, inclue=TRUE}
 soilt4 <- subset(soil_prop, soil_prop$time== "t4")
-str(soilt4)
 
 shapiro.test(soilt4$org.matter) #normal data
 hist(soilt4$org.matter)
@@ -455,7 +454,7 @@ plot_phosphorus_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= phosphorus))+
   stat_summary(fun=mean, aes(x= treatment, y = phosphorus),
                geom= "crossbar", colour= "green4", data=avgpho4)+
   geom_text(data=tukey_phosphorust4, aes(x=treatment, y = phosphorus, label= groups), nudge_x= 0.2, nudge_y= 0.01)+
-  labs(title = "Figure 1: Differences in phosphorus at T4.", subtitle = "HSDTukey" , caption = "p-value" )
+  labs(title = "Figure 2: Differences in phosphorus at T4.", subtitle = "HSDTukey" , caption = "p-value" )
 plot_phosphorus_t4
 ```
 ```{r stats ph water t4, echo=FALSE}
@@ -473,14 +472,142 @@ tukey_phwatert4 <- HSD.test(anova_phwatert4, "treatment", alpha = 0.05)$groups %
 tukey_phwatert4
 
 avgphwatert4 <- aggregate(ph.water ~ treatment, data=soilt4, FUN= mean)
-plot_ph.water_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= phosphorus))+
+plot_phwater_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= ph.water))+
   geom_point()+
   stat_summary(fun=mean, aes(x= treatment, y = ph.water),
                geom= "crossbar", colour= "green4", data=avgphwatert4)+
   geom_text(data=tukey_phwatert4, aes(x=treatment, y = ph.water, label= groups), nudge_x= 0.2, nudge_y= 0.01)+
-  labs(title = "Figure 1: Differences in ph.water at T4.", subtitle = "HSDTukey" , caption = "p-value" )
-plot_ph.water_t4
+  labs(title = "Figure 3: Differences in ph.water at T4.", subtitle = "HSDTukey" , caption = "p-value" )
+plot_phwater_t4
+
+```
+
+```{r stats conductivity t4, include=FALSE}
+shapiro.test(soilt4$conductivity) #no normal data
+soil_prop %>% group_by(treatment) %>% shapiro_test(conductivity) # each treatments are normal 
+ggqqplot(data = soil_prop, "conductivity", facet.by = "treatment")
+
+anova_conductivityt4 <- aov(conductivity ~ treatment, data=soilt4) #sig. different
+summary(anova_conductivityt4)
+plot(anova_conductivityt4, which=2)
+leveneTest(conductivity~ treatment, data=soilt4) #equal variances 
+
+#### hsd tukey from agricolae::
+tukey_conductivityt4 <- HSD.test(anova_conductivityt4, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_conductivityt4
+
+avgconduct4 <- aggregate(conductivity ~ treatment, data=soilt4, FUN= mean)
+plot_conduc_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= conductivity))+
+  geom_point()+
+  stat_summary(fun=mean, aes(x= treatment, y = conductivity),
+               geom= "crossbar", colour= "green4", data=avgconduct4)+
+  geom_text(data=tukey_conductivityt4, aes(x=treatment, y = conductivity, label= groups), nudge_x= 0.2, nudge_y= 0.01)+
+  labs(title = "Figure 4: Differences in conductivity at T4.", subtitle = "HSDTukey" , caption = "p-value" )
+plot_conduc_t4
+```
+```{r stats calcium t4, echo=FALSE}
+shapiro.test(soilt4$calcium) #normal data
+
+anova_calciumt4 <- aov(calcium ~ treatment, data=soilt4) #sig. different
+summary(anova_calciumt4)
+plot(anova_phwatert4, which=2)
+leveneTest(calcium~ treatment, data=soilt4) # equal variances 
+
+#### hsd tukey from agricolae::
+tukey_calciumt4 <- HSD.test(anova_calciumt4, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_calciumt4
+
+avgcalciumt4 <- aggregate(calcium ~ treatment, data=soilt4, FUN= mean)
+plot_calcium_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= calcium))+
+  geom_point()+
+  stat_summary(fun=mean, aes(x= treatment, y = calcium),
+               geom= "crossbar", colour= "green4", data=avgcalciumt4)+
+  geom_text(data=tukey_calciumt4, aes(x=treatment, y = calcium, label= groups), nudge_x= 0.2, nudge_y= 0.2)+
+  labs(title = "Figure 5: Differences in calcium at T4.", subtitle = "HSDTukey" , caption = "p-value" )
+plot_calcium_t4
+```
+```{r stats sodium t4, echo=FALSE}
+shapiro.test(soilt4$sodium) #normal data
+
+anova_sodiumt4 <- aov(sodium ~ treatment, data=soilt4) #sig. different
+summary(anova_sodiumt4)
+plot(anova_sodiumt4, which=2)
+leveneTest(sodium~ treatment, data=soilt4) # equal variances 
+
+#### hsd tukey from agricolae::
+tukey_sodiumt4 <- HSD.test(anova_sodiumt4, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_sodiumt4
+
+avgsodiumt4 <- aggregate(sodium~ treatment, data=soilt4, FUN= mean)
+plot_sodium_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= sodium))+
+  geom_point()+
+  stat_summary(fun=mean, aes(x= treatment, y = sodium),
+               geom= "crossbar", colour= "green4", data=avgsodiumt4)+
+  geom_text(data=tukey_sodiumt4, aes(x=treatment, y = sodium, label= groups), nudge_x= 0.2, nudge_y= 0.2)+
+  labs(title = "Figure 6: Differences in sodium at T4.", subtitle = "HSDTukey" , caption = "p-value" )
+plot_sodium_t4
+```
+```{r stats potassium t4, echo=FALSE}
+shapiro.test(soilt4$potassium) #normal data
+soilt4 %>% group_by(treatment) %>% shapiro_test(potassium) # each treatments are normal 
 
 
+anova_potassiumt4 <- aov(potassium ~ treatment, data=soilt4) #sig. different
+summary(anova_potassiumt4)
+plot(anova_potassiumt4, which=2)
+leveneTest(potassium~ treatment, data=soilt4) # equal variances 
+
+#### hsd tukey from agricolae::
+tukey_potassiumt4 <- HSD.test(anova_potassiumt4, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_potassiumt4
+
+avgpotassiumt4 <- aggregate(potassium~ treatment, data=soilt4, FUN= mean)
+plot_potassium_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= potassium))+
+  geom_point()+
+  stat_summary(fun=mean, aes(x= treatment, y = potassium),
+               geom= "crossbar", colour= "green4", data=avgpotassiumt4)+
+  geom_text(data=tukey_potassiumt4, aes(x=treatment, y = potassium, label= groups), nudge_x= 0.2, nudge_y= 0.2)+
+  labs(title = "Figure 7: Differences in potassium at T4.", subtitle = "HSDTukey" , caption = "p-value" )
+plot_potassium_t4
+```
+```{r stats nitrogen,echo=FALSE}
+shapiro.test(soilt4$nitrogen) #normal data
+anova_nitrogent4 <- aov(nitrogen ~ treatment, data=soilt4) #sig. different
+summary(anova_nitrogent4)
+plot(anova_nitrogent4, which=2)
+leveneTest(nitrogen~ treatment, data=soilt4) # equal variances 
+
+#### hsd tukey from agricolae::
+tukey_nitrogent4 <- HSD.test(anova_nitrogent4, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_nitrogent4
+
+avgnitrogent4 <- aggregate(nitrogen~ treatment, data=soilt4, FUN= mean)
+plot_nitrogen_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= nitrogen))+
+  geom_point()+
+  stat_summary(fun=mean, aes(x= treatment, y = nitrogen),
+               geom= "crossbar", colour= "green4", data=avgnitrogent4)+
+  geom_text(data=tukey_nitrogent4, aes(x=treatment, y = nitrogen, label= groups), nudge_x= 0.2, nudge_y= 0.01)+
+  labs(title = "Figure 8: Differences in nitrogen at T4.", subtitle = "HSDTukey" , caption = "p-value" )
+plot_nitrogen_t4
+```
+## Differences between the beginning of the experiment (t0) and the end (t4)
+
+
+```{r stats orgmatter t0t4, include=TRUE}
+
+
+soilt0t4 <- soil_prop %>% filter(time == "t0" | time == "t4") #data only t0 and t4
+soilt0t4 
+
+shapiro.test(soilt0t4$org.matter) #no normal data
+soilt0t4 %>% group_by(treatment) %>% shapiro_test(org.matter) # each treatments are normal 
+ggqqplot(data = soilt0t4, "org.matter", facet.by = "treatment")
+leveneTest(org.matter~ treatment, data=soilt0t4) # no equal variances 
+
+anova_orgt0t4 <- aov(org.matter ~ time + treatment, data=soilt0t4) #anova two ways
+summary(anova_orgt0t4)
+#Para controlar el efecto de las diferencias entre repeticiones, añadimos un tercer término, "block"
+anova_orgt0t4int <- aov(org.matter ~ time * treatment, data=soilt0t4) # interaction between them?
+summary(anova_orgt0t4int)
 ```
 
