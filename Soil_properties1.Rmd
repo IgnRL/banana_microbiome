@@ -565,11 +565,7 @@ plot_nitrogen_t4
 
 
 ```{r stats orgmatter t0t4, include=TRUE}
-
-
 soilt0t4 <- soil_prop %>% filter(time == "t0" | time == "t4") #data only t0 and t4
-soilt0t4 
-
 shapiro.test(soilt0t4$org.matter) #no normal data
 soilt0t4 %>% group_by(treatment) %>% shapiro_test(org.matter) # each treatments are normal 
 ggqqplot(data = soilt0t4, "org.matter", facet.by = "treatment")
@@ -584,8 +580,30 @@ summary(anova_orgt0t4int)
 leveneTest(org.matter ~ time * treatment, data=soilt0t4) #equal variances 
 
 
-tukey_orgmattert0t4 <- HSD.test(anova_orgt0t4int, "time", alpha = 0.05)$groups %>% rownames_to_column(var = "time:treatment")
-tukey_orgmattert0t4 #preguntar ignacio 
+tukey_orgmattert0t4time <- HSD.test(anova_orgt0t4int, "time", alpha = 0.05)$groups %>% rownames_to_column(var = "time")
+tukey_orgmattert0t4time #preguntar ignacio 
+tukey_orgmattert0t4treat <- HSD.test(anova_orgt0t4int, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var = "treatment")
+tukey_orgmattert0t4treat
+
+avg_orgt0t4 <- aggregate(org.matter~ treatment:time, data=soilt0t4, FUN= mean)
+avg_orgt0t4
+#plot de treatment
+plot_orgmatter_t0t4 <- soilt0t4 %>% ggplot(aes(x= treatment, group= time, col=time, y= org.matter))+
+  geom_point()+
+  stat_summary(fun=mean, aes(x= treatment, y = org.matter),
+               geom= "crossbar", colour= "violet", data=avg_orgt0t4, fatten=3)+
+  geom_text(data=tukey_orgmattert0t4treat, aes(x=treatment, y = org.matter, label= groups), nudge_x= 0.2, nudge_y= 0.01)+
+  labs(title = "Figure 1: Differences in org.matter between T0 and T4.", subtitle = "HSDTukey" , caption = "p-value" )
+plot_orgmatter_t0t4
+
+#potassium.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= potassium_mean))+
+  geom_line()+
+  scale_colour_banana_disc("paleta.treat")+
+  geom_point()+
+  geom_errorbar(aes(ymin=potassium_mean-potassium_sd, ymax=potassium_mean+potassium_sd), width=0.2)+
+  labs(title = "Figure 5: Potassium evolution over time .", subtitle = , caption = "Mean and sd of each treatment" )
+
+
 
 
 ```
