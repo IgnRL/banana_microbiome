@@ -541,7 +541,8 @@ plot_nitrogen_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= nitrogen))+
   labs(title = "Figure 8: Differences in nitrogen at T4.", subtitle = "HSDTukey" , caption = "p-value" )
 plot_nitrogen_t4
 ```
-## Differences between the beginning of the experiment (t0) and the end (t4)
+
+### Differences between the beginning at the end of the experiment (T0 vs T4)
 
 
 ```{r stats orgmatter t0t4, include=TRUE}
@@ -561,50 +562,17 @@ tukey_orgmattert0t4time
 tukey_orgmattert0t4treat <- HSD.test(anova_orgt0t4int, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var = "treatment")
 tukey_orgmattert0t4treat
 
-avg_orgt0t4 <- aggregate(org.matter~ treatment:time, data=soilt0t4, FUN= mean)
 #plot de treatment
 #plot_orgmatter_t0t4 <- soilt0t4 %>% ggplot(aes(x= treatment, group= time, col=time, y= org.matter))+geom_point()+stat_summary(fun=mean, aes(x= treatment, y = org.matter),geom= "crossbar", colour= "violet", data=avg_orgt0t4, fatten=3)+geom_text(data=tukey_orgmattert0t4treat, aes(x=treatment, y = org.matter, label= groups), nudge_x= 0.2, nudge_y= 0.01)+labs(title = "Figure 1: Differences in org.matter between T0 and T4.", subtitle = "HSDTukey" , caption = "p-value" )
 
 #plot_orgmatter_t0t4 #preguntar ignacio
 
-cld <- multcompLetters4(anova_orgt0t4int, tukey_orgmattert0t4treat)
-agvprueba<- aggregate(org.matter~ treatment, data=soilt0t4, FUN=mean)
-prueba <- soilt0t4%>% ggplot(aes(x=treatment, group= time, col= time, y= org.matter))+ geom_point()+
-  geom_text(data=tukey_orgmattert0t4treat, aes(x=treatment, y = org.matter, label= groups), nudge_x= 0.2, nudge_y= 0.01)+
-  labs(title = "prueba at T4", subtitle = "HSDTukey" , caption = "p-value" )
-  
+orgmatter_plot_interac <- soilt0t4%>% ggplot(aes(x=treatment, group= time, col= time, y= org.matter))+ geom_point()+
+  labs(title = "ORGANIC MATTER T4 preguntar ignacio", subtitle = "HSDTukey" , caption = "p-value" )
+orgmatter_plot_interac
 
-prueba <- soilt0t4 %>%
-  ggplot(aes(x=treatment, group= time, col= time, y= org.matter)) + 
-  geom_point() +
-  geom_text(aes(label= groups))+
-  labs(title = "prueba at T4", subtitle = "HSDTukey" , caption = "p-value" )
-
-prueba
-
-nitrogen.plotsd <- soil.summ.sd%>% ggplot(aes(x=treatment, group= time, col= time, y= nitrogen_mean))+
-  geom_line()+
-  scale_colour_banana_disc("paleta.treat")+
-  geom_point()+
-  geom_errorbar(aes(ymin=nitrogen_mean-nitrogen_sd, ymax=nitrogen_mean+nitrogen_sd), width=0.2)+
-  labs(title = "Figure 8: Nitrogen evolution over time.", subtitle = , caption = "Mean and sd of each treatment" )
-nitrogen.plotsd
-
-
-
-avgnitrogent4 <- aggregate(nitrogen~ treatment, data=soilt4, FUN= mean)
-plot_nitrogen_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= nitrogen))+
-  geom_point()+
-  stat_summary(fun=mean, aes(x= treatment, y = nitrogen),
-               geom= "crossbar", colour= "green4", data=avgnitrogent4)+
-  geom_text(data=tukey_nitrogent4, aes(x=treatment, y = nitrogen, label= groups), nudge_x= 0.2, nudge_y= 0.01)+
-  labs(title = "Figure 8: Differences in nitrogen at T4.", subtitle = "HSDTukey" , caption = "p-value" )
 
 ```
-
-
-
-
 
 ```{r stas phosphorus t0t4, echo=FALSE}
 shapiro.test(soilt0t4$phosphorus) #no normal data
@@ -619,7 +587,9 @@ tukey_phosphot0t4time <- HSD.test(anova_phosphot0t4int, "time", alpha = 0.05)$gr
 tukey_phosphot0t4time
 tukey_phosphot0t4treat <- HSD.test(anova_phosphot0t4int, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var = "treatment")
 tukey_phosphot0t4treat
-
+phospho_plot_interac <- soilt0t4%>% ggplot(aes(x=treatment, group= time, col= time, y= phosphorus))+ geom_point()+
+  labs(title = "PHOSPHORUS", subtitle = "HSDTukey" , caption = "p-value" )
+phospho_plot_interac
 ```
 ```{r stats ph water t0t4, echo=FALSE}
 shapiro.test(soilt0t4$ph.water) #no normal data
@@ -634,7 +604,9 @@ tukey_phwatert0t4time <- HSD.test(anova_phwatert0t4int, "time", alpha = 0.05)$gr
 tukey_phwatert0t4time
 tukey_phwatert0t4treat <- HSD.test(anova_phwatert0t4int, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var = "treatment")
 tukey_phwatert0t4treat
-
+phwater_plot_interac <- soilt0t4%>% ggplot(aes(x=treatment, group= time, col= time, y= ph.water))+ geom_point()+
+  labs(title = "pH water", subtitle = "HSDTukey" , caption = "p-value" )
+phwater_plot_interac
 
 ```
 
@@ -651,7 +623,9 @@ tukey_conduct0t4time <- HSD.test(anova_conduct0t4int, "time", alpha = 0.05)$grou
 tukey_conduct0t4time
 tukey_conduct0t4treat <- HSD.test(anova_conduct0t4int, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var = "treatment")
 tukey_conduct0t4treat
-
+conduct_plot_interac <- soilt0t4%>% ggplot(aes(x=treatment, group= time, col= time, y= conductivity))+ geom_point()+
+  labs(title = "Conductivity", subtitle = "HSDTukey" , caption = "p-value" )
+conduct_plot_interac
 ```
 
 ```{r stas calcium t0t4, echo=FALSE}
@@ -666,6 +640,10 @@ tukey_calciumt0t4time <- HSD.test(anova_calciumt0t4int, "time", alpha = 0.05)$gr
 tukey_calciumt0t4time
 tukey_calciumt0t4treat <- HSD.test(anova_calciumt0t4int, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var = "treatment")
 tukey_calciumt0t4treat
+calcium_plot_interac <- soilt0t4%>% ggplot(aes(x=treatment, group= time, col= time, y= calcium))+ geom_point()+
+  labs(title = "Calcium", subtitle = "HSDTukey" , caption = "p-value" )
+calcium_plot_interac
+
 ```
 
 ```{r stats sodium t0t4, echo=FALSE}
@@ -681,6 +659,9 @@ tukey_sodiumt0t4time <- HSD.test(anova_sodiumt0t4int, "time", alpha = 0.05)$grou
 tukey_sodiumt0t4time
 tukey_sodiumt0t4treat <- HSD.test(anova_sodiumt0t4int, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var = "treatment")
 tukey_sodiumt0t4treat
+sodium_plot_interac <- soilt0t4%>% ggplot(aes(x=treatment, group= time, col= time, y= sodium))+ geom_point()+
+  labs(title = "Sodium", subtitle = "HSDTukey" , caption = "p-value" )
+sodium_plot_interac
 
 ```
 
@@ -696,6 +677,10 @@ tukey_potassiumt0t4time <- HSD.test(anova_potassiumt0t4int, "time", alpha = 0.05
 tukey_potassiumt0t4time
 tukey_potassiumt0t4treat <- HSD.test(anova_potassiumt0t4int, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var = "treatment")
 tukey_potassiumt0t4treat
+potassium_plot_interac <- soilt0t4%>% ggplot(aes(x=treatment, group= time, col= time, y= potassium))+ geom_point()+
+  labs(title = "Potassium", subtitle = "HSDTukey" , caption = "p-value" )
+potassium_plot_interac
+
 ```
 
 
@@ -711,6 +696,9 @@ tukey_nitrogent0t4time <- HSD.test(anova_nitrogent0t4int, "time", alpha = 0.05)$
 tukey_nitrogent0t4time
 tukey_nitrogent0t4treat <- HSD.test(anova_nitrogent0t4int, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var = "treatment")
 tukey_nitrogent0t4treat
+nitrogen_plot_interac <- soilt0t4%>% ggplot(aes(x=treatment, group= time, col= time, y= nitrogen))+ geom_point()+
+  labs(title = "Nitrogen", subtitle = "HSDTukey" , caption = "p-value" )
+nitrogen_plot_interac
 
 ```
 
