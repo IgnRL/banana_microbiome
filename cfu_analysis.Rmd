@@ -18,8 +18,41 @@ library(ggpubr)
 library(rstatix)
 library(MASS)
 library(dplyr)
+library(dunn.test)
 ```
 
+```{r Palette, include= FALSE}
+
+banana.paleta = list(
+  paleta.treat = c("#FFC125", "#8B7D6B", "#81bc1f", "#ddec76",
+                 "#a4e361", "#27408B", "#EE5C42"),
+  my_favourite_colours = c("#702963", "#637029",    "#296370"),
+  paleta.iro= c("royalblue1","chocolate4","green4","darkseagreen","darkolivegreen4","red3","darkorchid1"))
+
+
+banana.paleta.f = function(name, n, all_palettes = banana.paleta, type = c("discrete", "continuous")) {
+  palette = all_palettes[[name]]
+  if (missing(n)) {
+    n = length(palette)
+  }
+  type = match.arg(type)
+  out = switch(type,
+               continuous = grDevices::colorRampPalette(palette)(n),
+               discrete = palette[1:n] )
+  structure(out, name = name, class = "palette")
+}
+banana.paleta.f("paleta.iro", all_palettes = banana.paleta, type= "discrete")
+
+scale_colour_banana_disc = function(name) {
+  ggplot2::scale_colour_manual(values = banana.paleta.f(name, type = "discrete"))
+}
+
+scale_fill_banana_disc = function(name) {
+  ggplot2::scale_fill_manual(values = banana.paleta.f(name,
+                                                     type = "discrete"))
+}
+
+```
 
 # Analysis of the cfu counted
 
@@ -35,7 +68,7 @@ Must complete
 
 # About the data
 
-```{r Load data}
+```{r Load data, include= FALSE}
 cfu_data <- read_xlsx("raw_files/cfu_data.xlsx")
 head(cfu_data, 6)
 str(cfu_data)
@@ -47,6 +80,7 @@ cfu_data$pot <- as.character(cfu_data$pot)
 cfu_data$log_cfu <- log2(cfu_data$cfu_g_soil)
 cfu_data$sqr_cfu <- sqrt(cfu_data$cfu_g_soil)
 cfu_data$inv_cfu <- 1/(cfu_data$cfu_g_soil)
+cfu_data$arc_cfu <- asin(sqrt(cfu_data$cfu_g_soil)) #Only possible to values 0:1 otherwise it creates NaN 
 #Subset
 cfu_actino <- subset(cfu_data, cfu_data$org== "actinobacteria")
 cfu_bact <- subset(cfu_data, cfu_data$org== "bacteria")
@@ -295,6 +329,9 @@ cfu_fungi$bc_cfu <- (cfu_fungi$cfu_g_soil ^ lambda - 1) / lambda
 cfu_fungi %>%  shapiro_test(bc_cfu)
 hist(cfu_fungi$bc_cfu)
 ggqqplot(data= cfu_fungi, "bc_cfu", facet.by = "time")
+
+
+# arsin squareroot transformation
 ```
 
 
@@ -305,18 +342,74 @@ The data does not follow a normal distribution no matter which transformation, a
 kruskal.actino.treat <- kruskal(cfu_actino$cfu_g_soil, cfu_actino$treatment , alpha= 0.05, p.adj= "bonferroni", group= TRUE)
 ```
 
-Kruskal Wallis' test does not consider repeated measures (time), but Friedman's test can recognize repeated measures and is non parametric. the only problem is that the input is the mean values, losing the variability of the replicates
+Kruskal Wallis' test does not consider repeated measures (time), but Friedman's test can recognize repeated measures (time as a blocking variable) and is non parametric. The only problem is that the input is the mean values, losing the variability of the replicates
 
-```{r Friedmann's test}
- actino<- data.frame("cfu"= cfu_actino$cfu_g_soil, "treatment"= cfu_actino$treatment, "time"= cfu_actino$time)
+Friedmann's test recognizes the whole data frame, so a new one must be created with only the variables of interest.
+
+ Additionally it works with the mean values, losing statistical power.
+
+```{r Friedmann's test actino, echo=FALSE}
+
+actino<- data.frame("cfu"= cfu_actino$cfu_g_soil, "treatment"= cfu_actino$treatment, "time"= cfu_actino$time)
 
 mean.cfu.actino <- actino %>% group_by(time, treatment) %>% summarise(mean.cfu = mean(cfu))
-mean.cfu.data <- cfu_data %>% group_by(time, treatment, org) %>% summarise(mean.cfu = mean(cfu_g_soil))
 
-friedmann.actino.treat <- friedman.test(mean.cfu ~ treatment| time , data = mean.cfu.actino)
-friedmann.actino.treat$p.value
+friedman.actino.treat <- friedman.test(mean.cfu ~ treatment| time , data = mean.cfu.actino)
+friedman.actino.treat$statistic
 
+dunn.actino <- dunn.test(mean.cfu.actino$mean.cfu, g = mean.cfu.actino$treatment,
+                             kw = friedman.actino.treat$statistic, method = "bonferroni", table = TRUE)
 ```
 
+```{r Friedmann test bact, include= FALSE}
+
+bact<- data.frame("cfu"= cfu_bact$cfu_g_soil, "treatment"= cfu_bact$treatment, "time"= cfu_bact$time)
+
+mean.cfu.bact <- bact %>% group_by(time, treatment) %>% summarise(mean.cfu = mean(cfu))
+friedman.bact.treat <- friedman.test(mean.cfu ~ treatment| time , data = mean.cfu.bact)
+friedman.bact.treat$p.value
+```
+
+```{r Friedmann test fungi, include= FALSE}
+
+fungi<- data.frame("cfu"= cfu_fungi$cfu_g_soil, "treatment"= cfu_fungi$treatment, "time"= cfu_fungi$time)
+
+mean.cfu.fungi <- fungi %>% group_by(time, treatment) %>% summarise(mean.cfu = mean(cfu))
+friedman.fungi.treat <- friedman.test(mean.cfu ~ treatment| time , data = mean.cfu.fungi)
+friedman.fungi.treat$p.value
+```
+
+The p values for the Friedman's test for the treatments in each organism group with the variable time as a blocker are:
+
+* Actinobacteria: `r friedman.actino.treat$p.value`
+
+* Bacteria: `r friedman.bact.treat$p.value` 
+
+* Fungi: `r friedman.actino.treat$p.value`
+
+All of them are signifficant. This would indicate that at least one of the treatments has a different effect on cfu levels compared to the others within specific time points.
+
+
+
+```{r}
+
+labels.cfu <- c(paste('Actinobacteria\n Friedman p.val=', round(friedman.actino.treat$p.value,3)),
+            paste('Bacteria\n Friedman p.val=', round(friedman.bact.treat$p.value,3)),
+            paste('Fungi\n Friedman p.val=', round(friedman.fungi.treat$p.value,3)))
+            
+
+cfu.data.plot <- cfu_data %>% group_by(time, treatment, org) %>% summarise(mean_cfu = mean(cfu_g_soil), se = sd(cfu_g_soil) / sqrt(length(cfu_g_soil)))
+
+cfu.data.plot$org <- factor(cfu.data.plot$org, levels= c("actinobacteria", "bacteria", "fungi"), labels= labels.cfu)
+
+cfu.data.plot %>% ggplot(aes(x= time, y= mean_cfu, group= treatment, col= treatment))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin=mean_cfu-se, ymax=mean_cfu+se), width= 0.1)+
+  labs(title= "Evolution of the CFU for each group under the different treatments")+
+  xlab("Time")+ ylab("CFU")+
+  scale_colour_banana_disc("paleta.iro")+
+  facet_wrap(~ org, scales = "free" )+theme_classic2(base_size = 10)+guides(col=guide_legend(title="Treatment"))
+```
 
 
