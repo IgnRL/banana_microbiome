@@ -61,7 +61,8 @@ library(AICcmodavg)
 banana.paleta = list(
   paleta.treat = c("#FFC125", "#8B7D6B", "#81bc1f", "#ddec76",
                  "#a4e361", "#27408B", "#EE5C42"),
-  my_favourite_colours = c("#702963", "#637029",    "#296370"))
+  my_favourite_colours = c("#702963", "#637029",    "#296370"),
+  paleta.iro= c("royalblue4","darkolivegreen","darkseagreen","darkolivegreen3","darkred","darkorchid"))
 
 
 banana.paleta.f = function(name, n, all_palettes = banana.paleta, type = c("discrete", "continuous")) {
