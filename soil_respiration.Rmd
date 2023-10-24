@@ -86,10 +86,10 @@ scale_fill_banana_disc = function(name) {
 
 
 ```{r soil respiration, include=FALSE}
-soil_resp <- readxl::read_excel("C:/Users/raquel.correa/Documents/banana_microbiome/raw_files/soil_respiration.xlsx")
+soil_basal <- readxl::read_excel("C:/Users/raquel.correa/Documents/banana_microbiome/raw_files/basal_resp.xlsx")
+soil_induced <-readxl::read_excel("C:/Users/raquel.correa/Documents/banana_microbiome/raw_files/induced_resp.xlsx")
 
-
-soil_resp.sd <- soil_resp %>% group_by(treatment,  time, respiration) %>% 
+soil_basal.sd <- soil_basal %>% group_by(treatment,  time) %>% 
   summarise(across(.cols=mg_co,.fns=list(mean = mean, sd = sd)),.groups = "drop")
 
 ```
@@ -98,12 +98,11 @@ soil_resp.sd <- soil_resp %>% group_by(treatment,  time, respiration) %>%
 
 
 ```{r over the time, echo=FALSE}
-basal_plotsd <- soil_resp.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= mg_co_mean))+
-  geom_line()+
-  scale_colour_banana_disc("paleta.treat")+
-  geom_point()+
-  geom_errorbar(aes(ymin=mg_co_mean-mg_co_sd, ymax=mg_co_mean+mg_co_sd), width=0.2)+
-  labs(title = "Figure 1: Organic matter evolution over time .", subtitle = , caption = "Mean and sd of each treatment" )
+basal_plotsd <- soil_resp.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y=mg_co_mean))+
+  geom_line(aes(y=res_basal), color= "black")+
+  geom_line(aes(y=res_induced), color= "red")+
+  #geom_errorbar(aes(ymin=mg_co_mean-mg_co_sd, ymax=mg_co_mean+mg_co_sd), width=0.2)+
+  #labs(title = "Figure 1: Organic matter evolution over time .", subtitle = , caption = "Mean and sd of each treatment" )
 basal_plotsd
 
 
