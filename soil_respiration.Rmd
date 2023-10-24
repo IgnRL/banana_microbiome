@@ -1,0 +1,110 @@
+---
+title: "Soil respiration. Banana project"
+author: "Raquel Correa"
+date: "2023-10-24"
+output: html_document
+---
+
+```{r library, include=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(ggpubr)
+library(gridExtra)
+library(corrplot)
+library(agricolae)
+library(emmeans)
+library(multcomp)
+library(multcompView)
+library(data.table)
+library(tidyverse)
+library(phyloseq)
+library(vegan)
+library(ape)
+library(here)
+library(readxl)
+library(ggpubr)
+library(geomtextpath)
+library(knitr)
+library(gridExtra)
+library(Biostrings)
+library(seqinr)
+library(FSA)
+library(agricolae)
+library(MASS)
+library(grid)
+library(gridExtra)
+library(emmeans)
+library(multcomp)
+library(broom)
+library(viridis)
+library(ALDEx2)
+library(FactoMineR)
+library(factoextra)
+library(kableExtra)
+library(scales)
+library(dunn.test)
+library(car)
+library(corrplot)
+library(eulerr)
+library(ggforce)
+library(ggrepel)
+library(rstatix)
+library(AICcmodavg)
+
+```
+
+
+```{r banana palete, include=FALSE}
+banana.paleta = list(
+  paleta.treat = c("#FFC125", "#8B7D6B", "#81bc1f", "#ddec76",
+                 "#a4e361", "#27408B", "#EE5C42"),
+  my_favourite_colours = c("#702963", "#637029",    "#296370"))
+
+
+banana.paleta.f = function(name, n, all_palettes = banana.paleta, type = c("discrete", "continuous")) {
+  palette = all_palettes[[name]]
+  if (missing(n)) {
+    n = length(palette)
+  }
+  type = match.arg(type)
+  out = switch(type,
+               continuous = grDevices::colorRampPalette(palette)(n),
+               discrete = palette[1:n] )
+  structure(out, name = name, class = "palette")
+}
+banana.paleta.f("paleta.treat", all_palettes = banana.paleta, type= "discrete")
+
+scale_colour_banana_disc = function(name) {
+  ggplot2::scale_colour_manual(values = banana.paleta.f(name, type = "discrete"))
+}
+
+scale_fill_banana_disc = function(name) {
+  ggplot2::scale_fill_manual(values = banana.paleta.f(name, type = "discrete"))
+}
+
+```
+
+
+```{r soil respiration, include=FALSE}
+soil_basal <- readxl::read_excel("C:/Users/raquel.correa/Documents/banana_microbiome/raw_files/basal_resp.xlsx")
+soil_induced <-readxl::read_excel("C:/Users/raquel.correa/Documents/banana_microbiome/raw_files/induced_resp.xlsx")
+
+soil_basal.sd <- soil_basal %>% group_by(treatment,  time) %>% 
+  summarise(across(.cols=mg_co,.fns=list(mean = mean, sd = sd)),.groups = "drop")
+
+```
+
+### Evolution of soil respiration over time 
+
+
+```{r over the time, echo=FALSE}
+basal_plotsd <- soil_resp.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y=mg_co_mean))+
+  geom_line(aes(y=res_basal), color= "black")+
+  geom_line(aes(y=res_induced), color= "red")+
+  #geom_errorbar(aes(ymin=mg_co_mean-mg_co_sd, ymax=mg_co_mean+mg_co_sd), width=0.2)+
+  #labs(title = "Figure 1: Organic matter evolution over time .", subtitle = , caption = "Mean and sd of each treatment" )
+basal_plotsd
+
+
+```
+
