@@ -21,52 +21,6 @@ library(dplyr)
 library(dunn.test)
 ```
 
-```{r Palette, include= FALSE}
-
-banana.paleta = list(
-  paleta.treat = c("#FFC125", "#8B7D6B", "#81bc1f", "#ddec76",
-                 "#a4e361", "#27408B", "#EE5C42"),
-  my_favourite_colours = c("#702963", "#637029",    "#296370"),
-  paleta.iro= c("royalblue1","chocolate4","green4","darkseagreen","darkolivegreen4","red3","darkorchid1"))
-
-
-banana.paleta.f = function(name, n, all_palettes = banana.paleta, type = c("discrete", "continuous")) {
-  palette = all_palettes[[name]]
-  if (missing(n)) {
-    n = length(palette)
-  }
-  type = match.arg(type)
-  out = switch(type,
-               continuous = grDevices::colorRampPalette(palette)(n),
-               discrete = palette[1:n] )
-  structure(out, name = name, class = "palette")
-}
-banana.paleta.f("paleta.iro", all_palettes = banana.paleta, type= "discrete")
-
-scale_colour_banana_disc = function(name) {
-  ggplot2::scale_colour_manual(values = banana.paleta.f(name, type = "discrete"))
-}
-
-scale_fill_banana_disc = function(name) {
-  ggplot2::scale_fill_manual(values = banana.paleta.f(name,
-                                                     type = "discrete"))
-}
-
-```
-
-# Analysis of the cfu counted
-
-## Experimental design
-
-Must complete
-
-## Method
-
-### Spore trap
-
-### Counting
-
-# About the data
 
 ```{r Load data, include= FALSE}
 cfu_data <- read_xlsx("raw_files/cfu_data.xlsx")
@@ -86,6 +40,27 @@ cfu_actino <- subset(cfu_data, cfu_data$org== "actinobacteria")
 cfu_bact <- subset(cfu_data, cfu_data$org== "bacteria")
 cfu_fungi<- subset(cfu_data, cfu_data$org== "fungi")
 ```
+
+
+```{r colors, include=FALSE}
+treat.colors <- c("control"= "green4" ,"control.amf"  = "darkseagreen" , "chicken.manure"= "royalblue1", "cow.manure" = "red3","mo.pellet"= "darkorchid1","compost"="chocolate4","control.legumes"="darkolivegreen4")
+```
+
+
+# Analysis of the cfu counted
+
+## Experimental design
+
+Must complete
+
+## Method
+
+### Spore trap
+
+### Counting
+
+# About the data
+
 
 
 # My research question:
@@ -408,7 +383,7 @@ cfu.data.plot %>% ggplot(aes(x= time, y= mean_cfu, group= treatment, col= treatm
   geom_errorbar(aes(ymin=mean_cfu-se, ymax=mean_cfu+se), width= 0.1)+
   labs(title= "Evolution of the CFU for each group under the different treatments")+
   xlab("Time")+ ylab("CFU")+
-  scale_colour_banana_disc("paleta.iro")+
+  scale_color_manual(values = treat.colors)+
   facet_wrap(~ org, scales = "free" )+theme_classic2(base_size = 10)+guides(col=guide_legend(title="Treatment"))
 ```
 

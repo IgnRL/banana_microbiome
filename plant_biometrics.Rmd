@@ -19,9 +19,20 @@ library(rstatix)
 library(MASS)
 library(dplyr)
 library(dunn.test)
+library(corrplot)
 ```
 
 ```{r import data}
 plant.metrics <- read_excel("raw_files/plant_biometric_parameters.xlsx")
+```
+
+```{r}
+plant.response <- plant.metrics[,-c(1,2)]
+cor.matrix <- plant.response %>% cor()
+
+cor.mat.test <- cor.mtest(cor.matrix)
+
+corrplot(cor.matrix, p.mat=cor.mat.test$p, sig.level = 0.05, order= "hclust", type= "upper", method= "number", insig = "pch", pch=4,number.cex = 0.75)
+```
 ```
 
