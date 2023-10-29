@@ -49,6 +49,7 @@ library(ggforce)
 library(ggrepel)
 library(rstatix)
 library(AICcmodavg)
+library(ggthemes)
 
 ```
 
@@ -89,6 +90,13 @@ scale_fill_banana_disc = function(name) {
 
 ```
 
+
+```{r colors, include=FALSE}
+treat.colors <- c("control"= "green4" ,"control.amf"  = "darkseagreen" , "chicken.manure"= "royalblue1", "cow.manure" = "red3","mo.pellet"= "darkorchid1","compost"="chocolate4","control.legumes"="darkolivegreen4")
+treat.colors
+
+```
+
 ## Properties of soil 
 
 
@@ -111,74 +119,115 @@ soil.summ$soil.id <- NULL
 ### Evolucion de cada parametros en los distintos muestreos del experimento
 
 
-```{r Materia organica plot, echo=FALSE}
+```{r over the time, include=FALSE}
+
 #En este codigo veremos la evolucion de los distintos parametros en el tiempo. La función "aes" sirve para indicar en un grafico cual es tu X,y. Debes indicar en texto quien es quien.Toda la información de los datos referido al grafico es lo que va dentro del parentesis. Los adornos van fuera con el signo de +. La funcion "geom_line" sirve para elegir el tipo de grafico que quieres. 
+
 
 org.mat.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= org.matter_mean))+
   geom_line()+
-  scale_colour_banana_disc("paleta.treat")+
+  theme_classic()+
+  xlab("")+
+  ylab("Organic matter")+
+  scale_color_manual(values= treat.colors)+
   geom_point()+
-  geom_errorbar(aes(ymin=org.matter_mean-org.matter_sd, ymax=org.matter_mean+org.matter_sd), width=0.2)+
-  labs(title = "Figure 1: Organic matter evolution over time .", subtitle = , caption = "Mean and sd of each treatment" )
+  geom_errorbar(aes(ymin=org.matter_mean-org.matter_sd, ymax=org.matter_mean+org.matter_sd), width=0.2)
 org.mat.plotsd
- 
+
 phosp.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y=phosphorus_mean))+
   geom_line()+
-  scale_colour_banana_disc("paleta.treat")+
+  theme_classic()+
+  xlab("")+
+  ylab("Phosphorus")+
+  scale_color_manual(values= treat.colors)+
   geom_point()+
-  geom_errorbar(aes(ymin=phosphorus_mean-phosphorus_sd, ymax=phosphorus_mean+phosphorus_sd), width=0.2)+
-  labs(title = "Figure 2: Phosphorus evolution over time .", subtitle = , caption = "Mean and sd of each treatment" )
+  geom_errorbar(aes(ymin=phosphorus_mean-phosphorus_sd, ymax=phosphorus_mean+phosphorus_sd), width=0.2)
 phosp.plotsd
 
 calcium.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= calcium_mean))+
   geom_line()+
-  scale_colour_banana_disc("paleta.treat")+
+  theme_classic()+
+  xlab("")+
+  ylab("Calcium")+
+  scale_color_manual(values= treat.colors)+
   geom_point()+
-  geom_errorbar(aes(ymin=calcium_mean-calcium_sd, ymax=calcium_mean+calcium_sd), width=0.2)+
-  labs(title = "Figure 3: Calcium evolution over time .", subtitle = , caption = "Mean and sd of each treatment" )
+  geom_errorbar(aes(ymin=calcium_mean-calcium_sd, ymax=calcium_mean+calcium_sd), width=0.2)
 calcium.plotsd
 
 sodium.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= sodium_mean))+
   geom_line()+
-  scale_colour_banana_disc("paleta.treat")+
+  theme_classic()+
+  xlab("")+
+  ylab("Sodium")+
+  scale_color_manual(values= treat.colors)+
   geom_point()+
-  geom_errorbar(aes(ymin=sodium_mean-sodium_sd, ymax=sodium_mean+sodium_sd), width=0.2)+
-  labs(title = "Figure 4: Sodium evolution over time .", subtitle = , caption = "Mean and sd of each treatment" )
+  geom_errorbar(aes(ymin=sodium_mean-sodium_sd, ymax=sodium_mean+sodium_sd), width=0.2)
 sodium.plotsd
 
 potassium.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= potassium_mean))+
   geom_line()+
-  scale_colour_banana_disc("paleta.treat")+
+  theme_classic()+
+  xlab("")+
+  ylab("Potassium")+
+  scale_color_manual(values= treat.colors)+
   geom_point()+
-  geom_errorbar(aes(ymin=potassium_mean-potassium_sd, ymax=potassium_mean+potassium_sd), width=0.2)+
-  labs(title = "Figure 5: Potassium evolution over time .", subtitle = , caption = "Mean and sd of each treatment" )
+  geom_errorbar(aes(ymin=potassium_mean-potassium_sd, ymax=potassium_mean+potassium_sd), width=0.2)
 potassium.plotsd
 
 pH_water.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= ph.water_mean))+
   geom_line()+
-  scale_colour_banana_disc("paleta.treat")+
+  theme_classic()+
+  xlab("")+
+  ylab("pH water")+
+  scale_color_manual(values= treat.colors)+
   geom_point()+
-  geom_errorbar(aes(ymin=ph.water_mean-ph.water_sd, ymax=ph.water_mean+ph.water_sd), width=0.2)+
-  labs(title = "Figure 6: pH water evolution over time .", subtitle = , caption = "Mean and sd of each treatment" )
+  geom_errorbar(aes(ymin=ph.water_mean-ph.water_sd, ymax=ph.water_mean+ph.water_sd), width=0.2)
 pH_water.plotsd
 
 conductivity.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= conductivity_mean))+
   geom_line()+
-  scale_colour_banana_disc("paleta.treat")+
+  theme_classic()+
+  xlab("")+
+  ylab("Conductivity")+
+  scale_color_manual(values= treat.colors)+
   geom_point()+
-  geom_errorbar(aes(ymin=conductivity_mean-conductivity_sd, ymax=conductivity_mean+conductivity_sd), width=0.2)+
-  labs(title = "Figure 7: Conductivity evolution over time.", subtitle = , caption = "Mean and sd of each treatment" )
+  geom_errorbar(aes(ymin=conductivity_mean-conductivity_sd, ymax=conductivity_mean+conductivity_sd), width=0.2)
 conductivity.plotsd
 
 nitrogen.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= nitrogen_mean))+
   geom_line()+
-  scale_colour_banana_disc("paleta.treat")+
+  theme_classic()+
+  xlab("Time")+
+  ylab("Nitrogen")+
+  scale_color_manual(values= treat.colors)+
   geom_point()+
-  geom_errorbar(aes(ymin=nitrogen_mean-nitrogen_sd, ymax=nitrogen_mean+nitrogen_sd), width=0.2)+
-  labs(title = "Figure 8: Nitrogen evolution over time.", subtitle = , caption = "Mean and sd of each treatment" )
+  geom_errorbar(aes(ymin=nitrogen_mean-nitrogen_sd, ymax=nitrogen_mean+nitrogen_sd), width=0.2)
 nitrogen.plotsd
 
 ```
+
+
+```{r together, echo=FALSE}
+
+figureall <- ggarrange(org.mat.plotsd, phosp.plotsd, pH_water.plotsd, potassium.plotsd, sodium.plotsd,calcium.plotsd, nitrogen.plotsd, conductivity.plotsd,
+                    labels = c("A", "B", "C", "D", "E", "F", "G", "H"),
+                    font.label = list (size = 10, color= "black"),
+                    common.legend = TRUE, legend = "bottom",
+                    vjust = 10,
+                    ncol = 3, nrow = 3)
+title <- text_grob("Soil properties over the time", 
+                                color ="black", face = "bold", size = 14)
+
+
+figure_title <- annotate_figure(figureall, 
+                top=title, 
+                bottom = text_grob("Mean and sd of each treatments"))
+
+grid.draw(figure_title)
+
+```
+
+
 
 ### Analisis estadistico.
 
