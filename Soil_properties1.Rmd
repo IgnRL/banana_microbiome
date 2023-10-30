@@ -227,8 +227,6 @@ grid.draw(figure_title)
 
 ```
 
-
-
 ### Analisis estadistico.
 
 ### Check the correlation between the variables to analyse the most interesting ones.
