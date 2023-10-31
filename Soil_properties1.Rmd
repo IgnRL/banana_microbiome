@@ -571,6 +571,7 @@ plot_potassium_t4 <- soilt4 %>% ggplot(aes(x= treatment, y= potassium))+
   labs(title = "Figure 7: Differences in potassium at T4.", subtitle = "HSDTukey" , caption = "p-value" )
 plot_potassium_t4
 ```
+
 ```{r stats nitrogent4, echo=FALSE}
 shapiro.test(soilt4$nitrogen) #normal data
 anova_nitrogent4 <- aov(nitrogen ~ treatment, data=soilt4) #sig. different
@@ -600,7 +601,7 @@ soilt0t4 %>% group_by(treatment) %>% shapiro_test(org.matter) # each treatments 
 ggqqplot(data = soilt0t4, "org.matter", facet.by = "treatment")
 anova_orgt0t4 <- aov(org.matter ~ time + treatment, data=soilt0t4) #anova two ways
 summary(anova_orgt0t4)
-anova_orgt0t4int <- aov(org.matter ~ time * treatment + rep, data=soilt0t4) #add rep= "block" To control for the effect of the differences between the 3 replicates # interaction between them?
+anova_orgt0t4int <- aov(org.matter ~ time * treatment , data=soilt0t4) #add rep= "block" To control for the effect of the differences between the 3 replicates # interaction between them?
 summary(anova_orgt0t4int)
 leveneTest(org.matter ~ time * treatment, data=soilt0t4) #equal variances 
 
@@ -609,7 +610,22 @@ anova(orglm)
 emmip(orglm, time ~ treatment)#to visualize the interactions 
 
 emm_org <- emmeans(orglm, pairwise ~ time | treatment, adjust= "tukey")#how to add tukey
-emm_org
+emm_org$contrasts %>% rbind(adjust= "fdr") %>% 
+  summary(infer = TRUE)
+emm_org <- cld(emmeans(orglm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+
+d1 <- data.frame(emm_org$contrasts)
+d2 <- data.frame(emm_org$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")
+str(d1)
+
+pval.org.mat.time <- data.frame(treatment= d1$treatment, pval= d1$p.value, emmean= d2$emmean)
+
+pval.org.mat.time$sign <- ifelse(pval.org.mat.time$pval>0.05, paste("ns"),
+                                 ifelse(pval.org.mat.time$pval>0.01, paste("*"),
+                                        ifelse(pval.org.mat.time$pval> 0.001,
+                                               paste("**"), paste("***"))))
+
+
 
 pairs(emm_org)
 summary(pairs(emm_org), by =NULL, adjust="tukey")
