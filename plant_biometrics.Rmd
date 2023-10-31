@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(include = TRUE)
+
 ```
 
 ```{r libraries, include=FALSE}
@@ -24,15 +25,145 @@ library(corrplot)
 
 ```{r import data}
 plant.metrics <- read_excel("raw_files/plant_biometric_parameters.xlsx")
+plant.metrics$pot <- as.character(plant.metrics$pot)
 ```
+
+```{r colors and order, include=FALSE}
+treat.colors <- c("control"= "green4" ,"control.amf"  = "darkseagreen" , "chicken.manure"= "royalblue1", "cow.manure" = "red3","mo.pellet"= "darkorchid1","compost"="chocolate4","control.legumes"="darkolivegreen4")
+
+treat.order <- c('control', 'control.amf', 'control.legume', "compost", "chicken.manure", "cow.manure", "mo.pellet") 
+treat.labels <- c("Control", "Control\nAMF", "Control\nLegume", "Compost", "Chicken\nmanure", "Cow manure", "Pellet")
+```
+
 
 ```{r}
-plant.response <- plant.metrics[,-c(1,2)]
+plant.response <- plant.metrics[-4,-c(1,2,8,13,15)]
 cor.matrix <- plant.response %>% cor()
+cor.mtest(cor.matrix)
 
-cor.mat.test <- cor.mtest(cor.matrix)
-
-corrplot(cor.matrix, p.mat=cor.mat.test$p, sig.level = 0.05, order= "hclust", type= "upper", method= "number", insig = "pch", pch=4,number.cex = 0.75)
+dev.set(1)
+png(file="biometric_results/biometrics_corr.png", height = 800, width = 800)
+corplot.plant <- corrplot(cor.matrix, p.mat=cor.mtest(cor.matrix)$p, sig.level = 0.05, order= "hclust", type= "upper", method= "number", insig = "pch", pch=4,number.cex = 1.4, tl.cex =1.5)
+dev.off()
 ```
+
+
+Variables that I consider worth looking into: 
+
+* Aerial fresh weight 
+* Root fresh weight
+* N° leaves
+* Root length
+* Total height pseudostem
+
+
+```{r aerial fw, include= FALSE}
+plant.metrics %>% 
+  group_by(treatment) %>% 
+  shapiro_test(fresh_weight_aerial_kg)
+ggqqplot(data= plant.metrics, "fresh_weight_aerial_kg", facet.by = "treatment")
+
+# Data is normal
+
+plot.aerial.fw <- plant.metrics %>% ggplot(aes(x= factor(treatment, level= treat.order), y= fresh_weight_aerial_kg, fill= treatment))+
+  geom_boxplot(col= "black",)+
+  geom_point(size= 3, pch= 21, col= "black", aes(fill= treatment))+
+  scale_fill_manual(values= treat.colors)+
+  scale_color_manual(values= treat.colors)+
+  theme_classic2()+
+  xlab("")+ylab("Aerial f.w. (kg)")+
+  scale_x_discrete(labels= treat.labels)+
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5))+
+  guides(fill=guide_legend(title="Treatment"))
+plot.aerial.fw
+```
+
+```{r root fw exploration, include= FALSE}
+plant.metrics %>% 
+  group_by(treatment) %>% 
+  shapiro_test(number_leaves)
+ggqqplot(data= plant.metrics, "number_leaves", facet.by = "treatment")
+
+# Data is normal
+
+plot.n.leaves <- plant.metrics %>% ggplot(aes(x= factor(treatment, level= treat.order), y= number_leaves, fill= treatment))+
+  geom_boxplot(col= "black",)+
+  geom_point(size= 3, pch= 21, col= "black", aes(fill= treatment))+
+  scale_fill_manual(values= treat.colors)+
+  scale_color_manual(values= treat.colors)+
+  theme_classic2()+
+  xlab("")+ylab("N° leaves")+
+  scale_x_discrete(labels= treat.labels)+
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5))+
+  guides(fill=guide_legend(title="Treatment"))
+plot.n.leaves
+```
+
+```{r root fw exploration, include= FALSE}
+plant.metrics %>% 
+  group_by(treatment) %>% 
+  shapiro_test(root_length_cm)
+ggqqplot(data= plant.metrics, "root_length_cm", facet.by = "treatment")
+
+# Data is normal
+
+plot.root.length <- plant.metrics %>% ggplot(aes(x= factor(treatment, level= treat.order), y= root_length_cm, fill= treatment))+
+  geom_boxplot(col= "black",)+
+  geom_point(size= 3, pch= 21, col= "black", aes(fill= treatment))+
+  scale_fill_manual(values= treat.colors)+
+  scale_color_manual(values= treat.colors)+
+  theme_classic2()+
+  xlab("")+ylab("Root length (cm)")+
+  scale_x_discrete(labels= treat.labels)+
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5))+
+  guides(fill=guide_legend(title="Treatment"))
+plot.root.length
+```
+
+```{r root fw exploration, include= FALSE}
+plant.metrics %>% 
+  group_by(treatment) %>% 
+  shapiro_test(fresh_weight_root_kg)
+ggqqplot(data= plant.metrics, "fresh_weight_root_kg", facet.by = "treatment")
+
+# Data is normal
+
+plot.root.fw <- plant.metrics %>% ggplot(aes(x= factor(treatment, level= treat.order), y= fresh_weight_root_kg, fill= treatment))+
+  geom_boxplot(col= "black",)+
+  geom_point(size= 3, pch= 21, col= "black", aes(fill= treatment))+
+  scale_fill_manual(values= treat.colors)+
+  scale_color_manual(values= treat.colors)+
+  theme_classic2()+
+  xlab("")+ylab("Root f.w. (kg)")+
+  scale_x_discrete(labels= treat.labels)+
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5))+
+  guides(fill=guide_legend(title="Treatment"))
+plot.root.fw
+```
+
+```{r root fw exploration, include= FALSE}
+plant.metrics %>% 
+  group_by(treatment) %>% 
+  shapiro_test(total_height_pseudostem)
+ggqqplot(data= plant.metrics, "total_height_pseudostem", facet.by = "treatment")
+
+# Data is normal
+
+plot.pseudo.height <- plant.metrics %>% ggplot(aes(x= factor(treatment, level= treat.order), y= total_height_pseudostem, fill= treatment))+
+  geom_boxplot(col= "black",)+
+  geom_point(size= 3, pch= 21, col= "black", aes(fill= treatment))+
+  scale_fill_manual(values= treat.colors)+
+  scale_color_manual(values= treat.colors)+
+  theme_classic2()+
+  xlab("")+ylab("Pseudostem height (cm)")+
+  scale_x_discrete(labels= treat.labels)+
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5))+
+  guides(fill=guide_legend(title="Treatment"))
+plot.pseudo.height
+```
+
+
+```{r exploration multiplot}
+plots.plant.metrics <- grid.arrange(plot.pseudo.height, plot.aerial.fw, plot.n.leaves, plot.root.length, plot)
 ```
 
