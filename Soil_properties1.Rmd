@@ -602,16 +602,39 @@ anova_orgt0t4 <- aov(org.matter ~ time + treatment, data=soilt0t4) #anova two wa
 summary(anova_orgt0t4)
 anova_orgt0t4int <- aov(org.matter ~ time * treatment + rep, data=soilt0t4) #add rep= "block" To control for the effect of the differences between the 3 replicates # interaction between them?
 summary(anova_orgt0t4int)
-
 leveneTest(org.matter ~ time * treatment, data=soilt0t4) #equal variances 
+
+orglm <- lm(org.matter~ time*treatment, data=soilt0t4)#model
+anova(orglm)
+emmip(orglm, time ~ treatment)#to visualize the interactions 
+
+emm_org <- emmeans(orglm, pairwise ~ time | treatment, adjust= "tukey")#how to add tukey
+emm_org
+
+pairs(emm_org)
+summary(pairs(emm_org), by =NULL, adjust="tukey")
+plot(emm_org, comparison= TRUE)
+
+
+#pairs(emm_org, adjust= "Tukey")#to add tukey?
+#summary(pairs(emm_org), by =NULL adjust="tukey")#If you wish to apply a P-value adjustment to all tests across all groups, you need to null-out the by variable and summarize, as in the following. 
+plot(emm_org, comparison= TRUE) #to see the comparison
+
+pwpp(emm_org)#Pairwise P-value plots
+
+
+
+
+
+
 
 tukey_orgmattert0t4time <- HSD.test(anova_orgt0t4int, "time", alpha = 0.05)$groups %>% rownames_to_column(var = "time")
 tukey_orgmattert0t4time
 tukey_orgmattert0t4treat <- HSD.test(anova_orgt0t4int, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var = "treatment")
 tukey_orgmattert0t4treat
 
-#plot de treatment
-#plot_orgmatter_t0t4 <- soilt0t4 %>% ggplot(aes(x= treatment, group= time, col=time, y= org.matter))+geom_point()+stat_summary(fun=mean, aes(x= treatment, y = org.matter),geom= "crossbar", colour= "violet", data=avg_orgt0t4, fatten=3)+geom_text(data=tukey_orgmattert0t4treat, aes(x=treatment, y = org.matter, label= groups), nudge_x= 0.2, nudge_y= 0.01)+labs(title = "Figure 1: Differences in org.matter between T0 and T4.", subtitle = "HSDTukey" , caption = "p-value" )
+
+
 
 #plot_orgmatter_t0t4 #preguntar ignacio
 
