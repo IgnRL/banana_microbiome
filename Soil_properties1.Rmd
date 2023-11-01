@@ -607,51 +607,61 @@ leveneTest(org.matter ~ time * treatment, data=soilt0t4) #equal variances
 
 orglm <- lm(org.matter~ time*treatment, data=soilt0t4)#model
 anova(orglm)
-emmip(orglm, time ~ treatment)#to visualize the interactions 
-
-emm_org <- emmeans(orglm, pairwise ~ time | treatment, adjust= "tukey")#how to add tukey
-emm_org$contrasts %>% rbind(adjust= "fdr") %>% 
+emm_org <- emmeans(orglm, pairwise ~ time | treatment)
+emm_org$contrasts %>% rbind(adjust= "fdr") %>% #el adjust es para el metodo de los pvalues
   summary(infer = TRUE)
-emm_org <- cld(emmeans(orglm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+emm_org <- cld(emmeans(orglm, specs = pairwise~treatment), Letters= letters, reversed= TRUE) #tabla con las diferencias sig y las letras se lo indicas 
+emm_org #tabla con los resultados. Se hacen dataframe para sacar las columnas que queremos y poder unirlas en los graficos 
 
-d1 <- data.frame(emm_org$contrasts)
-d2 <- data.frame(emm_org$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")
-str(d1)
+orgcontras <- data.frame(emm_org$contrasts)#creamos data frame para sacar el valor del contraste 
+orgemmeans <- data.frame(emm_org$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")
+str(orgcontras)
 
-pval.org.mat.time <- data.frame(treatment= d1$treatment, pval= d1$p.value, emmean= d2$emmean)
+pval.org.mat.time <- data.frame(treatment= orgcontras$treatment, pval= orgcontras$p.value, emmean= orgemmeans$emmean)
 
 pval.org.mat.time$sign <- ifelse(pval.org.mat.time$pval>0.05, paste("ns"),
                                  ifelse(pval.org.mat.time$pval>0.01, paste("*"),
                                         ifelse(pval.org.mat.time$pval> 0.001,
-                                               paste("**"), paste("***"))))
+                                               paste("**"), paste("***"))))#para add la significancia con el condicional ifelse
 
+#para hacer el delta, es decir cuanto ha variado la materia organica. 
+mat.org.t0 <- subset(soilt0t4, soilt0t4$time == "t0")
+mat.org.t0 <- data.frame( treatment=mat.org.t0$treatment, org.matter.t0= mat.org.t0$org.matter)
+mat.org.t4 <- subset(soilt0t4, soilt0t4$time == "t4")
+mat.org.t4 <- data.frame( treatment=mat.org.t4$treatment, org.matter.t4= mat.org.t4$org.matter)
 
+delta.mat.org <- data.frame(treatment= mat.org.t0$treatment,t4= mat.org.t4$org.matter.t4 ,t0= mat.org.t0$org.matter.t0)
+delta.mat.org$delta <- delta.mat.org$t4-delta.mat.org$t0
+#delta.mat.org$ratio <- delta.mat.org$t4/delta.mat.org$t0
 
-pairs(emm_org)
-summary(pairs(emm_org), by =NULL, adjust="tukey")
-plot(emm_org, comparison= TRUE)
+delta.org.lm <- lm(delta~ treatment, data=delta.mat.org)#model
+anova(delta.org.lm)
 
+emm.delta.org <- emmeans(delta.org.lm, pairwise ~  treatment, adjust= "tukey")#how to add tukey
+emm.delta.org$contrasts %>% rbind(adjust= "fdr") %>% 
+  summary(infer = TRUE)
+emm.delta.org <- cld(emmeans(delta.org.lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+emm.delta.org$.group#letras 
 
-#pairs(emm_org, adjust= "Tukey")#to add tukey?
-#summary(pairs(emm_org), by =NULL adjust="tukey")#If you wish to apply a P-value adjustment to all tests across all groups, you need to null-out the by variable and summarize, as in the following. 
-plot(emm_org, comparison= TRUE) #to see the comparison
+plotdeltaorg <-delta.mat.org %>% ggplot(aes(x= treatment, y= delta, fill= treatment))+
+  geom_point(pch= 21, size= 5)+
+  scale_fill_manual(values= treat.colors)+
+  ylab("Delta (t4-t0)")+
+  geom_text(data= emm.delta.org, aes(x= treatment, y= emmean, label= `.group`), nudge_x = 0.2, nudge_y = 0.2)
 
-pwpp(emm_org)#Pairwise P-value plots
+soilt0t4mean <- soilt0t4 %>% group_by(treatment,  time) %>% 
+  summarise(across(.cols=everything(),.fns=mean),.groups = "drop")
 
+soilt0t4mean
+plot1 <- soilt0t4mean %>% ggplot(aes(x= treatment, y= org.matter))+
+  geom_col(aes(fill= time),position= "dodge")+
+  geom_text(data = pval.org.mat.time, aes(x= treatment, y= emmean, label= sign))
+plot1
 
+#unir los dos graficos
+orgt0t4 <- ggarrange(plot1, plotdeltaorg)
 
-
-
-
-
-tukey_orgmattert0t4time <- HSD.test(anova_orgt0t4int, "time", alpha = 0.05)$groups %>% rownames_to_column(var = "time")
-tukey_orgmattert0t4time
-tukey_orgmattert0t4treat <- HSD.test(anova_orgt0t4int, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var = "treatment")
-tukey_orgmattert0t4treat
-
-
-
-
+orgt0t4
 #plot_orgmatter_t0t4 #preguntar ignacio
 
 orgmatter_plot_interac <- soilt0t4%>% ggplot(aes(x=treatment, group= time, col= time, y= org.matter))+ geom_point()+
@@ -660,6 +670,8 @@ orgmatter_plot_interac
 
 
 ```
+
+
 
 ```{r stas phosphorus t0t4, echo=FALSE}
 shapiro.test(soilt0t4$phosphorus) #no normal data
