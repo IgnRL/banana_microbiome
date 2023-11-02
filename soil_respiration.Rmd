@@ -57,8 +57,9 @@ library(ggthemes)
 
 ```{r banana colours, include=FALSE}
 treat.colors <- c("control"= "green4" ,"control.amf"  = "darkseagreen" , "chicken.manure"= "royalblue1", "cow.manure" = "red3","mo.pellet"= "darkorchid1","compost"="chocolate4","control.legume"="darkolivegreen4")
-treat.colors
-#scale_color_manual(values= treat.colors)
+
+treat.order <- c('control', 'control.amf', 'control.legume', "compost", "chicken.manure", "cow.manure", "mo.pellet") 
+treat.labels <- c("Control", "Control\nAMF", "Control\nLegume", "Compost", "Chicken\nmanure", "Cow\nmanure", "Pellet")
 
 ```
 
@@ -149,7 +150,7 @@ tukey_basalt0
 
 meanbasalt0 <- aggregate(mg_co_basal ~ treatment, data=respirationt0, FUN= mean)
 
-plot_basal_t0 <- respirationt0 %>% ggplot(aes(x= treatment, y= mg_co_basal, col=treatment, group=treatment))+
+plot_basal_t0 <- respirationt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= mg_co_basal, col=treatment, group=treatment))+
   geom_point(size=9)+
   scale_color_manual(values= treat.colors)+
   xlab("Treatments")+
@@ -160,7 +161,8 @@ plot_basal_t0 <- respirationt0 %>% ggplot(aes(x= treatment, y= mg_co_basal, col=
             size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 0.6)+
   labs(title = "Basal respiration at T0.", subtitle = "" , caption = "HSDTukey p-value")+
   theme(plot.title = element_text(size=1))+
-  theme_clean()
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()
 plot_basal_t0
 
 #analized induced
@@ -174,7 +176,7 @@ tukey_inducedt0
 
 meaninducedt0 <- aggregate(mg_co_induced ~ treatment, data=respirationt0, FUN= mean)
 
-plot_induced_t0 <- respirationt0 %>% ggplot(aes(x= treatment, y= mg_co_induced, col=treatment, group=treatment))+
+plot_induced_t0 <- respirationt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= mg_co_induced, col=treatment, group=treatment))+
   geom_point(size=9)+
   scale_color_manual(values= treat.colors)+
   xlab("Treatments")+
@@ -185,7 +187,8 @@ plot_induced_t0 <- respirationt0 %>% ggplot(aes(x= treatment, y= mg_co_induced, 
             size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 4.5)+
   labs(title = "Induced respiration at T0.", subtitle = "" , caption = "HSDTukey p-value")+
   theme(plot.title = element_text(size=1))+
-  theme_clean()
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()
 plot_induced_t0
 
 basal_induced_t0 <- ggarrange(plot_basal_t0,plot_induced_t0,
@@ -200,9 +203,199 @@ basal_induced_t0
 
 ### Differences of respiration between treatments at T1
 
-```{respiration basal and induced t1, echo=FALSE}
+
+```{r respiration basal and induced t1, echo=FALSE}
+
+respirationt1 <- subset(soil_resp, soil_resp$time == "t1")
+#analized basal
+shapiro.test(respirationt1$mg_co_basal)#data basal normal
+leveneTest(mg_co_basal~ treatment, data=respirationt0) #equal Variance 
+
+anova_basalt1 <- aov(mg_co_basal ~ treatment, data=respirationt1) #signification different 
+summary(anova_basalt1)
+tukey_basalt1 <- HSD.test(anova_basalt1, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_basalt1
+
+meanbasalt1 <- aggregate(mg_co_basal ~ treatment, data=respirationt1, FUN= mean)
+
+plot_basal_t1 <- respirationt1 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= mg_co_basal, col=treatment))+
+  geom_point(size=9)+
+  scale_color_manual(values= treat.colors)+
+  xlab("Treatments")+
+  ylab("mg C-CO2/kg dry soil")+#basal
+  stat_summary(fun=mean, aes(x= treatment, y = mg_co_basal),
+               geom= "crossbar", colour= "black", width= 0.7, data=meanbasalt1)+
+  geom_text(data=tukey_basalt1, aes(x=treatment, y = mg_co_basal, label= groups), 
+            size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 0.6)+
+  labs(title = "Basal respiration at T1.", subtitle = "" , caption = "HSDTukey p-value")+
+  theme(plot.title = element_text(size=1))+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()
+plot_basal_t1
+
+#analized induced
+shapiro.test(respirationt1$mg_co_induced)#data induced no normal
+soil_resp %>% group_by(treatment) %>% shapiro_test(mg_co_induced) #all data of each time of induced are normal
+leveneTest(mg_co_induced~ treatment, data=respirationt1) #equal variance
+anova_inducedt1 <- aov(mg_co_induced ~ treatment, data=respirationt1)#signification different 
+summary(anova_inducedt1)
+tukey_inducedt1 <- HSD.test(anova_inducedt1, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_inducedt1
+
+meaninducedt1 <- aggregate(mg_co_induced ~ treatment, data=respirationt1, FUN= mean)
+
+plot_induced_t1 <- respirationt1 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= mg_co_induced, col=treatment, group=treatment))+
+  geom_point(size=9)+
+  scale_color_manual(values= treat.colors)+
+  xlab("Treatments")+
+  ylab("mg C-CO2/kg dry soil")+#induced
+  stat_summary(fun=mean, aes(x= treatment, y = mg_co_induced),
+               geom= "crossbar", colour= "black", width= 0.7, data=meaninducedt1)+
+  geom_text(data=tukey_inducedt1, aes(x=treatment, y = mg_co_induced, label= groups), 
+            size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 4.5)+
+  labs(title = "Induced respiration at T1.", subtitle = "" , caption = "HSDTukey p-value")+
+  theme(plot.title = element_text(size=1))+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()
+plot_induced_t1
+
+basal_induced_t1 <- ggarrange(plot_basal_t1,plot_induced_t1,
+                              ncol=2,
+                              common.legend = TRUE, legend = "none", 
+                              labels = c("A", "B"), 
+                              font.label = list (size = 10, color= "black"))
+basal_induced_t1
+
+```
+
+### Differences of respiration between treatments at T2
 
 
+```{r respiration in t2, echo=FALSE}
 
+respirationt2 <- subset(soil_resp, soil_resp$time == "t2")
+#analized basal
+shapiro.test(respirationt2$mg_co_basal)#data basal normal
+leveneTest(mg_co_basal~ treatment, data=respirationt0) #equal Variance 
+
+anova_basalt2 <- aov(mg_co_basal ~ treatment, data=respirationt2) #signification different 
+summary(anova_basalt2)
+tukey_basalt2 <- HSD.test(anova_basalt2, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_basalt2
+
+meanbasalt2 <- aggregate(mg_co_basal ~ treatment, data=respirationt2, FUN= mean)
+
+plot_basal_t2 <- respirationt2 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= mg_co_basal, col=treatment))+
+  geom_point(size=9)+
+  scale_color_manual(values= treat.colors)+
+  xlab("Treatments")+
+  ylab("mg C-CO2/kg dry soil")+#basal
+  stat_summary(fun=mean, aes(x= treatment, y = mg_co_basal),
+               geom= "crossbar", colour= "black", width= 0.7, data=meanbasalt2)+
+  geom_text(data=tukey_basalt2, aes(x=treatment, y = mg_co_basal, label= groups), 
+            size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 0.6)+
+  labs(title = "Basal respiration at t2.", subtitle = "" , caption = "HSDTukey p-value")+
+  theme(plot.title = element_text(size=1))+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()
+plot_basal_t2
+
+#analized induced
+shapiro.test(respirationt2$mg_co_induced)#data induced no normal
+soil_resp %>% group_by(treatment) %>% shapiro_test(mg_co_induced) #all data of each time of induced are normal
+leveneTest(mg_co_induced~ treatment, data=respirationt2) #equal variance
+anova_inducedt2 <- aov(mg_co_induced ~ treatment, data=respirationt2)#signification different 
+summary(anova_inducedt2)
+tukey_inducedt2 <- HSD.test(anova_inducedt2, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_inducedt2
+
+meaninducedt2 <- aggregate(mg_co_induced ~ treatment, data=respirationt2, FUN= mean)
+
+plot_induced_t2 <- respirationt2 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= mg_co_induced, col=treatment, group=treatment))+
+  geom_point(size=9)+
+  scale_color_manual(values= treat.colors)+
+  xlab("Treatments")+
+  ylab("mg C-CO2/kg dry soil")+#induced
+  stat_summary(fun=mean, aes(x= treatment, y = mg_co_induced),
+               geom= "crossbar", colour= "black", width= 0.7, data=meaninducedt2)+
+  geom_text(data=tukey_inducedt2, aes(x=treatment, y = mg_co_induced, label= groups), 
+            size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 4.5)+
+  labs(title = "Induced respiration at t2.", subtitle = "" , caption = "HSDTukey p-value")+
+  theme(plot.title = element_text(size=1))+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()
+plot_induced_t2
+
+basal_induced_t2 <- ggarrange(plot_basal_t2,plot_induced_t2,
+                              ncol=2,
+                              common.legend = TRUE, legend = "none", 
+                              labels = c("A", "B"), 
+                              font.label = list (size = 10, color= "black"))
+basal_induced_t2
+
+```
+
+### Differences of respiration between treatments at T3
+
+```{r respiration at t3, echo=FALSE}
+respirationt2 <- subset(soil_resp, soil_resp$time == "t2")
+#analized basal
+shapiro.test(respirationt2$mg_co_basal)#data basal normal
+leveneTest(mg_co_basal~ treatment, data=respirationt0) #equal Variance 
+
+anova_basalt2 <- aov(mg_co_basal ~ treatment, data=respirationt2) #signification different 
+summary(anova_basalt2)
+tukey_basalt2 <- HSD.test(anova_basalt2, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_basalt2
+
+meanbasalt2 <- aggregate(mg_co_basal ~ treatment, data=respirationt2, FUN= mean)
+
+plot_basal_t2 <- respirationt2 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= mg_co_basal, col=treatment))+
+  geom_point(size=9)+
+  scale_color_manual(values= treat.colors)+
+  xlab("Treatments")+
+  ylab("mg C-CO2/kg dry soil")+#basal
+  stat_summary(fun=mean, aes(x= treatment, y = mg_co_basal),
+               geom= "crossbar", colour= "black", width= 0.7, data=meanbasalt2)+
+  geom_text(data=tukey_basalt2, aes(x=treatment, y = mg_co_basal, label= groups), 
+            size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 0.6)+
+  labs(title = "Basal respiration at t2.", subtitle = "" , caption = "HSDTukey p-value")+
+  theme(plot.title = element_text(size=1))+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()
+plot_basal_t2
+
+#analized induced
+shapiro.test(respirationt2$mg_co_induced)#data induced no normal
+soil_resp %>% group_by(treatment) %>% shapiro_test(mg_co_induced) #all data of each time of induced are normal
+leveneTest(mg_co_induced~ treatment, data=respirationt2) #equal variance
+anova_inducedt2 <- aov(mg_co_induced ~ treatment, data=respirationt2)#signification different 
+summary(anova_inducedt2)
+tukey_inducedt2 <- HSD.test(anova_inducedt2, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_inducedt2
+
+meaninducedt2 <- aggregate(mg_co_induced ~ treatment, data=respirationt2, FUN= mean)
+
+plot_induced_t2 <- respirationt2 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= mg_co_induced, col=treatment, group=treatment))+
+  geom_point(size=9)+
+  scale_color_manual(values= treat.colors)+
+  xlab("Treatments")+
+  ylab("mg C-CO2/kg dry soil")+#induced
+  stat_summary(fun=mean, aes(x= treatment, y = mg_co_induced),
+               geom= "crossbar", colour= "black", width= 0.7, data=meaninducedt2)+
+  geom_text(data=tukey_inducedt2, aes(x=treatment, y = mg_co_induced, label= groups), 
+            size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 4.5)+
+  labs(title = "Induced respiration at t2.", subtitle = "" , caption = "HSDTukey p-value")+
+  theme(plot.title = element_text(size=1))+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()
+plot_induced_t2
+
+basal_induced_t2 <- ggarrange(plot_basal_t2,plot_induced_t2,
+                              ncol=2,
+                              common.legend = TRUE, legend = "none", 
+                              labels = c("A", "B"), 
+                              font.label = list (size = 10, color= "black"))
+basal_induced_t2
 ```
 
