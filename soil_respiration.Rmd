@@ -196,6 +196,12 @@ basal_induced_t0 <- ggarrange(plot_basal_t0,plot_induced_t0,
                               font.label = list (size = 10, color= "black"))
 basal_induced_t0
 
+```
+
+### Differences of respiration between treatments at T1
+
+```{respiration basal and induced t1, echo=FALSE}
+
 
 
 ```
