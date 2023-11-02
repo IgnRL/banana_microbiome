@@ -56,7 +56,7 @@ library(ggthemes)
 
 
 ```{r banana colours, include=FALSE}
-treat.colors <- c("control"= "green4" ,"control.amf"  = "darkseagreen" , "chicken.manure"= "royalblue1", "cow.manure" = "red3","mo.pellet"= "darkorchid1","compost"="chocolate4","control.legumes"="darkolivegreen4")
+treat.colors <- c("control"= "green4" ,"control.amf"  = "darkseagreen" , "chicken.manure"= "royalblue1", "cow.manure" = "red3","mo.pellet"= "darkorchid1","compost"="chocolate4","control.legume"="darkolivegreen4")
 treat.colors
 #scale_color_manual(values= treat.colors)
 
@@ -69,6 +69,8 @@ soil_resp <- readxl::read_excel("C:/Users/raquel.correa/Documents/banana_microbi
 soil_resp_mean <- soil_resp %>% group_by(treatment,  time) %>% 
   summarise(across(.cols=everything(),.fns=list(mean = mean, sd = sd)),.groups = "drop")
 
+
+soil_resp_mean
 ```
 
 ### Evolution of soil respiration over time 
@@ -76,36 +78,125 @@ soil_resp_mean <- soil_resp %>% group_by(treatment,  time) %>%
 
 ```{r over the time, echo=FALSE}
 basal_plotsd <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, col= treatment, y=mg_co_basal_mean))+
-  geom_line()+
-  theme_clean()+
+  geom_line(size=1)+
+  theme_classic2()+
   xlab("Time")+
   ylab("mg C-CO2/kg dry soil")+
   scale_color_manual(values= treat.colors)+
   geom_point()+
-  geom_errorbar(aes(ymin=mg_co_basal_mean-mg_co_basal_sd,   ymax=mg_co_basal_mean+mg_co_basal_sd), width=0.2)
+  geom_errorbar(aes(ymin=mg_co_basal_mean-mg_co_basal_sd,   ymax=mg_co_basal_mean+mg_co_basal_sd), size =0.5, width=0.2)+
+  labs(title = "Basal respiration.", subtitle = "", caption="Mean and SD")+
+  theme(plot.title = element_text(size=12))
 basal_plotsd
 
-
-
 induced_plotsd <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, col= treatment, y=mg_co_induced_mean))+
-  geom_line()+
-  theme_clean()+
+  geom_line(size=1)+
+  theme_classic2()+
   xlab("Time")+
   ylab("mg C-CO2/kg dry soil")+
   scale_color_manual(values= treat.colors)+
-  geom_point(shape=15)+
-  geom_errorbar(aes(ymin=mg_co_induced_mean-mg_co_induced_sd,   ymax=mg_co_induced_mean+mg_co_induced_sd), width=0.2)
+  geom_point()+
+  geom_errorbar(aes(ymin=mg_co_induced_mean-mg_co_induced_sd,   ymax=mg_co_induced_mean+mg_co_induced_sd), width=0.2)+
+  labs(title = "Induced respiration.", subtitle = "", caption="Mean and SD")+
+  theme(plot.title = element_text(size=12))
 induced_plotsd
 
 
-basal_plotsd1 <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, col= treatment, y=mg_co_basal_mean))+
-  stat_boxplot(geom="errorbar")+
-  geom_boxplot()+
-  xlab("Time")+
-  ylab("mg C-CO2/kg dry soil")+
-  scale_color_manual(values= treat.colors)
-  
-basal_plotsd1
+respirationplot <- ggarrange (basal_plotsd, induced_plotsd,
+                              common.legend = TRUE, legend = "bottom", 
+                              labels = c("A", "B"), 
+                              font.label = list (size = 10, color= "black"))
+
+respirationplot
+
+respiration_inducedplot2 <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, fill= treatment, y=mg_co_induced_mean))+
+  geom_col(aes(fill= treatment), position= "dodge")+
+  scale_fill_manual(values= treat.colors)+
+  labs(title = "Induced respiration.", subtitle = "", caption="Mean")+
+  theme_classic()
+
+respiration_inducedplot2
+
+respiration_basdalplot2 <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, fill= treatment, y=mg_co_basal_mean))+
+  geom_col(aes(fill= treatment), position= "dodge")+
+  scale_fill_manual(values= treat.colors)+
+  labs(title = "Basal respiration.", subtitle = "", caption="Mean")+
+  theme_classic()
+respiration_basdalplot2
+
+
+respiration_columplot <- ggarrange (respiration_basdalplot2, respiration_inducedplot2,
+                              common.legend = TRUE, legend = "bottom", 
+                              labels = c("A", "B"), 
+                              font.label = list (size = 10, color= "black"))
+respiration_columplot
+
+```
+
+### Differences of respiration between treatments at the start of the experiment (t0)
+
+```{r respiration basal and induced t0, echo=FALSE}
+
+respirationt0 <- subset(soil_resp, soil_resp$time == "t0")
+#analized basal
+shapiro.test(respirationt0$mg_co_basal)#data basal normal
+leveneTest(mg_co_basal~ treatment, data=respirationt0) #equal Variance 
+
+anova_basalt0 <- aov(mg_co_basal ~ treatment, data=respirationt0) #signification different 
+summary(anova_basalt0)
+tukey_basalt0 <- HSD.test(anova_basalt0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_basalt0
+
+meanbasalt0 <- aggregate(mg_co_basal ~ treatment, data=respirationt0, FUN= mean)
+
+plot_basal_t0 <- respirationt0 %>% ggplot(aes(x= treatment, y= mg_co_basal, col=treatment, group=treatment))+
+  geom_point(size=9)+
+  scale_color_manual(values= treat.colors)+
+  xlab("Treatments")+
+  ylab("mg C-CO2/kg dry soil")+#basal
+  stat_summary(fun=mean, aes(x= treatment, y = mg_co_basal),
+               geom= "crossbar", colour= "black", width= 0.7, data=meanbasalt0)+
+  geom_text(data=tukey_basalt0, aes(x=treatment, y = mg_co_basal, label= groups), 
+            size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 0.6)+
+  labs(title = "Basal respiration at T0.", subtitle = "" , caption = "HSDTukey p-value")+
+  theme(plot.title = element_text(size=1))+
+  theme_clean()
+plot_basal_t0
+
+#analized induced
+shapiro.test(respirationt0$mg_co_induced)#data induced no normal
+soil_resp %>% group_by(treatment) %>% shapiro_test(mg_co_induced) #all data of each time of induced are normal
+leveneTest(mg_co_induced~ treatment, data=respirationt0) #equal variance
+anova_inducedt0 <- aov(mg_co_induced ~ treatment, data=respirationt0) #signification different 
+summary(anova_inducedt0)
+tukey_inducedt0 <- HSD.test(anova_inducedt0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_inducedt0
+
+meaninducedt0 <- aggregate(mg_co_induced ~ treatment, data=respirationt0, FUN= mean)
+
+plot_induced_t0 <- respirationt0 %>% ggplot(aes(x= treatment, y= mg_co_induced, col=treatment, group=treatment))+
+  geom_point(size=9)+
+  scale_color_manual(values= treat.colors)+
+  xlab("Treatments")+
+  ylab("mg C-CO2/kg dry soil")+#induced
+  stat_summary(fun=mean, aes(x= treatment, y = mg_co_induced),
+               geom= "crossbar", colour= "black", width= 0.7, data=meaninducedt0)+
+  geom_text(data=tukey_inducedt0, aes(x=treatment, y = mg_co_induced, label= groups), 
+            size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 4.5)+
+  labs(title = "Induced respiration at T0.", subtitle = "" , caption = "HSDTukey p-value")+
+  theme(plot.title = element_text(size=1))+
+  theme_clean()
+plot_induced_t0
+
+basal_induced_t0 <- ggarrange(plot_basal_t0,plot_induced_t0,
+                              ncol=1, nrow=2,
+                              common.legend = TRUE, legend = "none", 
+                              labels = c("A", "B"), 
+                              align="hv",
+                              font.label = list (size = 10, color= "black"))
+basal_induced_t0
+
+
 
 ```
 
