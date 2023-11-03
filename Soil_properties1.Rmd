@@ -613,9 +613,9 @@ summary(anova(orglm))
 
 emm_org <- emmeans(orglm, pairwise ~ time | treatment)
 emm_org
+
 #el adjust es para el metodo de los pvalues
 emm_org$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)
-
 
 emm_org <- cld(emmeans(orglm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
 #tabla con las diferencias sig y las letras se lo indicas 
