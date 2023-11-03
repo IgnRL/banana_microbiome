@@ -55,50 +55,29 @@ library(ggthemes)
 
 
 # Data analysis octubre 2023
-
-
-```{r Palette, include= FALSE}
-
-banana.paleta = list(
-  paleta.treat = c("#FFC125", "#8B7D6B", "#81bc1f", "#ddec76",
-                 "#a4e361", "#27408B", "#EE5C42"),
-  my_favourite_colours = c("#702963", "#637029",    "#296370"),
-  paleta.iro= c("royalblue4","darkolivegreen","darkseagreen","darkolivegreen3","darkred","darkorchid"))
-
-
-banana.paleta.f = function(name, n, all_palettes = banana.paleta, type = c("discrete", "continuous")) {
-  palette = all_palettes[[name]]
-  if (missing(n)) {
-    n = length(palette)
-  }
-  type = match.arg(type)
-  out = switch(type,
-               continuous = grDevices::colorRampPalette(palette)(n),
-               discrete = palette[1:n] )
-  structure(out, name = name, class = "palette")
-}
-banana.paleta.f("paleta.treat", all_palettes = banana.paleta, type= "discrete")
-
-scale_colour_banana_disc = function(name) {
-  ggplot2::scale_colour_manual(values = banana.paleta.f(name, type = "discrete"))
-}
-
-scale_fill_banana_disc = function(name) {
-  ggplot2::scale_fill_manual(values = banana.paleta.f(name,
-                                                     type = "discrete"))
-}
-
-```
+Add the information of each method to obtain each parameter 
 
 
 ```{r colors, include=FALSE}
 treat.colors <- c("control"= "green4" ,"control.amf"  = "darkseagreen" , "chicken.manure"= "royalblue1", "cow.manure" = "red3","mo.pellet"= "darkorchid1","compost"="chocolate4","control.legumes"="darkolivegreen4")
 treat.colors
+treat.order <- c('control', 'control.amf', 'control.legume', "compost", "chicken.manure", "cow.manure", "mo.pellet") 
+treat.labels <- c("Control", "Control\nAMF", "Control\nLegume", "Compost", "Chicken\nmanure", "Cow\nmanure", "Pellet")
 
 ```
 
-## Properties of soil 
+## Properties of soil
 
+Method to obtain each parameter. 
+
+Five hundred grams of each soil sample were processed. The soils were air-dried at room temperature, sieved through a 2 mm sieve and homogenized. 
+Oxidizable organic matter (%) was analyzed by oxidation with potassium dichromate in an acid medium and titrated with Mohr's salt, using a procedure adapted from that described by Walkley et al. (1934). 
+Assimilable phosphorus (mg/kg) was analyzed according to the colorimetric method of Olsen et al. (1954). 
+Soil exchange cations (mEq/kg), calcium, magnesium, potassium and sodium, were extracted with neutral 1N ammonium acetate and determined by flame atomic absorption spectrophotometry (Bower et al., 1952). 
+The pH in aqueous extract 1:5 (v:v) and in potassium chloride extract 1:5 (v:v) were determined by potentiometry with a combined glass electrode, with a procedure based on UNE-ISO 10390:2012 (2012).
+The electrical conductivity in extract 1:5 (mS/cm, µS/cm) by conductivity meter with the method based on UNE-EN 77308:2001 (2001). 
+
+The analyses of these parameters were carried out by the Laboratory Unit of the Canarian Institute of Agricultural Research (ICIA) Canary Island, Spain.
 
 ```{r Import, include=FALSE}
 #Esto se ha hecho para cargar el Excel de los datos iniciales (ojo, para poner el directorio de donde esta tu archivo excel, se tiene que cambiar \, por /), y para hacer la media de cada tratamiento, ya que de cada tratamiento hay 3 repeticiones. El simbolo %>% se llaman tuberias (the pipe) vienen de la libreria (tinyverse) (esta libreria sirve para mantener R más ordenado). Las tuberias funcionan usando el resultado de una operación(out) y convirtiendolo en el imput de otra. En el caso del codigo  "soil.summ <- soil_prop %>% group_by(treatment,  time) %>% summarise(across(.cols=everything(), .fns=mean),.groups = "drop")" quiere decir lo siguiente: hemos creado un objeto nuevo que es soil.summ, que es_ el archivo de excel soil_prop el que hacemos una serie de operaciones en cadena (tuberia) donde agrupamos solamente por tratamiento y tiempo (group_by,) y en ese agrupamiento queremos de todas las columnas, .cols=every, que haga la funcion de la media (fns=mean). NULL significa que no tenga en cuenta esas columnas. $ es para seleccionar cosas especificas. 
@@ -128,7 +107,7 @@ org.mat.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= trea
   geom_line()+
   theme_classic()+
   xlab("")+
-  ylab("Organic matter")+
+  ylab("Oxidable organic matter (%)")+
   scale_color_manual(values= treat.colors)+
   geom_point()+
   geom_errorbar(aes(ymin=org.matter_mean-org.matter_sd, ymax=org.matter_mean+org.matter_sd), width=0.2)
@@ -138,7 +117,7 @@ phosp.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatm
   geom_line()+
   theme_classic()+
   xlab("")+
-  ylab("Phosphorus")+
+  ylab("Phosphorus mg/Kg")+
   scale_color_manual(values= treat.colors)+
   geom_point()+
   geom_errorbar(aes(ymin=phosphorus_mean-phosphorus_sd, ymax=phosphorus_mean+phosphorus_sd), width=0.2)
@@ -148,7 +127,7 @@ calcium.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= trea
   geom_line()+
   theme_classic()+
   xlab("")+
-  ylab("Calcium")+
+  ylab("Calcium mEq/kg")+
   scale_color_manual(values= treat.colors)+
   geom_point()+
   geom_errorbar(aes(ymin=calcium_mean-calcium_sd, ymax=calcium_mean+calcium_sd), width=0.2)
@@ -158,7 +137,7 @@ sodium.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treat
   geom_line()+
   theme_classic()+
   xlab("")+
-  ylab("Sodium")+
+  ylab("Sodium mEq/kg")+
   scale_color_manual(values= treat.colors)+
   geom_point()+
   geom_errorbar(aes(ymin=sodium_mean-sodium_sd, ymax=sodium_mean+sodium_sd), width=0.2)
@@ -168,7 +147,7 @@ potassium.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= tr
   geom_line()+
   theme_classic()+
   xlab("")+
-  ylab("Potassium")+
+  ylab("Potassium mEq/kg")+
   scale_color_manual(values= treat.colors)+
   geom_point()+
   geom_errorbar(aes(ymin=potassium_mean-potassium_sd, ymax=potassium_mean+potassium_sd), width=0.2)
@@ -178,7 +157,7 @@ pH_water.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= tre
   geom_line()+
   theme_classic()+
   xlab("")+
-  ylab("pH water")+
+  ylab("pH water udes.")+
   scale_color_manual(values= treat.colors)+
   geom_point()+
   geom_errorbar(aes(ymin=ph.water_mean-ph.water_sd, ymax=ph.water_mean+ph.water_sd), width=0.2)
@@ -188,7 +167,7 @@ conductivity.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col=
   geom_line()+
   theme_classic()+
   xlab("")+
-  ylab("Conductivity")+
+  ylab("Conductivity mS/cm")+
   scale_color_manual(values= treat.colors)+
   geom_point()+
   geom_errorbar(aes(ymin=conductivity_mean-conductivity_sd, ymax=conductivity_mean+conductivity_sd), width=0.2)
@@ -198,7 +177,7 @@ nitrogen.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= tre
   geom_line()+
   theme_classic()+
   xlab("Time")+
-  ylab("Nitrogen")+
+  ylab("Nitrogen (%)")+
   scale_color_manual(values= treat.colors)+
   geom_point()+
   geom_errorbar(aes(ymin=nitrogen_mean-nitrogen_sd, ymax=nitrogen_mean+nitrogen_sd), width=0.2)
@@ -211,7 +190,7 @@ nitrogen.plotsd
 
 figureall <- ggarrange(org.mat.plotsd, phosp.plotsd, pH_water.plotsd, potassium.plotsd, sodium.plotsd,calcium.plotsd, nitrogen.plotsd, conductivity.plotsd,
                     labels = c("A", "B", "C", "D", "E", "F", "G", "H"),
-                    font.label = list (size = 10, color= "black"),
+                    font.label = list (size = 10, color= "black", position= "right"),
                     common.legend = TRUE, legend = "bottom",
                     vjust = 10,
                     ncol = 3, nrow = 3)
@@ -279,12 +258,19 @@ tukey_orgmatter
 #crear un grafico con la media de la los valores de materia organica de t0, y la letra de HSDTukey)
 
 avgm <- aggregate(org.matter ~ treatment, data=soilt0, FUN= mean)
-plot_orgmatter_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= org.matter))+
-  geom_point()+
+plot_orgmatter_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), 
+                                           y= org.matter, col=treatment))+
+  geom_point(size= 6)+
+  scale_color_manual(values= treat.colors)+
+  ylab("Oxidable organic matter (%)")+
+  xlab("")+
+  scale_x_discrete(labels= treat.labels)+
+  theme_clean()+
   stat_summary(fun=mean, aes(x= treatment, y = org.matter),
-               geom= "crossbar", colour= "orange", data=avgm)+
-  geom_text(data=tukey_orgmatter, aes(x=treatment, y = org.matter, label= groups), nudge_x= 0.2, nudge_y= 0.2)+
-  labs(title = "Figure 1: Differences in organic matter at T0.", subtitle = "HSDTukey" , caption = "p-value" )
+               geom= "crossbar", width=0.5, colour= "grey20", data=avgm)+
+  geom_text(data=tukey_orgmatter, aes(x=treatment, y = org.matter, label= groups), color="black", nudge_x= 0.2, nudge_y= 0.2)+
+  labs(title = "Differences in the percentage of oxidizable organic matter T0.", 
+       subtitle = "Three measures of each treatment", caption = "Anova p-value: 2.5e-13 (HSDTukey)", size = 10 )
 plot_orgmatter_t0
 
 ```
@@ -298,14 +284,22 @@ summary(anova_phosphto)
 plot(anova_phosphto, which=2)
 leveneTest(phosphorus~ treatment, data= soilt0)#se cumple el supuesto de homogenicidad de varianzas.
 tukey_phosphorus <- HSD.test(anova_phosphto, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+
 avgpho <- aggregate(phosphorus ~ treatment, data=soilt0, FUN= mean)
-plot_phosphorus_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= phosphorus))+
-  geom_point()+
+plot_phosphorus_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= phosphorus, col=treatment))+
+  geom_point(size= 6)+
+  scale_color_manual(values= treat.colors)+
+  ylab("Phosphorus mg/Kg")+
+  xlab("")+
+  scale_x_discrete(labels= treat.labels)+
+  theme_clean()+
   stat_summary(fun=mean, aes(x= treatment, y = phosphorus),
-               geom= "crossbar", colour= "orange", data=avgpho)+
-  geom_text(data=tukey_phosphorus, aes(x=treatment, y = phosphorus, label= groups), nudge_x= 0.2, nudge_y= 0.3)+
-  labs(title = "Figure 2: Differences in phosphorus at T0.", subtitle = "HSDTukey" , caption = "p-value" )
+               geom= "crossbar",  width=0.5, colour= "grey20", data=avgpho)+
+  geom_text(data=tukey_phosphorus, aes(x=treatment, y = phosphorus, label= groups), 
+            colour="black", nudge_x= 0.2, nudge_y= 3)+
+  labs(title = "Differences in phosphorus T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: 0.000186 (HSDTukey)" )
 plot_phosphorus_t0
+
 ```
 
 ```{r ph water stast, echo=FALSE}
@@ -319,14 +313,23 @@ plot(anova_phwatert0, which=2)
 leveneTest(ph.water~ treatment, data= soilt0)#se cumple el supuesto de homogenicidad de varianzas.
 
 tukey_phwater <- HSD.test(anova_phwatert0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+
 avgphwater <- aggregate(ph.water ~ treatment, data=soilt0, FUN= mean)
-plot_phwater_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= ph.water))+
-  geom_point()+
+plot_phwater_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= ph.water, col=treatment))+
+  geom_point(size= 6)+
+  scale_color_manual(values= treat.colors)+
+  ylab("pH water udes.")+
+  xlab("")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)+
   stat_summary(fun=mean, aes(x= treatment, y = ph.water),
-               geom= "crossbar", colour= "orange", data=avgphwater)+
-  geom_text(data=tukey_phwater, aes(x=treatment, y = ph.water, label= groups), nudge_x= 0.2, nudge_y= 0.1)+
-  labs(title = "Figure 3: Differences in ph water at T0.", subtitle = "HSDTukey" , caption = "p-value" )
+               geom= "crossbar",  width=0.5, colour= "grey20", data=avgphwater)+
+  geom_text(data=tukey_phwater, aes(x=treatment, y = ph.water, label= groups), 
+            colour="black", nudge_x= 0.2, nudge_y= 0.05)+
+  labs(title = "Differences in pH water udes. T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: 4.21e-07 (HSDTukey)" )
+
 plot_phwater_t0
+
 ```
 
 ```{r conductivity stats, echo=FALSE}
@@ -336,16 +339,24 @@ ggqqplot(data = soil_prop, "conductivity", facet.by = "treatment")
 anova_conductivityt0 <- aov(conductivity ~ treatment, data=soilt0)
 summary(anova_conductivityt0)
 plot(anova_conductivityt0, which=2)
-leveneTest(conductivity~ treatment, data= soilt0)
+leveneTest(conductivity~ treatment, data= soilt0) #no equal variance
 tukey_conductivity <- HSD.test(anova_conductivityt0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 avgconduc <- aggregate(conductivity ~ treatment, data=soilt0, FUN= mean)
-plot_conduc_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= conductivity))+
-  geom_point()+
+
+plot_conduc_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= conductivity, col=treatment))+
+  geom_point(size= 6)+
+  scale_color_manual(values= treat.colors)+
+  ylab("Conductivity mS/cm.")+
+  xlab("")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)+
   stat_summary(fun=mean, aes(x= treatment, y = conductivity),
-               geom= "crossbar", colour= "orange", data=avgconduc)+
-  geom_text(data=tukey_conductivity, aes(x=treatment, y = conductivity, label= groups), nudge_x= 0.2, nudge_y= 0.1)+
-  labs(title = "Figure 4: Differences in conductivity at T0.", subtitle = "HSDTukey" , caption = "p-value, ojo un dato se va" )
+               geom= "crossbar",  width=0.5, colour= "grey20", data=avgconduc)+
+  geom_text(data=tukey_conductivity, aes(x=treatment, y = conductivity, label= groups), 
+            colour="black", nudge_x= 0.2, nudge_y= 0.05)+
+  labs(title = "Differences in conductivity. T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: 1.89e-07 (HSDTukey)" )
 plot_conduc_t0
+
 ```
 
 
@@ -354,17 +365,26 @@ shapiro.test(soilt0$calcium)#normal data
 anova_calciumt0 <- aov(calcium ~ treatment, data=soilt0)
 summary(anova_calciumt0)
 plot(anova_calciumt0, which=2)
-leveneTest(calcium~ treatment, data= soilt0)
+leveneTest(calcium~ treatment, data= soilt0)#equal variance
 
 tukey_calcium <- HSD.test(anova_calciumt0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_calcium
 avgcalcium <- aggregate(calcium ~ treatment, data=soilt0, FUN= mean)
-plot_calcium_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= calcium))+
-  geom_point()+
+
+plot_calcium_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= calcium, col=treatment))+
+  geom_point(size= 6)+
+  scale_color_manual(values= treat.colors)+
+  ylab("Calcium mEq/kg.")+
+  xlab("")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)+
   stat_summary(fun=mean, aes(x= treatment, y = calcium),
-               geom= "crossbar", colour= "orange", data=avgcalcium)+
-  geom_text(data=tukey_calcium, aes(x=treatment, y = calcium, label= groups), nudge_x= 0.2, nudge_y= 0.1)+
-  labs(title = "Figure 5: Differences in calcium at T0.", subtitle = "HSDTukey" , caption = "p-value" )
+               geom= "crossbar",  width=0.5, colour= "grey20", data=avgcalcium)+
+  geom_text(data=tukey_calcium, aes(x=treatment, y = calcium, label= groups), 
+            colour="black", nudge_x= 0.2, nudge_y= 0.05)+
+  labs(title = "Differences in calcium T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: 3.5e-06 (HSDTukey)" )
 plot_calcium_t0
+
 
 ```
 
@@ -376,14 +396,23 @@ plot(anova_sodiumt0, which=2)
 leveneTest(sodium~ treatment, data= soilt0)
 
 tukey_sodium <- HSD.test(anova_sodiumt0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_sodium
 avgsodium <- aggregate(sodium ~ treatment, data=soilt0, FUN= mean)
-plot_sodium_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= sodium))+
-  geom_point()+
+
+plot_sodium_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= sodium, col=treatment))+
+  geom_point(size= 6)+
+  scale_color_manual(values= treat.colors)+
+  ylab("sodium mEq/kg.")+
+  xlab("")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)+
   stat_summary(fun=mean, aes(x= treatment, y = sodium),
-               geom= "crossbar", colour= "orange", data=avgsodium)+
-  geom_text(data=tukey_sodium, aes(x=treatment, y = sodium, label= groups), nudge_x= 0.2, nudge_y= 0.1)+
-  labs(title = "Figure 6: No Differences in sodium at T0.", subtitle = "HSDTukey" , caption = "p-value" )
+               geom= "crossbar",  width=0.5, colour= "grey20", data=avgsodium)+
+  geom_text(data=tukey_sodium, aes(x=treatment, y = sodium, label= groups), 
+            colour="black", nudge_x= 0.2, nudge_y= 0.2)+
+  labs(title = "Differences in sodium T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: ns (HSDTukey)" )
 plot_sodium_t0
+
 ```
 
 ```{r stats potassium, echo=FALSE}
@@ -391,17 +420,27 @@ shapiro.test(soilt0$potassium) #normal data
 anova_potassiumt0 <- aov(potassium ~ treatment, data=soilt0)
 summary(anova_potassiumt0)
 plot(anova_potassiumt0, which=2)
-leveneTest(potassium~ treatment, data= soilt0)
+leveneTest(potassium~ treatment, data= soilt0) #equal variance
 
 tukey_potassium <- HSD.test(anova_potassiumt0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 avgpotassium <- aggregate(potassium ~ treatment, data=soilt0, FUN= mean)
-plot_potassium_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= potassium))+
-  geom_point()+
+
+plot_potassium_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= potassium, col=treatment))+
+  geom_point(size= 6)+
+  scale_color_manual(values= treat.colors)+
+  ylab("potassium mEq/kg.")+
+  xlab("")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)+
   stat_summary(fun=mean, aes(x= treatment, y = potassium),
-               geom= "crossbar", colour= "orange", data=avgpotassium)+
-  geom_text(data=tukey_potassium, aes(x=treatment, y = potassium, label= groups), nudge_x= 0.2, nudge_y= 0.1)+
-  labs(title = "Figure 7: Differences in potassium at T0.", subtitle = "HSDTukey" , caption = "p-value" )
+               geom= "crossbar",  width=0.5, colour= "grey20", data=avgpotassium)+
+  geom_text(data=tukey_potassium, aes(x=treatment, y = potassium, label= groups), 
+            colour="black", nudge_x= 0.2, nudge_y= 0.6)+
+  labs(title = "Differences in potassium T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: 1.16e-05 (HSDTukey)" )
+
 plot_potassium_t0
+
+
 ```
 
 
@@ -416,13 +455,22 @@ leveneTest(nitrogen~ treatment, data= soilt0)
 
 tukey_nitrogen <- HSD.test(anova_nitrogen0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 avgnitrogen <- aggregate(nitrogen ~ treatment, data=soilt0, FUN= mean)
-plot_nitrogen_t0 <- soilt0 %>% ggplot(aes(x= treatment, y= nitrogen))+
-  geom_point()+
+
+plot_nitrogen_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= nitrogen, col=treatment))+
+  geom_point(size= 6)+
+  scale_color_manual(values= treat.colors)+
+  ylab("nitrogen (%)")+
+  xlab("")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)+
   stat_summary(fun=mean, aes(x= treatment, y = nitrogen),
-               geom= "crossbar", colour= "orange", data=avgnitrogen)+
-  geom_text(data=tukey_nitrogen, aes(x=treatment, y = nitrogen, label= groups), nudge_x= 0.2, nudge_y= 0.0)+
-  labs(title = "Figure 8: Differences in nitrogen at T0.", subtitle = "HSDTukey" , caption = "p-value" )
+               geom= "crossbar",  width=0.5, colour= "grey20", data=avgnitrogen)+
+  geom_text(data=tukey_nitrogen, aes(x=treatment, y = nitrogen, label= groups), 
+            colour="black", nudge_x= 0.2, nudge_y= 0.01)+
+  labs(title = "Differences in nitrogen T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: 3.65e-09 (HSDTukey)" )
+
 plot_nitrogen_t0
+
 
 ```
 
@@ -608,6 +656,7 @@ leveneTest(org.matter ~ time * treatment, data=soilt0t4) #equal variances
 
 
 orglm <- lm(org.matter~ time*treatment, data=soilt0t4)#model
+
 anova(orglm)
 summary(anova(orglm))
 
@@ -615,17 +664,16 @@ emm_org <- emmeans(orglm, pairwise ~ time | treatment)
 emm_org
 
 #el adjust es para el metodo de los pvalues
-emm_org$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)
+#emm_org$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)
+#orgcontras <- data.frame(emm_org$contrasts)#data frame para sacar el valor del contraste 
+#orgcontras
+#orgemmeans <- data.frame(emm_org$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")
 
+str(orgcontras)
 emm_org <- cld(emmeans(orglm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
 #tabla con las diferencias sig y las letras se lo indicas 
 emm_org
 #tabla con los resultados. Se hacen dataframe para sacar las columnas que queremos y poder unirlas en los graficos 
-
-orgcontras <- data.frame(emm_org$contrasts)#data frame para sacar el valor del contraste 
-orgcontras
-orgemmeans <- data.frame(emm_org$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")
-str(orgcontras)
 
 pval.org.mat.time <- data.frame(treatment= orgcontras$treatment, pval= orgcontras$p.value, emmean= orgemmeans$emmean)
 
@@ -650,6 +698,7 @@ anova(delta.org.lm)
 emm.delta.org <- emmeans(delta.org.lm, pairwise ~  treatment, adjust= "tukey")#how to add tukey
 emm.delta.org$contrasts %>% rbind(adjust= "fdr") %>% 
   summary(infer = TRUE)
+
 emm.delta.org <- cld(emmeans(delta.org.lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
 emm.delta.org$.group#letras 
 
@@ -709,6 +758,7 @@ anova(delta.phosp.lm )
 emm.delta.phosp <- emmeans(delta.phosp.lm, pairwise ~  treatment, adjust= "tukey")#how to add tukey
 emm.delta.phosp$contrasts %>% rbind(adjust= "fdr") %>% 
   summary(infer = TRUE)
+
 emm.delta.phosp <- cld(emmeans(delta.phosp.lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
 emm.delta.phosp
 emm.delta.phosp$.group#letras 

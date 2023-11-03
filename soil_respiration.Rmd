@@ -75,11 +75,19 @@ soil_resp_mean
 ```
 
 ### Evolution of soil respiration over time 
+One way to measure the microbial community of a soil is respiration. Check how much CO2 is released from it.
 
+A) Basal respiration: The falcon tubes (50 ml), with the original soil samples, were placed in jars with
+hermetic closure. The evaluation of respiration (CO2 production) was carried out by titration of the
+sodium hydroxide (0.5 M) with hydrochloric acid (0.5 M) once the sample has been incubated for 7 days at 25ºC.
+
+
+B) Induced respiration: Induced respiration was carried out once basal respiration had been evaluated (that is, on the same samples). A solution is added of 20% sterile glucose (0.5 ml/sample). Subsequently, the samples were incubated at 25ºC for
+2.5 days and the sodium hydroxide (0.5 M) was titrated with hydrochloric acid (0.5 M).
 
 ```{r over the time, echo=FALSE}
 basal_plotsd <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, col= treatment, y=mg_co_basal_mean))+
-  geom_line(size=1)+
+  geom_line(linewidth=1)+
   theme_classic2()+
   xlab("Time")+
   ylab("mg C-CO2/kg dry soil")+
@@ -91,7 +99,7 @@ basal_plotsd <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, col= trea
 basal_plotsd
 
 induced_plotsd <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, col= treatment, y=mg_co_induced_mean))+
-  geom_line(size=1)+
+  geom_line(linewidth=1)+
   theme_classic2()+
   xlab("Time")+
   ylab("mg C-CO2/kg dry soil")+
@@ -192,10 +200,9 @@ plot_induced_t0 <- respirationt0 %>% ggplot(aes(x= factor(treatment, level= trea
 plot_induced_t0
 
 basal_induced_t0 <- ggarrange(plot_basal_t0,plot_induced_t0,
-                              ncol=1, nrow=2,
+                              ncol=2,
                               common.legend = TRUE, legend = "none", 
-                              labels = c("A", "B"), 
-                              align="hv",
+                              labels = c("A", "B"),
                               font.label = list (size = 10, color= "black"))
 basal_induced_t0
 
@@ -488,27 +495,14 @@ anova(basalt0t4lm)
 
 
 emm_basalt0t4 <- emmeans(basalt0t4lm, pairwise ~ time | treatment)#emmeans
-str(emm_basalt0t4)
-
 emm_basalt0t4$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)#el adjust es para el metodo de los pvalues
-
 basalt0t4contras <- data.frame(emm_basalt0t4$contrasts)#data frame para sacar el valor del contraste 
-
 basalt0t4contras
-
 basalt0t4emmeans <- data.frame(emm_basalt0t4$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")
 basalt0t4emmeans
 
 emm_basalt0t4 <- cld(emmeans(basalt0t4lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE) #add letters
 emm_basalt0t4
-
-#basalt0t4contras <- data.frame(emm_basalt0t4$contrasts)#data frame para sacar el valor del contraste 
-#basalt0t4contras
-
-#emm_basalt0t4 <- cld(emmeans(basalt0t4lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE) #add letters
-#tabla con las diferencias sig y las letras se lo indicas 
-emm_basalt0t4
-
 pval_basalt0t4_time <- data.frame(treatment= basalt0t4contras$treatment, pval= basalt0t4contras$p.value, emmean= basalt0t4emmeans$emmean)
 pval_basalt0t4_time$sign <- ifelse(pval_basalt0t4_time$pval>0.05, paste("ns"),
                                  ifelse(pval_basalt0t4_time$pval>0.01, paste("*"),
@@ -527,11 +521,6 @@ basalt0t4_time <- respirationt0t4mean %>% ggplot(aes(x=factor(treatment, level= 
 basalt0t4_time
 
 #delta
-mat.org.t0 <- subset(soilt0t4, soilt0t4$time == "t0")
-mat.org.t0 <- data.frame( treatment=mat.org.t0$treatment, org.matter.t0= mat.org.t0$org.matter)
-mat.org.t4 <- subset(soilt0t4, soilt0t4$time == "t4")
-mat.org.t4 <- data.frame( treatment=mat.org.t4$treatment, org.matter.t4= mat.org.t4$org.matter)
-
 delta_basalt0t4 <- data.frame (treatment=respirationt0$treatment, t4= respirationt4$mg_co_basal, t0=respirationt0$mg_co_basal)
 delta_basalt0t4$delta <- delta_basalt0t4$t4-delta_basalt0t4$t0
 
@@ -553,6 +542,7 @@ plotdelta_basalt0t4 <- delta_basalt0t4 %>% ggplot(aes(x=factor(treatment, level=
   geom_point(pch= 21, size= 7)+
   xlab("")+
   ylab("Delta variation between t4-t0")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
   scale_fill_manual(values= treat.colors)+
   geom_text(data= emm.delta.basalt0t4, aes(x= treatment, y= emmean, label= `.group`), nudge_x = 0.2, nudge_y = 0.2)+
   scale_x_discrete(labels= treat.labels)+
@@ -563,8 +553,108 @@ basal_t0t4plot <- ggarrange(basalt0t4_time, plotdelta_basalt0t4,
                               ncol=2,
                               common.legend = TRUE,
                               legend = c("left", "none"), 
+                              labels = c("A", "B"),
+                              font.label = list (size = 10, color= "black"))
+
+basal_t0t4plot <- annotate_figure(basal_t0t4plot, 
+                                  top = text_grob("Basal respiration", color = "black", face = "bold", size = 10),
+                                  bottom = text_grob("Interaction and variation between beginning and end of the experiment", size=10))
+
+basal_t0t4plot
+
+
+
+#induced
+shapiro.test(respirationt0t4$mg_co_induced)# no normal data, but all data of each time of induced are normal
+leveneTest(mg_co_induced ~ time * treatment, data=respirationt0t4) #equal variances
+
+anova_inducedt0t4 <- aov(mg_co_induced~ time + treatment, data=respirationt0t4) #anova two ways
+summary(anova_inducedt0t4)
+anova_inducedt0t4int <- aov(mg_co_induced ~ time * treatment , data=respirationt0t4) # interaction between them?
+summary(anova_inducedt0t4int)
+
+inducedt0t4lm <- lm(mg_co_induced~ time*treatment, data=respirationt0t4)#model
+anova(inducedt0t4lm)
+
+
+
+emm_inducedt0t4 <- emmeans(inducedt0t4lm, pairwise ~ time | treatment)#emmeans
+str(emm_inducedt0t4)
+
+emm_inducedt0t4$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)#el adjust es para el metodo de los pvalues
+
+inducedt0t4contras <- data.frame(emm_inducedt0t4$contrasts)#data frame para sacar el valor del contraste 
+
+inducedt0t4contras
+
+inducedt0t4emmeans <- data.frame(emm_inducedt0t4$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")
+inducedt0t4emmeans
+
+emm_inducedt0t4 <- cld(emmeans(inducedt0t4lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE) #add letters
+emm_inducedt0t4
+pval_inducedt0t4_time <- data.frame(treatment= inducedt0t4contras$treatment, pval= inducedt0t4contras$p.value, emmean= inducedt0t4emmeans$emmean)
+pval_inducedt0t4_time$sign <- ifelse(pval_inducedt0t4_time$pval>0.05, paste("ns"),
+                                 ifelse(pval_inducedt0t4_time$pval>0.01, paste("*"),
+                                        ifelse(pval_inducedt0t4_time$pval> 0.001,
+                                               paste("**"), paste("***"))))
+inducedt0t4_time <- respirationt0t4mean %>% ggplot(aes(x=factor(treatment, level= treat.order), y= mg_co_induced_mean))+
+  geom_col(aes(fill= time),position= "dodge")+
+  xlab("")+
+  ylab("induced mg C-CO2/kg dry soil")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)+
+  geom_text(data = pval_inducedt0t4_time, aes(x= treatment, y= emmean, label= sign), nudge_x= 0, nudge_y= 25)+
+  geom_errorbar(data=respirationt0t4mean, aes(ymin=mg_co_induced_mean-mg_co_induced_sd, 
+                                            ymax=mg_co_induced_mean+mg_co_induced_sd, group= time),
+                position=position_dodge(0.9),
+                                            size =0.2, width=0.2)
+inducedt0t4_time
+
+#delta
+
+delta_inducedt0t4 <- data.frame (treatment=respirationt0$treatment, t4= respirationt4$mg_co_induced, t0=respirationt0$mg_co_induced)
+delta_inducedt0t4$delta <- delta_inducedt0t4$t4-delta_inducedt0t4$t0
+
+delta_inducedt0t4
+
+delta_inducedt0t4_lm <- lm(delta~ treatment, data=delta_inducedt0t4)#model
+anova(delta_inducedt0t4_lm)
+
+emm.delta.inducedt0t4 <- emmeans(delta_inducedt0t4_lm, pairwise ~  treatment)
+emm.delta.inducedt0t4
+emm.delta.inducedt0t4$contrasts %>% rbind(adjust= "fdr") %>% 
+  summary(infer = TRUE)
+emm.delta.inducedt0t4 <- cld(emmeans(delta_inducedt0t4_lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+emm.delta.inducedt0t4$.group
+str(emm.delta.inducedt0t4)
+str(delta_inducedt0t4)
+
+plotdelta_inducedt0t4 <- delta_inducedt0t4 %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 21, size= 7)+
+  xlab("")+
+  ylab("Delta variation between t4-t0")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
+  scale_fill_manual(values= treat.colors)+
+  geom_text(data= emm.delta.inducedt0t4, aes(x= treatment, y= emmean, label= `.group`), nudge_x = 0.2, nudge_y = 0.2)+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()
+
+plotdelta_inducedt0t4
+
+induced_t0t4plot <- ggarrange(inducedt0t4_time, plotdelta_inducedt0t4,
+                              ncol=2,
+                              common.legend = TRUE,
+                              legend = c("left", "none"), 
                               labels = c("A", "B"), 
                               font.label = list (size = 10, color= "black"))
-basal_t0t4plot
+
+induced_t0t4plot
+
+induced_t0t4plot <- annotate_figure(induced_t0t4plot, 
+                                  top = text_grob("Induced respiration", color = "black", face = "bold", size = 10),
+                                  bottom = text_grob("Interaction and variation between beginning and end of the experiment", size=10))
+
+induced_t0t4plot
+
 ```
 
