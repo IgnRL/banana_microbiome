@@ -23,11 +23,27 @@ library(corrplot)
 library(gridExtra)
 library(phyloseq)
 library(vegan)
+library(here)
+library(geomtextpath)
+```
+
+
+```{r colors and order, include=FALSE}
+treat.colors <- c("control"= "green4" ,"control_amf"  = "darkseagreen" , "chicken"= "royalblue1", "cow" = "red3","pellet"= "darkorchid1","compost"="chocolate4","control_legumes"="darkolivegreen4")
+time.colors <- c("T0"="#66c2a5", "T1"="#fc8d62", "T2"="#8da0cb", "T3"="#e78ac3", "T4"="#a6d854", "T5"="#ffd92f")
+
+
+treat.order <- c('control', 'control_amf', 'control_legumes', "compost", "chicken", "cow", "pellet") 
+treat.labels <- c("Control", "Control\nAMF", "Control\nLegume", "Compost", "Chicken\nmanure", "Cow\nmanure", "Pellet")
 ```
 
 ```{r import data}
 import <- here("ITS_banana", "p1031_run231023_ITS_ccs_ZOTU_c97_Count_Sintax.txt")
 zotu97 <- import_qiime(otufilename= import)
+metadata <- read_delim(file= here("ITS_banana","metadata.csv" ),show_col_types = FALSE) %>% 
+  column_to_rownames(var= "sample_name")
+
+zotu97 <- merge_phyloseq(zotu97, sample_data(metadata))
 ```
 
 ```{r phylum with NA}
@@ -82,36 +98,42 @@ p_phyla
 ```
 
 
-
 ```{r Sequencing depth z97 , include=FALSE}
 
 seqdepth97 <- colSums(otu_table(zotu97)) #get the number of sequences(or reads) per sample
 sample.table97 <- sample_data(zotu97)
-sample.table97 <- cbind(seqdepth97, sample.table97) #binds the number of sequences per sample to the sample data that also contains the metadata. This allows to filter all the data according to experiment, repetition, treatment...
+sample.table97 <- cbind(seq.depth= seqdepth97, sample.table97) #binds the number of sequences per sample to the sample data that also contains the metadata. This allows to filter all the data according to experiment, repetition, treatment...
+
 
 ```
 
 ```{r plot Sequences per sample z97, echo=FALSE, message=FALSE, warning=FALSE}
-res.wilcox97 <- wilcox.test(seqdepth97 ~ treat, data = sample.table97, exact = FALSE)
+summary(aov(seq.depth~treatment, data = sample.table97))
+summary(aov(seq.depth~time, data = sample.table97))
 
-plot_seq_exp97 <- sample.table97 %>% 
- ggplot(aes(x = treat,
-             y = seqdepth97,
-             color = soil)) +
-  geom_boxplot(outlier.colour = NA) +
-  geom_jitter( position = position_dodge(0.75), 
-              size =2, alpha = 0.5) +
-  theme(legend.position="bottom") +
-  geom_texthline(yintercept = min(sample.table97$seqdepth97), label = paste(min(sample.table97$seqdepth97), "= min seq depth"), 
-                 hjust = 0.5)+
-  labs(y= "N°sequences", x= "Treatment", title = "Sequencing depth of the different treatments and soils")+
-annotate("text", x=1.5, y=45000, label= paste("Wilcoxon test p-value:", formatC(res.wilcox97$p.value, format = "e", digits = 2)))
+plot.seq.depth.treat <- sample.table97 %>% 
+ ggplot(aes(x = factor(treatment, level= treat.order), y = seq.depth, col= treatment)) +
+  geom_boxplot()+
+  theme(legend.position="bottom")+
+  labs(y= "N.sequences", x= "Treatment", title = "Sequencing depth of the different treatments and soils")+
+  scale_color_manual(values= treat.colors)+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()
+plot.seq.depth.treat
 
-ggsave(plot_seq_exp97, file= "intro_results/seq_depth.png")
-print(plot_seq_exp97)
+plot.seq.depth.time <- sample.table97 %>% 
+ ggplot(aes(x = time, y = seq.depth, col= time)) +
+  geom_boxplot(outlier.colour = NA)+
+  theme(legend.position="bottom")+
+  scale_color_manual(values= time.colors)+
+  labs(y= "N.sequences", x= "Time", title = "Sequencing depth of the different treatments and soils")+
+  theme_classic2()
+plot.seq.depth.time
+
+
 ```
 
-As seen in the graph above, there is uneven sequencing depth among treatments (Wilcoxon test on the means of the sequencing depth of the treatments), this might lead to differences in the representation of the samples. This can also be visualized with the use of rarefaction plots. 
+As seen in the graphs above, there is uneven sequencing depth among treatments (Wilcoxon test on the means of the sequencing depth of the treatments), this might lead to differences in the representation of the samples. This can also be visualized with the use of rarefaction plots. 
 
 ### Rarefaction plots {.tabset}
 
@@ -127,58 +149,48 @@ plot_rare <- rarecurve97 %>%
   unnest(data)
 
 stopifnot(identical(sort(unique(plot_rare$sample)), 1:NROW(sample.table97))) #plot_data$sample and sample_data(zotu97) must be identical
-
-plot_rare$treat <- (sample.table97$treat)[plot_rare$sample]
-plot_rare$acc <- (sample.table97$acc)[plot_rare$sample]
-plot_rare$soil <- (sample.table97$soil)[plot_rare$sample]
+sample.table97 <- sample.table97[sample.table97$treatment != "NTC", ] %>% .[.$treatment != "CTL", ]
+zotu97 <- subset_samples(zotu97, treatment != "NTC" & treatment != "CTL")
+plot_rare$treat <- (sample.table97$treatment)[plot_rare$sample]
+plot_rare$time <- (sample.table97$time)[plot_rare$sample]
 
 pp_treat <- plot_rare %>% 
   ggplot() +
-  geom_line(aes(x,y, color = treat, group = sample),lwd= 1.5) +
+  geom_line(aes(x,y, color = treat, group = sample),lwd= 1) +
    theme(legend.position = "bottom",plot.title = element_text(hjust = 0.5))+
   ylab("Number of OTUs")+
   xlab("Number of sequences") +
   ggtitle("Rarefaction curve by treatment")+
-  geom_textvline(xintercept = min(sample.table97$seqdepth97), label = paste(min(sample.table97$seqdepth97), "= min seq depth"))+
-  coord_cartesian(xlim = c(0, 48000), ylim = c(0, 125)) 
-ggsave(pp_treat, file= "intro_results/rare_treat.png")
+  geom_textvline(xintercept = min(sample.table97$seq.depth), label = paste(min(sample.table97$seq.depth), "= min seq depth"))+
+  coord_cartesian(xlim = c(0, 60000), ylim = c(0, 450))+scale_color_manual(values= treat.colors)
+pp_treat
+ggsave(pp_treat, file= "ITS_results/rare_treat.png")
 
-pp_soil <- plot_rare %>% 
+pp_time <- plot_rare %>% 
   ggplot() +
-  geom_line(aes(x,y, color = soil, group = sample),lwd= 1.5) +
+  geom_line(aes(x,y, color = time, group = sample),lwd= 1) +
    theme(legend.position = "bottom",plot.title = element_text(hjust = 0.5))+
   ylab("Number of OTUs")+
   xlab("Number of sequences") +
-  ggtitle("Rarefaction curve by soil")+
-  geom_textvline(xintercept = min(sample.table97$seqdepth97), label = paste(min(sample.table97$seqdepth97), "= min seq depth"))+
-  coord_cartesian(xlim = c(0, 48000), ylim = c(0, 125)) 
-ggsave(pp_soil, file= "intro_results/rare_soil.png")
+  ggtitle("Rarefaction curve by time")+
+  geom_textvline(xintercept = min(sample.table97$seq.depth), label = paste(min(sample.table97$seq.depth), "= min seq depth"))+
+  coord_cartesian(xlim = c(0, 60000), ylim = c(0, 450))+scale_color_manual(values= time.colors)
+pp_time
+ggsave(pp_time, file= "ITS_results/rare_time.png")
 
-pp_gen <- plot_rare %>% 
-  ggplot() +
-  geom_line(aes(x,y, color = acc, group = sample),lwd= 1.5) +
-  theme(legend.position = "bottom",plot.title = element_text(hjust = 0.5))+
-  ylab("Number of OTUs")+
-  xlab("Number of sequences") +
-  ggtitle("Rarefaction curve by acc") +
-  geom_textvline(xintercept = min(sample.table97$seqdepth97), label = paste(min(sample.table97$seqdepth97), "= min seq depth"))+
-  coord_cartesian(xlim = c(0, 48000), ylim = c(0, 125)) 
-ggsave(pp_gen, file= "intro_results/rare_gen.png")
 
-rarefaction_curves <- grid.arrange(pp_treat, pp_soil,pp_gen, ncol=2)
+
+rarefaction_curves <- grid.arrange(pp_treat, pp_time, nrow=2)
 ```
 
 #### Rarefaction plot by treatment
 
-![Rarefaction curve showing the treatments](intro_results/rare_treat.png)
+![Rarefaction curve showing the treatments](ITS_results/rare_treat.png)
 
 #### Rarefaction plot by soil
 
-![Rarefaction curve showing the soils](intro_results/rare_soil.png)
+![Rarefaction curve showing the soils](ITS_results/rare_time.png)
 
-#### Rarefaction plot by acc
-
-![Rarefaction curve showing the accs](intro_results/rare_gen.png)
 
 ## Rarefy the data
 
@@ -198,7 +210,7 @@ diversity_500 <- c()
 even_500 <- c()
 for (i in 1:500){
  #generate rarefied community
- temp_500 <-  rarefy_even_depth(otu_table(zotu97), rngseed = 20220517, sample.size = min(sample.table97$seqdepth97))
+ temp_500 <-  rarefy_even_depth(otu_table(zotu97), rngseed = 22081998, sample.size = min(sample.table97$seq.depth))
 #  richness is species number
  s <- specnumber(temp_500, MARGIN=2)
 richness_500 <- cbind(richness_500,s)
@@ -221,15 +233,135 @@ summary_diversity_rar <- data.frame( cbind( shannon, richness, evenness))
 stopifnot(identical(rownames(sample_data(zotu97)), names(richness)))
 
 sample.table97.500<- cbind(summary_diversity_rar, sample_data(zotu97))
-save(sample.table97.500, file=here("files", "sample.table97.500.Rdata"))
+save(sample.table97.500, file=here("ITS_banana", "sample.table97.500.Rdata"))
 #save the results of the loop in an object to avoid wasting time in each run, if needed to re-run, change the chunk option to "eval= TRUE"
 ```
 
 
 ```{r Load the rarefying loop, include = FALSE}
-load(here("files",  "sample.table97.500.Rdata"))
+load(here("ITS_banana",  "sample.table97.500.Rdata"))
 
 #merge this rarefied data with a phyloseq object
 zotu97.rar <- merge_phyloseq(zotu97, sample_data(sample.table97.500))
 # zotu97.rar contains the samples, the experimental variables and the alpha diversity indexes resulting of the rarefying loop.
+```
+
+```{r, include= TRUE}
+zotu97
+zotu97.rar
+```
+
+
+## Alpha diversity {.tabset}
+
+### Shanon
+
+```{r shannon, include= TRUE}
+data <- sample_data(zotu97.rar)
+
+
+
+shannon_treat_facet <- data %>% ggplot(aes(x= treatment, y= shannon, color= time)) +
+  geom_point()+
+  scale_color_manual(values= time.colors)+
+  facet_wrap(~time)+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels) 
+
+ggsave(shannon_treat_facet, file= "ITS_results/shannon_treat_facet.png", width = 4000, unit= "px")
+
+
+shannon_time_facet <- data %>% ggplot(aes(x= factor(time), y= shannon, color= treatment, group = 1)) +
+  geom_point()+
+  scale_color_manual(values= treat.colors)+
+  geom_smooth(aes(col= treatment), method = "lm", se = FALSE, size = 1) + 
+  facet_wrap(~treatment)+
+  theme_classic2()
+ggsave(shannon_time_facet, file= "ITS_results/shannon_time_facet.png", width = 3000, unit= "px")
+
+data %>% ggplot(aes(x= treatment, y= shannon, color= time, group= time)) +
+  geom_point()+
+  scale_color_manual(values= time.colors)+
+  scale_fill_manual(values= time.colors)+
+  geom_smooth(aes(color= time, fill= time), alpha= 0, method= "lm")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)
+
+data %>% ggplot(aes(x= time, y= shannon, color= treatment)) +
+  geom_point()+
+  scale_color_manual(values= treat.colors)+
+  scale_fill_manual(values= treat.colors)+
+  theme_classic2()
+```
+
+### Evenness
+
+```{r evenness, include=TRUE}
+data <- sample_data(zotu97.rar)
+
+evenness_treat_facet <- data %>% ggplot(aes(x= treatment, y= evenness, color= time)) +
+  geom_point()+
+  scale_color_manual(values= time.colors)+
+  facet_wrap(~time)+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)
+ggsave(evenness_treat_facet, file= "ITS_results/evenness_treat_facet.png", width = 4000, unit= "px")
+
+evenness_time_facet <- data %>% ggplot(aes(x= factor(time), y= evenness, color= treatment, group = 1)) +
+  geom_point()+
+  scale_color_manual(values= treat.colors)+
+  geom_smooth(aes(col= treatment), method = "lm", se = FALSE, size = 1) + 
+  facet_wrap(~treatment)+
+  theme_classic2()
+ggsave(evenness_time_facet, file= "ITS_results/evenness_time_facet.png", width = 3000, unit= "px")
+
+
+data %>% ggplot(aes(x= treatment, y= evenness, color= time, group= time)) +
+  geom_point()+
+  scale_color_manual(values= time.colors)+
+  scale_fill_manual(values= time.colors)+
+  geom_smooth(aes(color= time, fill= time), alpha= 0, method= "lm")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)
+
+data %>% ggplot(aes(x= time, y= evenness, color= treatment, group= treatment)) +
+  geom_point()+
+  scale_color_manual(values= treat.colors)+
+  theme_classic2()+
+  geom_smooth(aes(color= treatment), alpha= 0, method= "lm")
+
+```
+
+### Richness
+
+```{r richness, include=TRUE}
+data <- sample_data(zotu97.rar)
+
+data %>% ggplot(aes(x= treatment, y= richness, color= time)) +
+  geom_point()+
+  scale_color_manual(values= time.colors)+
+  facet_wrap(~time)+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)
+
+data %>% ggplot(aes(x= factor(time), y= richness, color= treatment, group = 1)) +
+  geom_point()+
+  scale_color_manual(values= treat.colors)+
+  geom_smooth(aes(col= treatment), method = "lm", se = FALSE, size = 1) + 
+  facet_wrap(~treatment)+
+  theme_classic2()
+
+data %>% ggplot(aes(x= treatment, y= richness, color= time, group= time)) +
+  geom_point()+
+  scale_color_manual(values= time.colors)+
+  scale_fill_manual(values= time.colors)+
+  geom_smooth(aes(color= time, fill= time), alpha= 0, method= "lm")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)
+
+data %>% ggplot(aes(x= time, y= richness, color= treatment, group= treatment)) +
+  geom_point()+
+  scale_color_manual(values= treat.colors)+
+  theme_classic2()+
+  geom_smooth(aes(color= treatment), alpha= 0, method= "lm")
 ```
