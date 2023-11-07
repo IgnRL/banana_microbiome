@@ -31,6 +31,10 @@ library(geomtextpath)
 ```{r colors and order, include=FALSE}
 treat.colors <- c("control"= "green4" ,"control_amf"  = "darkseagreen" , "chicken"= "royalblue1", "cow" = "red3","pellet"= "darkorchid1","compost"="chocolate4","control_legumes"="darkolivegreen4")
 time.colors <- c("T0"="#66c2a5", "T1"="#fc8d62", "T2"="#8da0cb", "T3"="#e78ac3", "T4"="#a6d854", "T5"="#ffd92f")
+time.colors <- c("T0"="#BFD3E6", "T1"="#9ECAE1", "T2"="#6BAED6", "T3"="#4292C6", "T4"="#2171B5", "T5"="#08519C")
+ time.colors <- c("#BFD3E6", "#9ECAE1", "#6BAED6", "#4292C6", "#2171B5", "#08519C")
+
+
 
 
 treat.order <- c('control', 'control_amf', 'control_legumes', "compost", "chicken", "cow", "pellet") 
@@ -66,7 +70,7 @@ num_unknown <- unknown_seqs %>% dplyr::count() %>% as.vector()
 The dataset contains `r numFungi` sequences that belong to the Fungi Kingdom and `r notFungi` sequences that are not Fungi but Rhizaria (Phylum Cercozoa)
 
 
-```{r Phyla with NA , echo=FALSE, warning=FALSE, message= FALSE}
+```{r Phyla with NA , echo=FALSE}
 
 dat_merge_all_tax <- tax_glom(physeq = zotu97, "Phylum", NArm = FALSE)
 molten_dat_all_merge <- psmelt(dat_merge_all_tax)
@@ -80,9 +84,10 @@ p_phyla_NA <- ggplot(molten_dat_all_merge,
   #theme(axis.text.x=element_blank(), axis.title.x=element_blank())+
   theme(legend.position="bottom")
 p_phyla_NA
+ggsave(p_phyla_NA, file= "ITS_results/phyla_NA.png")
 ```
 
-```{r, Phyla without NA}
+```{r, Phyla without NA, echo= FALSE}
 dat_merge_all_tax <- tax_glom(physeq = zotu97, "Phylum", NArm = TRUE)
 molten_dat_all_merge <- psmelt(dat_merge_all_tax)
 p_phyla <- ggplot(molten_dat_all_merge, 
@@ -95,7 +100,11 @@ p_phyla <- ggplot(molten_dat_all_merge,
   #theme(axis.text.x=element_blank(), axis.title.x=element_blank())+
   theme(legend.position="bottom")
 p_phyla
+ggsave(p_phyla, file= "ITS_results/phyla.png")
 ```
+
+![](ITS_results/phyla_NA.png)
+![](ITS_results/phyla.png)
 
 
 ```{r Sequencing depth z97 , include=FALSE}
@@ -256,28 +265,29 @@ zotu97.rar
 
 ### Shanon
 
-```{r shannon, include= TRUE}
+```{r shannon}
 data <- sample_data(zotu97.rar)
 
 
 
-shannon_treat_facet <- data %>% ggplot(aes(x= treatment, y= shannon, color= time)) +
+shannon_treat_facet <- data %>% ggplot(aes(x= factor(treatment, level= treat.order), y= shannon, color= time)) +
   geom_point()+
   scale_color_manual(values= time.colors)+
   facet_wrap(~time)+
   theme_classic2()+
   scale_x_discrete(labels= treat.labels) 
-
+shannon_treat_facet
 ggsave(shannon_treat_facet, file= "ITS_results/shannon_treat_facet.png", width = 4000, unit= "px")
 
 
-shannon_time_facet <- data %>% ggplot(aes(x= factor(time), y= shannon, color= treatment, group = 1)) +
+shannon_time_facet <- data %>% ggplot(aes(x= time, y= shannon, color= treatment, group = 1)) +
   geom_point()+
   scale_color_manual(values= treat.colors)+
   geom_smooth(aes(col= treatment), method = "lm", se = FALSE, size = 1) + 
-  facet_wrap(~treatment)+
+  facet_wrap(~factor(treatment, level= treat.order))+
   theme_classic2()
 ggsave(shannon_time_facet, file= "ITS_results/shannon_time_facet.png", width = 3000, unit= "px")
+shannon_time_facet
 
 data %>% ggplot(aes(x= treatment, y= shannon, color= time, group= time)) +
   geom_point()+
@@ -294,9 +304,12 @@ data %>% ggplot(aes(x= time, y= shannon, color= treatment)) +
   theme_classic2()
 ```
 
+![](ITS_results/shannon_treat_facet.png)
+![](ITS_results/shannon_time_facet.png)
+
 ### Evenness
 
-```{r evenness, include=TRUE}
+```{r evenness}
 data <- sample_data(zotu97.rar)
 
 evenness_treat_facet <- data %>% ggplot(aes(x= treatment, y= evenness, color= time)) +
@@ -306,15 +319,16 @@ evenness_treat_facet <- data %>% ggplot(aes(x= treatment, y= evenness, color= ti
   theme_classic2()+
   scale_x_discrete(labels= treat.labels)
 ggsave(evenness_treat_facet, file= "ITS_results/evenness_treat_facet.png", width = 4000, unit= "px")
+evenness_treat_facet
 
-evenness_time_facet <- data %>% ggplot(aes(x= factor(time), y= evenness, color= treatment, group = 1)) +
+evenness_time_facet <- data %>% ggplot(aes(x= time, y= evenness, color= treatment, group = 1)) +
   geom_point()+
   scale_color_manual(values= treat.colors)+
   geom_smooth(aes(col= treatment), method = "lm", se = FALSE, size = 1) + 
-  facet_wrap(~treatment)+
+  facet_wrap(~factor(treatment, level= treat.order))+
   theme_classic2()
 ggsave(evenness_time_facet, file= "ITS_results/evenness_time_facet.png", width = 3000, unit= "px")
-
+evenness_time_facet
 
 data %>% ggplot(aes(x= treatment, y= evenness, color= time, group= time)) +
   geom_point()+
@@ -332,24 +346,31 @@ data %>% ggplot(aes(x= time, y= evenness, color= treatment, group= treatment)) +
 
 ```
 
+![](ITS_results/evenness_treat_facet.png)
+![](ITS_results/evenness_time_facet.png)
+
 ### Richness
 
-```{r richness, include=TRUE}
+```{r richness}
 data <- sample_data(zotu97.rar)
 
-data %>% ggplot(aes(x= treatment, y= richness, color= time)) +
+richness_treat_facet <- data %>% ggplot(aes(x= treatment, y= richness, color= time)) +
   geom_point()+
   scale_color_manual(values= time.colors)+
   facet_wrap(~time)+
   theme_classic2()+
   scale_x_discrete(labels= treat.labels)
 
-data %>% ggplot(aes(x= factor(time), y= richness, color= treatment, group = 1)) +
+ggsave(richness_treat_facet, file= "ITS_results/richness_treat_facet.png", width = 4000, unit= "px")
+
+richness_time_facet <- data %>% ggplot(aes(x=time, y= richness, color= treatment, group = 1)) +
   geom_point()+
   scale_color_manual(values= treat.colors)+
   geom_smooth(aes(col= treatment), method = "lm", se = FALSE, size = 1) + 
-  facet_wrap(~treatment)+
+  facet_wrap(~factor(treatment, level= treat.order))+
   theme_classic2()
+richness_time_facet
+ggsave(richness_time_facet, file= "ITS_results/richness_time_facet.png", width = 3000, unit= "px")
 
 data %>% ggplot(aes(x= treatment, y= richness, color= time, group= time)) +
   geom_point()+
@@ -365,3 +386,9 @@ data %>% ggplot(aes(x= time, y= richness, color= treatment, group= treatment)) +
   theme_classic2()+
   geom_smooth(aes(color= treatment), alpha= 0, method= "lm")
 ```
+
+![](ITS_results/richness_treat_facet.png)
+
+
+![](ITS_results/richness_time_facet.png)
+Missing stats
