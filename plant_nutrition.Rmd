@@ -1,0 +1,96 @@
+---
+title: "plant_nutrition"
+author: "Raquel Correa"
+date: "2023-11-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+library(ggplot2)
+library(tidyverse)
+library(ggpubr)
+library(gridExtra)
+library(corrplot)
+library(agricolae)
+library(emmeans)
+library(multcomp)
+library(multcompView)
+library(data.table)
+library(tidyverse)
+library(phyloseq)
+library(vegan)
+library(ape)
+library(here)
+library(readxl)
+library(ggpubr)
+library(geomtextpath)
+library(knitr)
+library(gridExtra)
+library(Biostrings)
+library(seqinr)
+library(FSA)
+library(agricolae)
+library(MASS)
+library(grid)
+library(gridExtra)
+library(emmeans)
+library(multcomp)
+library(broom)
+library(viridis)
+library(ALDEx2)
+library(FactoMineR)
+library(factoextra)
+library(kableExtra)
+library(scales)
+library(dunn.test)
+library(car)
+library(corrplot)
+library(eulerr)
+library(ggforce)
+library(ggrepel)
+library(rstatix)
+library(AICcmodavg)
+library(ggthemes)
+
+```
+
+
+```{r colors, include=FALSE}
+treat.colors <- c("control"= "green4" ,"control.amf"  = "darkseagreen" , "chicken.manure"= "royalblue1", "cow.manure" = "red3","mo.pellet"= "darkorchid1","compost"="chocolate4","control.legumes"="darkolivegreen4")
+treat.colors
+treat.order <- c('control', 'control.amf', 'control.legume', "compost", "chicken.manure", "cow.manure", "mo.pellet") 
+treat.labels <- c("Control", "Control\nAMF", "Control\nLegume", "Compost", "Chicken\nmanure", "Cow\nmanure", "Pellet")
+```
+
+
+## Parameters related to plant nutrition 
+
+
+
+
+```{r stast, include= false}
+plant_nutrition <- readxl::read_excel("C:/Users/raquel.correa/Documents/banana_microbiome/raw_files/plant_nutricion.xlsx")
+
+plant_nutrition_mean <- plant_nutrition %>% group_by(treatment) %>% 
+  summarise(across(.cols=everything(),.fns=list(mean = mean, sd = sd)),.groups = "drop")
+plant_nutrition_mean
+
+```
+
+```{rCorrelogram, echo=FALSE}
+plant_nutrition_cor <- plant_nutrition
+
+plant_nutrition_cor$treatment <- NULL
+
+plant_cor_matrix <- plant_nutrition_cor %>% cor()
+plant_cor_matrix
+
+plant_cor_mat_test <- cor.mtest(plant_cor_matrix)
+
+corrplot(plant_cor_matrix, p.mat=plant_cor_mat_test$p, sig.level = 0.05, order= "hclust", type= "upper", method= "number", insig = "pch", pch=4,number.cex = 0.75)
+
+
+```
+
+
