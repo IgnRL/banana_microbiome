@@ -204,6 +204,13 @@ figure_title <- annotate_figure(figureall,
 
 grid.draw(figure_title)
 
+ggsave(figure_title, file="soil_parameters_result/soilproperties_time.png", width= 1900,height= 1200, units= "px")
+
+figureall2.2 <- grid.arrange(org.mat.plotsd, phosp.plotsd, pH_water.plotsd, potassium.plotsd)
+figureall2.3 <- grid.arrange(sodium.plotsd,calcium.plotsd, nitrogen.plotsd, conductivity.plotsd)
+
+ggsave(figureall2.2, file="soil_parameters_result/soilproperties_time2_2.png", width= 1900,height= 1200, units= "px")
+ggsave(figureall2.3, file="soil_parameters_result/soilproperties_time2_3.png", width= 1900,height= 1200, units= "px")
 ```
 
 ### Analisis estadistico.
@@ -220,7 +227,8 @@ cor.matrix <- soil_prop_cor %>% cor()
 
 cor.mat.test <- cor.mtest(cor.matrix)
 
-corrplot(cor.matrix, p.mat=cor.mat.test$p, sig.level = 0.05, order= "hclust", type= "upper", method= "number", insig = "pch", pch=4,number.cex = 0.75)
+correlation <- corrplot(cor.matrix, p.mat=cor.mat.test$p, sig.level = 0.05, order= "hclust", type= "upper", method= "number", insig = "pch", pch=4,number.cex = 0.75)
+
 ```
 
 The most interesing variables seem to be pH.water, organic matter, conductivity and NPKCa values. The rest could be omitted. 
@@ -272,6 +280,7 @@ plot_orgmatter_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.ord
   labs(title = "Differences in the percentage of oxidizable organic matter T0.", 
        subtitle = "Three measures of each treatment", caption = "Anova p-value: 2.5e-13 (HSDTukey)", size = 10 )
 plot_orgmatter_t0
+ggsave(plot_orgmatter_t0, file="soil_parameters_result/org_matter_t0.png", width= 1900,height= 1200, units= "px")
 
 ```
 
@@ -299,7 +308,7 @@ plot_phosphorus_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.or
             colour="black", nudge_x= 0.2, nudge_y= 3)+
   labs(title = "Differences in phosphorus T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: 0.000186 (HSDTukey)" )
 plot_phosphorus_t0
-
+ggsave(plot_phosphorus_t0, file="soil_parameters_result/phosphorus_t0.png", width= 1900,height= 1200, units= "px")
 ```
 
 ```{r ph water stast, echo=FALSE}
@@ -329,7 +338,7 @@ plot_phwater_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order
   labs(title = "Differences in pH water udes. T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: 4.21e-07 (HSDTukey)" )
 
 plot_phwater_t0
-
+ggsave(plot_phwater_t0, file="soil_parameters_result/phwater_t0.png", width= 1900,height= 1200, units= "px")
 ```
 
 ```{r conductivity stats, echo=FALSE}
@@ -356,7 +365,7 @@ plot_conduc_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order)
             colour="black", nudge_x= 0.2, nudge_y= 0.05)+
   labs(title = "Differences in conductivity. T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: 1.89e-07 (HSDTukey)" )
 plot_conduc_t0
-
+ggsave(plot_conduc_t0, file="soil_parameters_result/conduc_t0.png", width= 1900,height= 1200, units= "px")
 ```
 
 
@@ -384,7 +393,7 @@ plot_calcium_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order
             colour="black", nudge_x= 0.2, nudge_y= 0.05)+
   labs(title = "Differences in calcium T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: 3.5e-06 (HSDTukey)" )
 plot_calcium_t0
-
+ggsave(plot_calcium_t0, file="soil_parameters_result/calcium_t0.png", width= 1900,height= 1200, units= "px")
 
 ```
 
@@ -412,7 +421,7 @@ plot_sodium_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order)
             colour="black", nudge_x= 0.2, nudge_y= 0.2)+
   labs(title = "Differences in sodium T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: ns (HSDTukey)" )
 plot_sodium_t0
-
+ggsave(plot_sodium_t0, file="soil_parameters_result/sodium_t0.png", width= 1900,height= 1200, units= "px")
 ```
 
 ```{r stats potassium, echo=FALSE}
@@ -439,7 +448,7 @@ plot_potassium_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.ord
   labs(title = "Differences in potassium T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: 1.16e-05 (HSDTukey)" )
 
 plot_potassium_t0
-
+ggsave(plot_potassium_t0, file="soil_parameters_result/potassium_t0.png", width= 1900,height= 1200, units= "px")
 
 ```
 
@@ -470,7 +479,9 @@ plot_nitrogen_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.orde
   labs(title = "Differences in nitrogen T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: 3.65e-09 (HSDTukey)" )
 
 plot_nitrogen_t0
+ggsave(plot_nitrogen_t0, file="soil_parameters_result/nitrogen_t0.png", width= 1900,height= 1200, units= "px")
 
+ggsave(plot_nitrogen_t0, file="prueba/nitrogen_t0.png", width= 1900,height= 1200, units= "px")
 
 ```
 
