@@ -98,6 +98,8 @@ basal_plotsd <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, col= trea
   theme(plot.title = element_text(size=12))
 basal_plotsd
 
+ggsave(basal_plotsd, file="soil_respiration_result/basal_duringtime.png", width= 1900,height= 1200, units= "px")
+
 induced_plotsd <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, col= treatment, y=mg_co_induced_mean))+
   geom_line(linewidth=1)+
   theme_classic2()+
@@ -109,7 +111,7 @@ induced_plotsd <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, col= tr
   labs(title = "Induced respiration.", subtitle = "", caption="Mean and SD")+
   theme(plot.title = element_text(size=12))
 induced_plotsd
-
+ggsave(induced_plotsd, file="soil _respiration_result/induced_duringtime.png", width= 1900,height= 1200, units= "px")
 
 respirationplot <- ggarrange (basal_plotsd, induced_plotsd,
                               common.legend = TRUE, legend = "bottom", 
@@ -117,6 +119,7 @@ respirationplot <- ggarrange (basal_plotsd, induced_plotsd,
                               font.label = list (size = 10, color= "black"))
 
 respirationplot
+ggsave(respirationplot, file="soil_respiration_result/respiration_duringtime.png", width= 1900,height= 1200, units= "px")
 
 respiration_inducedplot2 <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, fill= treatment, y=mg_co_induced_mean))+
   geom_col(aes(fill= treatment), position= "dodge")+
@@ -139,6 +142,7 @@ respiration_columplot <- ggarrange (respiration_basdalplot2, respiration_induced
                               labels = c("A", "B"), 
                               font.label = list (size = 10, color= "black"))
 respiration_columplot
+ggsave(respiration_columplot, file="soil_respiration_result/respirationcolum_duringtime.png", width= 1900,height= 1200, units= "px")
 
 ```
 
@@ -172,6 +176,7 @@ plot_basal_t0 <- respirationt0 %>% ggplot(aes(x= factor(treatment, level= treat.
   scale_x_discrete(labels= treat.labels)+
   theme_classic2()
 plot_basal_t0
+ggsave(plot_basal_t0, file="soil_respiration_result/dif_basal_t0.png", width= 1900,height= 1200, units= "px")
 
 #analized induced
 shapiro.test(respirationt0$mg_co_induced)#data induced no normal
@@ -198,14 +203,14 @@ plot_induced_t0 <- respirationt0 %>% ggplot(aes(x= factor(treatment, level= trea
   scale_x_discrete(labels= treat.labels)+
   theme_classic2()
 plot_induced_t0
-
+ggsave(plot_induced_t0, file="soil_respiration_result/dif_induced_t0.png", width= 1900,height= 1200, units= "px")
 basal_induced_t0 <- ggarrange(plot_basal_t0,plot_induced_t0,
                               ncol=2,
                               common.legend = TRUE, legend = "none", 
                               labels = c("A", "B"),
                               font.label = list (size = 10, color= "black"))
 basal_induced_t0
-
+ggsave(basal_induced_t0, file="soil_respiration_result/dif_basal_induced_t0.png", width= 1900,height= 1200, units= "px")
 ```
 
 ### Differences of respiration between treatments at T1
@@ -239,7 +244,7 @@ plot_basal_t1 <- respirationt1 %>% ggplot(aes(x= factor(treatment, level= treat.
   scale_x_discrete(labels= treat.labels)+
   theme_classic2()
 plot_basal_t1
-
+ggsave(plot_basal_t1, file="soil_respiration_result/dif_basal_t1.png", width= 1900,height= 1200, units= "px")
 #analized induced
 shapiro.test(respirationt1$mg_co_induced)#data induced no normal
 soil_resp %>% group_by(treatment) %>% shapiro_test(mg_co_induced) #all data of each time of induced are normal
@@ -265,14 +270,14 @@ plot_induced_t1 <- respirationt1 %>% ggplot(aes(x= factor(treatment, level= trea
   scale_x_discrete(labels= treat.labels)+
   theme_classic2()
 plot_induced_t1
-
+ggsave(plot_induced_t1, file="soil_respiration_result/dif_induced_t1.png", width= 1900,height= 1200, units= "px")
 basal_induced_t1 <- ggarrange(plot_basal_t1,plot_induced_t1,
                               ncol=2,
                               common.legend = TRUE, legend = "none", 
                               labels = c("A", "B"), 
                               font.label = list (size = 10, color= "black"))
 basal_induced_t1
-
+ggsave(basal_induced_t1, file="soil_respiration_result/dif_basal_induced_t1.png", width= 1900,height= 1200, units= "px")
 ```
 
 ### Differences of respiration between treatments at T2
@@ -306,6 +311,7 @@ plot_basal_t2 <- respirationt2 %>% ggplot(aes(x= factor(treatment, level= treat.
   scale_x_discrete(labels= treat.labels)+
   theme_classic2()
 plot_basal_t2
+ggsave(plot_basal_t2, file="soil_respiration_result/dif_basal_t2.png", width= 1900,height= 1200, units= "px")
 
 #analized induced
 shapiro.test(respirationt2$mg_co_induced)#data induced no normal
@@ -332,14 +338,14 @@ plot_induced_t2 <- respirationt2 %>% ggplot(aes(x= factor(treatment, level= trea
   scale_x_discrete(labels= treat.labels)+
   theme_classic2()
 plot_induced_t2
-
+ggsave(plot_induced_t2, file="soil_respiration_result/dif_induced_t2.png", width= 1900,height= 1200, units= "px")
 basal_induced_t2 <- ggarrange(plot_basal_t2,plot_induced_t2,
                               ncol=2,
                               common.legend = TRUE, legend = "none", 
                               labels = c("A", "B"), 
                               font.label = list (size = 10, color= "black"))
 basal_induced_t2
-
+ggsave(basal_induced_t2, file="soil_respiration_result/dif_basal_induced_t2.png", width= 1900,height= 1200, units= "px")
 ```
 
 ### Differences of respiration between treatments at T3
@@ -371,7 +377,7 @@ plot_basal_t3 <- respirationt3 %>% ggplot(aes(x= factor(treatment, level= treat.
   scale_x_discrete(labels= treat.labels)+
   theme_classic2()
 plot_basal_t3
-
+ggsave(plot_basal_t3, file="soil_respiration_result/dif_basal_t3.png", width= 1900,height= 1200, units= "px")
 #analized induced
 shapiro.test(respirationt3$mg_co_induced)#data induced no normal
 soil_resp %>% group_by(treatment) %>% shapiro_test(mg_co_induced) #all data of each time of induced are normal
@@ -397,13 +403,14 @@ plot_induced_t3 <- respirationt3 %>% ggplot(aes(x= factor(treatment, level= trea
   scale_x_discrete(labels= treat.labels)+
   theme_classic2()
 plot_induced_t3
-
+ggsave(plot_induced_t3, file="soil_respiration_result/dif_induced_t3.png", width= 1900,height= 1200, units= "px")
 basal_induced_t3 <- ggarrange(plot_basal_t3,plot_induced_t3,
                               ncol=2,
                               common.legend = TRUE, legend = "none", 
                               labels = c("A", "B"), 
                               font.label = list (size = 10, color= "black"))
 basal_induced_t3
+ggsave(basal_induced_t3, file="soil_respiration_result/dif_basal_induced_t3.png", width= 1900,height= 1200, units= "px")
 ```
 
 
@@ -437,6 +444,7 @@ plot_basal_t4 <- respirationt4 %>% ggplot(aes(x= factor(treatment, level= treat.
   scale_x_discrete(labels= treat.labels)+
   theme_classic2()
 plot_basal_t4
+ggsave(plot_basal_t4, file="soil_respiration_result/dif_basal_t4.png", width= 1900,height= 1200, units= "px")
 
 #analized induced
 shapiro.test(respirationt4$mg_co_induced)#data induced no normal
@@ -463,15 +471,26 @@ plot_induced_t4 <- respirationt4 %>% ggplot(aes(x= factor(treatment, level= trea
   scale_x_discrete(labels= treat.labels)+
   theme_classic2()
 plot_induced_t4
-
+ggsave(plot_induced_t4, file="soil_respiration_result/dif_induced_t4.png", width= 1900,height= 1200, units= "px")
 basal_induced_t4 <- ggarrange(plot_basal_t4,plot_induced_t4,
                               ncol=2,
                               common.legend = TRUE, legend = "none", 
                               labels = c("A", "B"), 
                               font.label = list (size = 10, color= "black"))
 basal_induced_t4
+ggsave(basal_induced_t4, file="soil_respiration_result/dif_basal_induced_t4.png", width= 1900,height= 1200, units= "px")
 
 ```
+
+```{r resume, echo=FALSE}
+
+respiration_basal_all <- grid.arrange(plot_basal_t0, plot_basal_t1, plot_basal_t2, plot_basal_t3, plot_basal_t4)
+ggsave(respiration_basal_all, file="soil_respiration_result/respiration_basal_all.png", width= 1900,height= 1200, units= "px")
+
+respiration_induced_all <- grid.arrange(plot_induced_t0, plot_induced_t1, plot_induced_t2, plot_induced_t3, plot_induced_t4)
+ggsave(respiration_induced_all, file="soil_respiration_result/respiration_induced_all.png", width= 1900,height= 1200, units= "px")
+```
+
 
 ### How much has the respiration of each treatment varied from the beginning of the experiment to the end (T4 and tT0)?
 
@@ -562,7 +581,7 @@ basal_t0t4plot <- annotate_figure(basal_t0t4plot,
 
 basal_t0t4plot
 
-
+ggsave(basal_t0t4plot, file="soil_respiration_result/interac_basal_t4.png", width= 1900,height= 1200, units= "px")
 
 #induced
 shapiro.test(respirationt0t4$mg_co_induced)# no normal data, but all data of each time of induced are normal
@@ -655,6 +674,7 @@ induced_t0t4plot <- annotate_figure(induced_t0t4plot,
                                   bottom = text_grob("Interaction and variation between beginning and end of the experiment", size=10))
 
 induced_t0t4plot
+ggsave(induced_t0t4plot, file="soil_respiration_result/interac_induced_t4.png", width= 1900,height= 1200, units= "px")
 
 ```
 
