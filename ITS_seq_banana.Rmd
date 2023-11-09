@@ -354,9 +354,9 @@ data %>% ggplot(aes(x= time, y= evenness, color= treatment, group= treatment)) +
 ```{r richness}
 data <- sample_data(zotu97.rar)
 
-richness_treat_facet <- data %>% ggplot(aes(x= treatment, y= richness, color= time)) +
+richness_treat_facet <- data %>% ggplot(aes(x= factor(treatment, level= treat.order), y= richness, color= treatment)) +
   geom_point()+
-  scale_color_manual(values= time.colors)+
+  scale_color_manual(values= treat.colors)+
   facet_wrap(~time)+
   theme_classic2()+
   scale_x_discrete(labels= treat.labels)
