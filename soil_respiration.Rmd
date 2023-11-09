@@ -111,7 +111,7 @@ induced_plotsd <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, col= tr
   labs(title = "Induced respiration.", subtitle = "", caption="Mean and SD")+
   theme(plot.title = element_text(size=12))
 induced_plotsd
-ggsave(induced_plotsd, file="soil _respiration_result/induced_duringtime.png", width= 1900,height= 1200, units= "px")
+ggsave(induced_plotsd, file="soil_respiration_result/induced_duringtime.png", width= 1900,height= 1200, units= "px")
 
 respirationplot <- ggarrange (basal_plotsd, induced_plotsd,
                               common.legend = TRUE, legend = "bottom", 
