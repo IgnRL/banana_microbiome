@@ -51,7 +51,9 @@ library(ggrepel)
 library(rstatix)
 library(AICcmodavg)
 library(ggthemes)
-
+library(patchwork)
+library(egg)
+library(cowplot)
 ```
 
 
@@ -79,47 +81,54 @@ One way to measure the microbial community of a soil is respiration. Check how m
 
 A) Basal respiration: The falcon tubes (50 ml), with the original soil samples, were placed in jars with
 hermetic closure. The evaluation of respiration (CO2 production) was carried out by titration of the
-sodium hydroxide (0.5 M) with hydrochloric acid (0.5 M) once the sample has been incubated for 7 days at 25ºC.
+sodium hydroxide (0.5 M) with hydrochloric acid (0.5 M) once the sample has been incubated for 7 days at 25ºC. Basal respiration provides an indication of the microbial activity supported by the organic matter present in the soil. It reflects the metabolism of microorganisms utilizing the existing organic carbon pool.
 
 
 B) Induced respiration: Induced respiration was carried out once basal respiration had been evaluated (that is, on the same samples). A solution is added of 20% sterile glucose (0.5 ml/sample). Subsequently, the samples were incubated at 25ºC for
-2.5 days and the sodium hydroxide (0.5 M) was titrated with hydrochloric acid (0.5 M).
+2.5 days and the sodium hydroxide (0.5 M) was titrated with hydrochloric acid (0.5 M).Induced respiration provides insights into the potential microbial activity that can be activated in response to changes in the availability of easily degradable carbon sources. It helps researchers understand how the microbial community responds to specific inputs or disturbances.
+
+
+The results of basal respiration and induced respiration in the same soil sample can be different. These two measurements capture different aspects of microbial activity and provide complementary information about the soil's response to different conditions.
+
+-Basal Respiration:
+
+Reflects the baseline or inherent microbial activity in the soil under normal, undisturbed conditions.
+Represents the ongoing metabolism of microorganisms utilizing the existing organic carbon pool in the soil.
+Typically measured without the addition of external carbon sources or specific disturbances.
+
+-Induced Respiration:
+
+Reflects the additional microbial activity that can be stimulated by external factors or disturbances.
+Involves the addition of a substrate (e.g., glucose) or other stimuli to induce a response from the microbial community.
+Provides insights into the potential for increased microbial activity when additional carbon sources are made available
 
 ```{r over the time, echo=FALSE}
 basal_plotsd <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, col= treatment, y=mg_co_basal_mean))+
-  geom_line(linewidth=1)+
-  theme_classic2()+
+  geom_line(linewidth=1.1)+
   xlab("Time")+
   ylab("mg C-CO2/kg dry soil")+
   scale_color_manual(values= treat.colors)+
-  geom_point()+
+  geom_point(size =2)+
+  theme_minimal()+
   geom_errorbar(aes(ymin=mg_co_basal_mean-mg_co_basal_sd,   ymax=mg_co_basal_mean+mg_co_basal_sd), size =0.5, width=0.2)+
-  labs(title = "Basal respiration.", subtitle = "", caption="Mean and SD")+
+  labs(title = "Basal respiration over the time.", subtitle = "", caption="Mean and SD")+
   theme(plot.title = element_text(size=12))
 basal_plotsd
 
 ggsave(basal_plotsd, file="soil_respiration_result/basal_duringtime.png", width= 1900,height= 1200, units= "px")
 
 induced_plotsd <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, col= treatment, y=mg_co_induced_mean))+
-  geom_line(linewidth=1)+
-  theme_classic2()+
+  geom_line(linewidth=1.1)+
+  theme_minimal()+
   xlab("Time")+
   ylab("mg C-CO2/kg dry soil")+
   scale_color_manual(values= treat.colors)+
-  geom_point()+
+  geom_point(size=2)+
   geom_errorbar(aes(ymin=mg_co_induced_mean-mg_co_induced_sd,   ymax=mg_co_induced_mean+mg_co_induced_sd), width=0.2)+
-  labs(title = "Induced respiration.", subtitle = "", caption="Mean and SD")+
+  labs(title = "Induced respiration over the time.", subtitle = "", caption="Mean and SD")+
   theme(plot.title = element_text(size=12))
 induced_plotsd
 ggsave(induced_plotsd, file="soil_respiration_result/induced_duringtime.png", width= 1900,height= 1200, units= "px")
-
-respirationplot <- ggarrange (basal_plotsd, induced_plotsd,
-                              common.legend = TRUE, legend = "bottom", 
-                              labels = c("A", "B"), 
-                              font.label = list (size = 10, color= "black"))
-
-respirationplot
-ggsave(respirationplot, file="soil_respiration_result/respiration_duringtime.png", width= 1900,height= 1200, units= "px")
 
 respiration_inducedplot2 <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, fill= treatment, y=mg_co_induced_mean))+
   geom_col(aes(fill= treatment), position= "dodge")+
@@ -136,17 +145,10 @@ respiration_basdalplot2 <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment
   theme_classic()
 respiration_basdalplot2
 
-
-respiration_columplot <- ggarrange (respiration_basdalplot2, respiration_inducedplot2,
-                              common.legend = TRUE, legend = "bottom", 
-                              labels = c("A", "B"), 
-                              font.label = list (size = 10, color= "black"))
-respiration_columplot
-ggsave(respiration_columplot, file="soil_respiration_result/respirationcolum_duringtime.png", width= 1900,height= 1200, units= "px")
-
 ```
 
 ### Differences of respiration between treatments at the start of the experiment (t0)
+
 
 ```{r respiration basal and induced t0, echo=FALSE}
 
@@ -155,9 +157,13 @@ respirationt0 <- subset(soil_resp, soil_resp$time == "t0")
 shapiro.test(respirationt0$mg_co_basal)#data basal normal
 leveneTest(mg_co_basal~ treatment, data=respirationt0) #equal Variance 
 
-anova_basalt0 <- aov(mg_co_basal ~ treatment, data=respirationt0) #signification different 
-summary(anova_basalt0)
-tukey_basalt0 <- HSD.test(anova_basalt0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+anova_basalt0 <- aov(mg_co_basal ~ treatment + rep, data=respirationt0) #signification different anova two ways
+anova_basalt0 <- summary(aov(mg_co_basal ~ treatment + rep, data=respirationt0))
+
+pvalue_anova_basalt0 <- anova_basalt0[[1]][["Pr(>F)"]][1] #se tiene que sacar del summary el p-value
+
+tukey_basalt0 <- HSD.test(aov(mg_co_basal ~ treatment + rep, data=respirationt0), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+
 tukey_basalt0
 
 meanbasalt0 <- aggregate(mg_co_basal ~ treatment, data=respirationt0, FUN= mean)
@@ -165,15 +171,16 @@ meanbasalt0 <- aggregate(mg_co_basal ~ treatment, data=respirationt0, FUN= mean)
 plot_basal_t0 <- respirationt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= mg_co_basal, col=treatment, group=treatment))+
   geom_point(size=9)+
   scale_color_manual(values= treat.colors)+
-  xlab("Treatments")+
+  xlab("")+
   ylab("mg C-CO2/kg dry soil")+#basal
   stat_summary(fun=mean, aes(x= treatment, y = mg_co_basal),
                geom= "crossbar", colour= "black", width= 0.7, data=meanbasalt0)+
   geom_text(data=tukey_basalt0, aes(x=treatment, y = mg_co_basal, label= groups), 
             size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 0.6)+
-  labs(title = "Basal respiration at T0.", subtitle = "" , caption = "HSDTukey p-value")+
+  labs(subtitle = "" , caption = "Different letters indicate statistically significant differences between each treatment at T0.\nCrossbar indicate the average of the three samples ")+
   theme(plot.title = element_text(size=1))+
   scale_x_discrete(labels= treat.labels)+
+  ggtitle("Basal respiration at T0", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_anova_basalt0, scientific= TRUE, digits=2 ), sep= ""))+
   theme_classic2()
 plot_basal_t0
 ggsave(plot_basal_t0, file="soil_respiration_result/dif_basal_t0.png", width= 1900,height= 1200, units= "px")
@@ -182,9 +189,13 @@ ggsave(plot_basal_t0, file="soil_respiration_result/dif_basal_t0.png", width= 19
 shapiro.test(respirationt0$mg_co_induced)#data induced no normal
 soil_resp %>% group_by(treatment) %>% shapiro_test(mg_co_induced) #all data of each time of induced are normal
 leveneTest(mg_co_induced~ treatment, data=respirationt0) #equal variance
-anova_inducedt0 <- aov(mg_co_induced ~ treatment, data=respirationt0) #signification different 
-summary(anova_inducedt0)
-tukey_inducedt0 <- HSD.test(anova_inducedt0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+anova_inducedt0 <- aov(mg_co_induced ~ treatment +rep, data=respirationt0) #signification different 
+anova_inducedt0 <- summary(aov(mg_co_induced ~ treatment +rep, data=respirationt0))
+
+
+pvalue_anova_inducedt0 <- anova_inducedt0[[1]][["Pr(>F)"]][1]
+
+tukey_inducedt0 <- HSD.test(aov(mg_co_induced ~ treatment +rep, data=respirationt0), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 tukey_inducedt0
 
 meaninducedt0 <- aggregate(mg_co_induced ~ treatment, data=respirationt0, FUN= mean)
@@ -192,26 +203,21 @@ meaninducedt0 <- aggregate(mg_co_induced ~ treatment, data=respirationt0, FUN= m
 plot_induced_t0 <- respirationt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= mg_co_induced, col=treatment, group=treatment))+
   geom_point(size=9)+
   scale_color_manual(values= treat.colors)+
-  xlab("Treatments")+
+  xlab("")+
   ylab("mg C-CO2/kg dry soil")+#induced
   stat_summary(fun=mean, aes(x= treatment, y = mg_co_induced),
                geom= "crossbar", colour= "black", width= 0.7, data=meaninducedt0)+
   geom_text(data=tukey_inducedt0, aes(x=treatment, y = mg_co_induced, label= groups), 
             size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 4.5)+
-  labs(title = "Induced respiration at T0.", subtitle = "" , caption = "HSDTukey p-value")+
+  labs(subtitle = "" , caption = "Different letters indicate statistically significant differences between each treatment at T0.\nCrossbar indicate the average of the three samples ")+
   theme(plot.title = element_text(size=1))+
+  ggtitle("Induced respiration at T0", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_anova_inducedt0, scientific= TRUE, digits=2 ), sep= ""))+
   scale_x_discrete(labels= treat.labels)+
   theme_classic2()
 plot_induced_t0
-ggsave(plot_induced_t0, file="soil_respiration_result/dif_induced_t0.png", width= 1900,height= 1200, units= "px")
-basal_induced_t0 <- ggarrange(plot_basal_t0,plot_induced_t0,
-                              ncol=2,
-                              common.legend = TRUE, legend = "none", 
-                              labels = c("A", "B"),
-                              font.label = list (size = 10, color= "black"))
-basal_induced_t0
-ggsave(basal_induced_t0, file="soil_respiration_result/dif_basal_induced_t0.png", width= 1900,height= 1200, units= "px")
+
 ```
+
 
 ### Differences of respiration between treatments at T1
 
@@ -223,9 +229,11 @@ respirationt1 <- subset(soil_resp, soil_resp$time == "t1")
 shapiro.test(respirationt1$mg_co_basal)#data basal normal
 leveneTest(mg_co_basal~ treatment, data=respirationt0) #equal Variance 
 
-anova_basalt1 <- aov(mg_co_basal ~ treatment, data=respirationt1) #signification different 
-summary(anova_basalt1)
-tukey_basalt1 <- HSD.test(anova_basalt1, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+anova_basalt1 <- aov(mg_co_basal ~ treatment + rep, data=respirationt1) #signification different 
+anova_basalt1 <- summary(aov(mg_co_basal ~ treatment + rep, data=respirationt1))
+
+pvalue_anova_basalt1 <- anova_basalt1[[1]][["Pr(>F)"]][1]
+tukey_basalt1 <- HSD.test(aov(mg_co_basal ~ treatment + rep, data=respirationt1), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 tukey_basalt1
 
 meanbasalt1 <- aggregate(mg_co_basal ~ treatment, data=respirationt1, FUN= mean)
@@ -233,25 +241,31 @@ meanbasalt1 <- aggregate(mg_co_basal ~ treatment, data=respirationt1, FUN= mean)
 plot_basal_t1 <- respirationt1 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= mg_co_basal, col=treatment))+
   geom_point(size=9)+
   scale_color_manual(values= treat.colors)+
-  xlab("Treatments")+
+  xlab("")+
   ylab("mg C-CO2/kg dry soil")+#basal
   stat_summary(fun=mean, aes(x= treatment, y = mg_co_basal),
                geom= "crossbar", colour= "black", width= 0.7, data=meanbasalt1)+
   geom_text(data=tukey_basalt1, aes(x=treatment, y = mg_co_basal, label= groups), 
             size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 0.6)+
-  labs(title = "Basal respiration at T1.", subtitle = "" , caption = "HSDTukey p-value")+
+  labs(subtitle = "" , caption = "Different letters indicate statistically significant differences between each treatment at T1.\nCrossbar indicate the average of the three samples ")+
   theme(plot.title = element_text(size=1))+
   scale_x_discrete(labels= treat.labels)+
+  ggtitle("Basal respiration at T1", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_anova_basalt1, scientific= TRUE, digits=2 ), sep= ""))+
   theme_classic2()
 plot_basal_t1
 ggsave(plot_basal_t1, file="soil_respiration_result/dif_basal_t1.png", width= 1900,height= 1200, units= "px")
+
 #analized induced
 shapiro.test(respirationt1$mg_co_induced)#data induced no normal
 soil_resp %>% group_by(treatment) %>% shapiro_test(mg_co_induced) #all data of each time of induced are normal
 leveneTest(mg_co_induced~ treatment, data=respirationt1) #equal variance
-anova_inducedt1 <- aov(mg_co_induced ~ treatment, data=respirationt1)#signification different 
-summary(anova_inducedt1)
-tukey_inducedt1 <- HSD.test(anova_inducedt1, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+anova_inducedt1 <- aov(mg_co_induced ~ treatment +rep, data=respirationt1)#signification different 
+anova_inducedt1 <-summary(aov(mg_co_induced ~ treatment +rep, data=respirationt1))
+
+
+pvalue_anova_inducedt1 <- anova_inducedt1[[1]][["Pr(>F)"]][1]
+
+tukey_inducedt1 <- HSD.test(aov(mg_co_induced ~ treatment +rep, data=respirationt1), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 tukey_inducedt1
 
 meaninducedt1 <- aggregate(mg_co_induced ~ treatment, data=respirationt1, FUN= mean)
@@ -259,25 +273,21 @@ meaninducedt1 <- aggregate(mg_co_induced ~ treatment, data=respirationt1, FUN= m
 plot_induced_t1 <- respirationt1 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= mg_co_induced, col=treatment, group=treatment))+
   geom_point(size=9)+
   scale_color_manual(values= treat.colors)+
-  xlab("Treatments")+
+  xlab("")+
   ylab("mg C-CO2/kg dry soil")+#induced
   stat_summary(fun=mean, aes(x= treatment, y = mg_co_induced),
                geom= "crossbar", colour= "black", width= 0.7, data=meaninducedt1)+
   geom_text(data=tukey_inducedt1, aes(x=treatment, y = mg_co_induced, label= groups), 
-            size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 4.5)+
-  labs(title = "Induced respiration at T1.", subtitle = "" , caption = "HSDTukey p-value")+
+            size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 5)+
+  labs(subtitle = "" , caption = "Different letters indicate statistically significant differences between each treatment at T1.\nCrossbar indicate the average of the three samples ")+
+  ggtitle("Induced respiration at T1", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_anova_inducedt1, scientific= TRUE, digits=2 ), sep= ""))+
   theme(plot.title = element_text(size=1))+
   scale_x_discrete(labels= treat.labels)+
   theme_classic2()
 plot_induced_t1
+
 ggsave(plot_induced_t1, file="soil_respiration_result/dif_induced_t1.png", width= 1900,height= 1200, units= "px")
-basal_induced_t1 <- ggarrange(plot_basal_t1,plot_induced_t1,
-                              ncol=2,
-                              common.legend = TRUE, legend = "none", 
-                              labels = c("A", "B"), 
-                              font.label = list (size = 10, color= "black"))
-basal_induced_t1
-ggsave(basal_induced_t1, file="soil_respiration_result/dif_basal_induced_t1.png", width= 1900,height= 1200, units= "px")
+
 ```
 
 ### Differences of respiration between treatments at T2
@@ -290,9 +300,10 @@ respirationt2 <- subset(soil_resp, soil_resp$time == "t2")
 shapiro.test(respirationt2$mg_co_basal)#data basal normal
 leveneTest(mg_co_basal~ treatment, data=respirationt0) #equal Variance 
 
-anova_basalt2 <- aov(mg_co_basal ~ treatment, data=respirationt2) #signification different 
-summary(anova_basalt2)
-tukey_basalt2 <- HSD.test(anova_basalt2, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+anova_basalt2 <- aov(mg_co_basal ~ treatment + rep, data=respirationt2) #signification different 
+anova_basalt2 <- summary(aov(mg_co_basal ~ treatment + rep, data=respirationt2))
+pvalue_anova_basalt2 <- anova_basalt2[[1]][["Pr(>F)"]][1]
+tukey_basalt2 <- HSD.test(aov(mg_co_basal ~ treatment + rep, data=respirationt2), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 tukey_basalt2
 
 meanbasalt2 <- aggregate(mg_co_basal ~ treatment, data=respirationt2, FUN= mean)
@@ -300,26 +311,29 @@ meanbasalt2 <- aggregate(mg_co_basal ~ treatment, data=respirationt2, FUN= mean)
 plot_basal_t2 <- respirationt2 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= mg_co_basal, col=treatment))+
   geom_point(size=9)+
   scale_color_manual(values= treat.colors)+
-  xlab("Treatments")+
+  xlab("")+
   ylab("mg C-CO2/kg dry soil")+#basal
   stat_summary(fun=mean, aes(x= treatment, y = mg_co_basal),
                geom= "crossbar", colour= "black", width= 0.7, data=meanbasalt2)+
   geom_text(data=tukey_basalt2, aes(x=treatment, y = mg_co_basal, label= groups), 
-            size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 0.6)+
-  labs(title = "Basal respiration at t2.", subtitle = "" , caption = "HSDTukey p-value")+
+            size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 1)+
   theme(plot.title = element_text(size=1))+
   scale_x_discrete(labels= treat.labels)+
+  labs(subtitle = "" , caption = "Different letters indicate statistically significant differences between each treatment at T2.\nCrossbar indicate the average of the three samples ")+
+  ggtitle("Basal respiration at T2", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_anova_basalt2, scientific= TRUE, digits=2 ), sep= ""))+
   theme_classic2()
 plot_basal_t2
+
 ggsave(plot_basal_t2, file="soil_respiration_result/dif_basal_t2.png", width= 1900,height= 1200, units= "px")
 
 #analized induced
 shapiro.test(respirationt2$mg_co_induced)#data induced no normal
 soil_resp %>% group_by(treatment) %>% shapiro_test(mg_co_induced) #all data of each time of induced are normal
 leveneTest(mg_co_induced~ treatment, data=respirationt2) #equal variance
-anova_inducedt2 <- aov(mg_co_induced ~ treatment, data=respirationt2)#signification different 
-summary(anova_inducedt2)
-tukey_inducedt2 <- HSD.test(anova_inducedt2, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+anova_inducedt2 <- aov(mg_co_induced ~ treatment +rep, data=respirationt2)#signification different 
+anova_inducedt2<-summary(aov(mg_co_induced ~ treatment +rep, data=respirationt2))
+pvalue_anova_inducedt2 <- anova_inducedt2[[1]][["Pr(>F)"]][1]
+tukey_inducedt2 <- HSD.test(aov(mg_co_induced ~ treatment +rep, data=respirationt2), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 tukey_inducedt2
 
 meaninducedt2 <- aggregate(mg_co_induced ~ treatment, data=respirationt2, FUN= mean)
@@ -327,25 +341,20 @@ meaninducedt2 <- aggregate(mg_co_induced ~ treatment, data=respirationt2, FUN= m
 plot_induced_t2 <- respirationt2 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= mg_co_induced, col=treatment, group=treatment))+
   geom_point(size=9)+
   scale_color_manual(values= treat.colors)+
-  xlab("Treatments")+
+  xlab("")+
   ylab("mg C-CO2/kg dry soil")+#induced
   stat_summary(fun=mean, aes(x= treatment, y = mg_co_induced),
                geom= "crossbar", colour= "black", width= 0.7, data=meaninducedt2)+
   geom_text(data=tukey_inducedt2, aes(x=treatment, y = mg_co_induced, label= groups), 
             size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 4.5)+
-  labs(title = "Induced respiration at t2.", subtitle = "" , caption = "HSDTukey p-value")+
   theme(plot.title = element_text(size=1))+
   scale_x_discrete(labels= treat.labels)+
+  labs(subtitle = "" , caption = "Different letters indicate statistically significant differences between each treatment at T2.\nCrossbar indicate the average of the three samples ")+
+  ggtitle("Basal respiration at T2", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_anova_inducedt2, scientific= TRUE, digits=2 ), sep= ""))+
   theme_classic2()
 plot_induced_t2
 ggsave(plot_induced_t2, file="soil_respiration_result/dif_induced_t2.png", width= 1900,height= 1200, units= "px")
-basal_induced_t2 <- ggarrange(plot_basal_t2,plot_induced_t2,
-                              ncol=2,
-                              common.legend = TRUE, legend = "none", 
-                              labels = c("A", "B"), 
-                              font.label = list (size = 10, color= "black"))
-basal_induced_t2
-ggsave(basal_induced_t2, file="soil_respiration_result/dif_basal_induced_t2.png", width= 1900,height= 1200, units= "px")
+
 ```
 
 ### Differences of respiration between treatments at T3
@@ -356,9 +365,10 @@ respirationt3 <- subset(soil_resp, soil_resp$time == "t3")
 shapiro.test(respirationt3$mg_co_basal)#data basal normal
 leveneTest(mg_co_basal~ treatment, data=respirationt0) #equal Variance 
 
-anova_basalt3 <- aov(mg_co_basal ~ treatment, data=respirationt3) #signification different 
-summary(anova_basalt3)
-tukey_basalt3 <- HSD.test(anova_basalt3, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+anova_basalt3 <- aov(mg_co_basal ~ treatment +rep, data=respirationt3) #signification different 
+anova_basalt3<- summary(aov(mg_co_basal ~ treatment +rep, data=respirationt3))
+pvalue_anova_basalt3 <- anova_basalt3[[1]][["Pr(>F)"]][1]
+tukey_basalt3 <- HSD.test(aov(mg_co_basal ~ treatment +rep, data=respirationt3), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 tukey_basalt3
 
 meanbasalt3 <- aggregate(mg_co_basal ~ treatment, data=respirationt3, FUN= mean)
@@ -366,25 +376,28 @@ meanbasalt3 <- aggregate(mg_co_basal ~ treatment, data=respirationt3, FUN= mean)
 plot_basal_t3 <- respirationt3 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= mg_co_basal, col=treatment))+
   geom_point(size=9)+
   scale_color_manual(values= treat.colors)+
-  xlab("Treatments")+
+  xlab("")+
   ylab("mg C-CO2/kg dry soil")+#basal
   stat_summary(fun=mean, aes(x= treatment, y = mg_co_basal),
                geom= "crossbar", colour= "black", width= 0.7, data=meanbasalt3)+
   geom_text(data=tukey_basalt3, aes(x=treatment, y = mg_co_basal, label= groups), 
-            size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 0.6)+
-  labs(title = "Basal respiration at t3.", subtitle = "" , caption = "HSDTukey p-value")+
+            size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 1.5)+
   theme(plot.title = element_text(size=1))+
   scale_x_discrete(labels= treat.labels)+
+  labs(subtitle = "" , caption = "Different letters indicate statistically significant differences between each treatment at T3.\nCrossbar indicate the average of the three samples ")+
+  ggtitle("Basal respiration at T3", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_anova_basalt3, scientific= TRUE, digits=2 ), sep= ""))+
   theme_classic2()
+
 plot_basal_t3
 ggsave(plot_basal_t3, file="soil_respiration_result/dif_basal_t3.png", width= 1900,height= 1200, units= "px")
 #analized induced
 shapiro.test(respirationt3$mg_co_induced)#data induced no normal
 soil_resp %>% group_by(treatment) %>% shapiro_test(mg_co_induced) #all data of each time of induced are normal
 leveneTest(mg_co_induced~ treatment, data=respirationt3) #equal variance
-anova_inducedt3 <- aov(mg_co_induced ~ treatment, data=respirationt3)#signification different 
-summary(anova_inducedt3)
-tukey_inducedt3 <- HSD.test(anova_inducedt3, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+anova_inducedt3 <- aov(mg_co_induced ~ treatment +rep, data=respirationt3)#signification different 
+anova_inducedt3<- summary(aov(mg_co_induced ~ treatment +rep, data=respirationt3))
+pvalue_anova_inducedt3 <- anova_inducedt3[[1]][["Pr(>F)"]][1]
+tukey_inducedt3 <- HSD.test(aov(mg_co_induced ~ treatment +rep, data=respirationt3), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 tukey_inducedt3
 
 meaninducedt3 <- aggregate(mg_co_induced ~ treatment, data=respirationt3, FUN= mean)
@@ -392,25 +405,21 @@ meaninducedt3 <- aggregate(mg_co_induced ~ treatment, data=respirationt3, FUN= m
 plot_induced_t3 <- respirationt3 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= mg_co_induced, col=treatment, group=treatment))+
   geom_point(size=9)+
   scale_color_manual(values= treat.colors)+
-  xlab("Treatments")+
+  xlab("")+
   ylab("mg C-CO2/kg dry soil")+#induced
   stat_summary(fun=mean, aes(x= treatment, y = mg_co_induced),
                geom= "crossbar", colour= "black", width= 0.7, data=meaninducedt3)+
   geom_text(data=tukey_inducedt3, aes(x=treatment, y = mg_co_induced, label= groups), 
             size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 4.5)+
-  labs(title = "Induced respiration at t3.", subtitle = "" , caption = "HSDTukey p-value")+
   theme(plot.title = element_text(size=1))+
   scale_x_discrete(labels= treat.labels)+
+  labs(subtitle = "" , caption = "Different letters indicate statistically significant differences between each treatment at T3.\nCrossbar indicate the average of the three samples ")+
+  ggtitle("Induced respiration at T3", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_anova_inducedt3, scientific= TRUE, digits=2 ), sep= ""))+
   theme_classic2()
+
 plot_induced_t3
 ggsave(plot_induced_t3, file="soil_respiration_result/dif_induced_t3.png", width= 1900,height= 1200, units= "px")
-basal_induced_t3 <- ggarrange(plot_basal_t3,plot_induced_t3,
-                              ncol=2,
-                              common.legend = TRUE, legend = "none", 
-                              labels = c("A", "B"), 
-                              font.label = list (size = 10, color= "black"))
-basal_induced_t3
-ggsave(basal_induced_t3, file="soil_respiration_result/dif_basal_induced_t3.png", width= 1900,height= 1200, units= "px")
+
 ```
 
 
@@ -423,9 +432,10 @@ respirationt4 <- subset(soil_resp, soil_resp$time == "t4")
 shapiro.test(respirationt4$mg_co_basal)#data basal normal
 leveneTest(mg_co_basal~ treatment, data=respirationt0) #equal Variance 
 
-anova_basalt4 <- aov(mg_co_basal ~ treatment, data=respirationt4) #signification different 
-summary(anova_basalt4)
-tukey_basalt4 <- HSD.test(anova_basalt4, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+anova_basalt4 <- aov(mg_co_basal ~ treatment +rep, data=respirationt4) #signification different 
+anova_basalt4<-summary(aov(mg_co_basal ~ treatment +rep, data=respirationt4))
+pvalue_anova_basalt4 <- anova_basalt4[[1]][["Pr(>F)"]][1]
+tukey_basalt4 <- HSD.test(aov(mg_co_basal ~ treatment +rep, data=respirationt4), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 tukey_basalt4
 
 meanbasalt4 <- aggregate(mg_co_basal ~ treatment, data=respirationt4, FUN= mean)
@@ -433,15 +443,16 @@ meanbasalt4 <- aggregate(mg_co_basal ~ treatment, data=respirationt4, FUN= mean)
 plot_basal_t4 <- respirationt4 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= mg_co_basal, col=treatment))+
   geom_point(size=9)+
   scale_color_manual(values= treat.colors)+
-  xlab("Treatments")+
+  xlab("")+
   ylab("mg C-CO2/kg dry soil")+#basal
   stat_summary(fun=mean, aes(x= treatment, y = mg_co_basal),
                geom= "crossbar", colour= "black", width= 0.7, data=meanbasalt4)+
   geom_text(data=tukey_basalt4, aes(x=treatment, y = mg_co_basal, label= groups), 
-            size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 0.6)+
-  labs(title = "Basal respiration at t4.", subtitle = "" , caption = "HSDTukey p-value")+
+            size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 1)+
   theme(plot.title = element_text(size=1))+
   scale_x_discrete(labels= treat.labels)+
+  labs(subtitle = "" , caption = "Different letters indicate statistically significant differences between each treatment at T4.\nCrossbar indicate the average of the three samples ")+
+  ggtitle("Basal respiration at T4", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_anova_basalt4, scientific= TRUE, digits=2 ), sep= ""))+
   theme_classic2()
 plot_basal_t4
 ggsave(plot_basal_t4, file="soil_respiration_result/dif_basal_t4.png", width= 1900,height= 1200, units= "px")
@@ -450,9 +461,10 @@ ggsave(plot_basal_t4, file="soil_respiration_result/dif_basal_t4.png", width= 19
 shapiro.test(respirationt4$mg_co_induced)#data induced no normal
 soil_resp %>% group_by(treatment) %>% shapiro_test(mg_co_induced) #all data of each time of induced are normal
 leveneTest(mg_co_induced~ treatment, data=respirationt4) #equal variance
-anova_inducedt4 <- aov(mg_co_induced ~ treatment, data=respirationt4)#signification different 
-summary(anova_inducedt4)
-tukey_inducedt4 <- HSD.test(anova_inducedt4, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+anova_inducedt4 <- aov(mg_co_induced ~ treatment + rep, data=respirationt4)#signification different 
+anova_inducedt4 <- summary(aov(mg_co_induced ~ treatment + rep, data=respirationt4))
+pvalue_anova_inducedt4 <- anova_inducedt4[[1]][["Pr(>F)"]][1]
+tukey_inducedt4 <- HSD.test(aov(mg_co_induced ~ treatment + rep, data=respirationt4), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 tukey_inducedt4
 
 meaninducedt4 <- aggregate(mg_co_induced ~ treatment, data=respirationt4, FUN= mean)
@@ -460,40 +472,47 @@ meaninducedt4 <- aggregate(mg_co_induced ~ treatment, data=respirationt4, FUN= m
 plot_induced_t4 <- respirationt4 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= mg_co_induced, col=treatment, group=treatment))+
   geom_point(size=9)+
   scale_color_manual(values= treat.colors)+
-  xlab("Treatments")+
+  xlab("")+
   ylab("mg C-CO2/kg dry soil")+#induced
   stat_summary(fun=mean, aes(x= treatment, y = mg_co_induced),
                geom= "crossbar", colour= "black", width= 0.7, data=meaninducedt4)+
   geom_text(data=tukey_inducedt4, aes(x=treatment, y = mg_co_induced, label= groups), 
             size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 4.5)+
-  labs(title = "Induced respiration at t4.", subtitle = "" , caption = "HSDTukey p-value")+
   theme(plot.title = element_text(size=1))+
   scale_x_discrete(labels= treat.labels)+
+  labs(subtitle = "" , caption = "Different letters indicate statistically significant differences between each treatment at T4.\nCrossbar indicate the average of the three samples ")+
+  ggtitle("Induced respiration at T4", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_anova_inducedt4, scientific= TRUE, digits=2 ), sep= ""))+
   theme_classic2()
 plot_induced_t4
 ggsave(plot_induced_t4, file="soil_respiration_result/dif_induced_t4.png", width= 1900,height= 1200, units= "px")
-basal_induced_t4 <- ggarrange(plot_basal_t4,plot_induced_t4,
-                              ncol=2,
-                              common.legend = TRUE, legend = "none", 
-                              labels = c("A", "B"), 
-                              font.label = list (size = 10, color= "black"))
-basal_induced_t4
-ggsave(basal_induced_t4, file="soil_respiration_result/dif_basal_induced_t4.png", width= 1900,height= 1200, units= "px")
+
+```
+¨
+
+```{r graph basal, echo=FALSE}
+
+respiration_basal_all <- ggarrange(plot_basal_t0 + theme(legend.position="none"), plot_basal_t1 + theme(legend.position="none"), plot_basal_t2 + theme(legend.position="none"), plot_basal_t3+ theme(legend.position="none"), plot_basal_t4 + theme(legend.position="none") , ncol = 3)
+
+respiration_basal_all
+ggsave(respiration_basal_all, file="soil_respiration_result/all_basal_respiration.png", width= 1900,height= 1200, units= "px")
+
+respiration_induced_all <- ggarrange(plot_induced_t0 + theme(legend.position="none"), plot_induced_t1 + theme(legend.position="none"), plot_induced_t2 + theme(legend.position="none"), plot_induced_t3+ theme(legend.position="none"), plot_induced_t4 + theme(legend.position="none") , ncol = 3)
+respiration_induced_all
+ggsave(respiration_induced_all, file="soil_respiration_result/all_induced_respiration.png", width= 1900,height= 1200, units= "px")
 
 ```
 
-```{r resume, echo=FALSE}
-
-respiration_basal_all <- grid.arrange(plot_basal_t0, plot_basal_t1, plot_basal_t2, plot_basal_t3, plot_basal_t4)
-ggsave(respiration_basal_all, file="soil_respiration_result/respiration_basal_all.png", width= 1900,height= 1200, units= "px")
-
-respiration_induced_all <- grid.arrange(plot_induced_t0, plot_induced_t1, plot_induced_t2, plot_induced_t3, plot_induced_t4)
-ggsave(respiration_induced_all, file="soil_respiration_result/respiration_induced_all.png", width= 1900,height= 1200, units= "px")
-```
 
 
 ### How much has the respiration of each treatment varied from the beginning of the experiment to the end (T4 and tT0)?
 
+Delta Variation (ΔBasal Respiration): It represents the change or difference in basal respiration values between two specific time points. Mathematically, it is often expressed as the subtraction of the basal respiration value at an earlier time point from the value at a later time point.
+
+-Positive ΔBasal Respiration: Indicates an increase in basal respiration from the earlier time point to the later time point. This could be due to factors such as increased microbial activity, higher availability of organic matter, or changes in environmental conditions that favor microbial respiration.
+
+-Negative ΔBasal Respiration: Indicates a decrease in basal respiration from the earlier time point to the later time point. This could be due to factors such as decreased microbial activity, depletion of organic matter, or changes in environmental conditions that suppress microbial respiration.
+
+-Zero ΔBasal Respiration: Indicates no change in basal respiration between the two time points. The microbial activity and respiration rates remain constant over this period.
 
 ```{r change between t0 and t4, echo=FALSE}
 
@@ -503,17 +522,15 @@ respirationt0t4mean <- soil_resp_mean %>% filter(time == "t0" | time == "t4") #d
 shapiro.test(respirationt0t4$mg_co_basal)#normal data
 leveneTest(mg_co_basal ~ time * treatment, data=respirationt0t4) #equal variances
 
-anova_basalt0t4 <- aov(mg_co_basal ~ time + treatment, data=respirationt0t4) #anova two ways
-summary(anova_basalt0t4)
-anova_basalt0t4int <- aov(mg_co_basal ~ time * treatment , data=respirationt0t4) # interaction between them?
-summary(anova_basalt0t4int)
-
-basalt0t4lm <- lm(mg_co_basal~ time*treatment, data=respirationt0t4)#model
+#anova_basalt0t4 <- aov(mg_co_basal ~ time + treatment, data=respirationt0t4) #anova two ways
+#summary(anova_basalt0t4)
+anova_basalt0t4int <- aov(mg_co_basal ~ time * treatment +rep , data=respirationt0t4) # interaction between them?
+anova_basalt0t4int
+basalt0t4lm <- lm(mg_co_basal~ time*treatment +rep, data=respirationt0t4)#model
 anova(basalt0t4lm)
 
-
-
 emm_basalt0t4 <- emmeans(basalt0t4lm, pairwise ~ time | treatment)#emmeans
+emm_basalt0t4
 emm_basalt0t4$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)#el adjust es para el metodo de los pvalues
 basalt0t4contras <- data.frame(emm_basalt0t4$contrasts)#data frame para sacar el valor del contraste 
 basalt0t4contras
@@ -534,9 +551,12 @@ basalt0t4_time <- respirationt0t4mean %>% ggplot(aes(x=factor(treatment, level= 
   theme_classic2()+
   scale_x_discrete(labels= treat.labels)+
   geom_text(data = pval_basalt0t4_time, aes(x= treatment, y= emmean, label= sign), nudge_x= 0, nudge_y= 6)+
+  labs(subtitle = "" , caption = "Different letters indicate statistically significant differences between Time (T0 and T4).\nMean and SD of each treatment")+
+  ggtitle("Interaction between basal respiration at T0 and T4", subtitle= "ANOVA (Tukey-Interac-Time) p-value: 2.10e-09 \nEmmeans model") +
   geom_errorbar(data=respirationt0t4mean, aes(ymin=mg_co_basal_mean-mg_co_basal_sd, 
                                             ymax=mg_co_basal_mean+mg_co_basal_sd, group= time), position=position_dodge(0.9),
                                             size =0.2, width=0.2)
+
 basalt0t4_time
 
 #delta
@@ -554,8 +574,6 @@ emm.delta.basalt0t4$contrasts %>% rbind(adjust= "fdr") %>%
   summary(infer = TRUE)
 emm.delta.basalt0t4 <- cld(emmeans(delta_basalt0t4_lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
 emm.delta.basalt0t4$.group
-str(emm.delta.basalt0t4)
-str(delta_basalt0t4)
 
 plotdelta_basalt0t4 <- delta_basalt0t4 %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
   geom_point(pch= 21, size= 7)+
@@ -565,21 +583,13 @@ plotdelta_basalt0t4 <- delta_basalt0t4 %>% ggplot(aes(x=factor(treatment, level=
   scale_fill_manual(values= treat.colors)+
   geom_text(data= emm.delta.basalt0t4, aes(x= treatment, y= emmean, label= `.group`), nudge_x = 0.2, nudge_y = 0.2)+
   scale_x_discrete(labels= treat.labels)+
+  labs(subtitle = "" , caption = "Different letters indicate statistically significant differences \nbetween delta variation in each treatment between T0 and T4")+
+  ggtitle("Δ Basal Respiration basal at T0 and T4", subtitle= "ANOVA Δ (Tukey) p-value : 0.01512\nEmmeans model")+
   theme_classic2()
-plotdelta_basalt0t4
+plotdelta_basalt0t4 
 
-basal_t0t4plot <- ggarrange(basalt0t4_time, plotdelta_basalt0t4,
-                              ncol=2,
-                              common.legend = TRUE,
-                              legend = c("left", "none"), 
-                              labels = c("A", "B"),
-                              font.label = list (size = 10, color= "black"))
-
-basal_t0t4plot <- annotate_figure(basal_t0t4plot, 
-                                  top = text_grob("Basal respiration", color = "black", face = "bold", size = 10),
-                                  bottom = text_grob("Interaction and variation between beginning and end of the experiment", size=10))
-
-basal_t0t4plot
+basal_t0t4plot <- ggarrange(basalt0t4_time, plotdelta_basalt0t4+ guides(fill= "none"), ncol = 2)
+#basal_t0t4plot <- annotate_figure(basal_t0t4plot, top = text_grob("Basal respiration", color = "black", face = "bold", size = 10),bottom = text_grob("Interaction and variation between beginning and end of the experiment", size=10)) para dar titulo
 
 ggsave(basal_t0t4plot, file="soil_respiration_result/interac_basal_t4.png", width= 1900,height= 1200, units= "px")
 
@@ -587,19 +597,14 @@ ggsave(basal_t0t4plot, file="soil_respiration_result/interac_basal_t4.png", widt
 shapiro.test(respirationt0t4$mg_co_induced)# no normal data, but all data of each time of induced are normal
 leveneTest(mg_co_induced ~ time * treatment, data=respirationt0t4) #equal variances
 
-anova_inducedt0t4 <- aov(mg_co_induced~ time + treatment, data=respirationt0t4) #anova two ways
-summary(anova_inducedt0t4)
-anova_inducedt0t4int <- aov(mg_co_induced ~ time * treatment , data=respirationt0t4) # interaction between them?
+#anova_inducedt0t4 <- aov(mg_co_induced~ time + treatment, data=respirationt0t4) #anova two ways
+#summary(anova_inducedt0t4)
+anova_inducedt0t4int <- aov(mg_co_induced ~ time * treatment + rep, data=respirationt0t4) # interaction between them? # p-value 0.1037
 summary(anova_inducedt0t4int)
 
-inducedt0t4lm <- lm(mg_co_induced~ time*treatment, data=respirationt0t4)#model
+inducedt0t4lm <- lm(mg_co_induced~ time*treatment +rep, data=respirationt0t4)#model
 anova(inducedt0t4lm)
-
-
-
 emm_inducedt0t4 <- emmeans(inducedt0t4lm, pairwise ~ time | treatment)#emmeans
-str(emm_inducedt0t4)
-
 emm_inducedt0t4$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)#el adjust es para el metodo de los pvalues
 
 inducedt0t4contras <- data.frame(emm_inducedt0t4$contrasts)#data frame para sacar el valor del contraste 
@@ -621,12 +626,12 @@ inducedt0t4_time <- respirationt0t4mean %>% ggplot(aes(x=factor(treatment, level
   xlab("")+
   ylab("induced mg C-CO2/kg dry soil")+
   theme_classic2()+
+  labs(subtitle = "" , caption = "Different letters indicate statistically significant differences between Time (T0 and T4).\nMean and SD of each treatment")+
+  ggtitle("Interaction between induced respiration at T0 and T4", subtitle= "ANOVA (Tukey-Interac-Time) p-value:0.1037 de time ??? \nEmmeans model") +
   scale_x_discrete(labels= treat.labels)+
   geom_text(data = pval_inducedt0t4_time, aes(x= treatment, y= emmean, label= sign), nudge_x= 0, nudge_y= 25)+
-  geom_errorbar(data=respirationt0t4mean, aes(ymin=mg_co_induced_mean-mg_co_induced_sd, 
-                                            ymax=mg_co_induced_mean+mg_co_induced_sd, group= time),
-                position=position_dodge(0.9),
-                                            size =0.2, width=0.2)
+  geom_errorbar(data=respirationt0t4mean, aes(ymin=mg_co_induced_mean-mg_co_induced_sd, ymax=mg_co_induced_mean+mg_co_induced_sd, group= time), position=position_dodge(0.9), size =0.2, width=0.2)
+
 inducedt0t4_time
 
 #delta
@@ -637,7 +642,7 @@ delta_inducedt0t4$delta <- delta_inducedt0t4$t4-delta_inducedt0t4$t0
 delta_inducedt0t4
 
 delta_inducedt0t4_lm <- lm(delta~ treatment, data=delta_inducedt0t4)#model
-anova(delta_inducedt0t4_lm)
+anova(delta_inducedt0t4_lm) #pval 0.002363
 
 emm.delta.inducedt0t4 <- emmeans(delta_inducedt0t4_lm, pairwise ~  treatment)
 emm.delta.inducedt0t4
@@ -645,8 +650,6 @@ emm.delta.inducedt0t4$contrasts %>% rbind(adjust= "fdr") %>%
   summary(infer = TRUE)
 emm.delta.inducedt0t4 <- cld(emmeans(delta_inducedt0t4_lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
 emm.delta.inducedt0t4$.group
-str(emm.delta.inducedt0t4)
-str(delta_inducedt0t4)
 
 plotdelta_inducedt0t4 <- delta_inducedt0t4 %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
   geom_point(pch= 21, size= 7)+
@@ -656,22 +659,14 @@ plotdelta_inducedt0t4 <- delta_inducedt0t4 %>% ggplot(aes(x=factor(treatment, le
   scale_fill_manual(values= treat.colors)+
   geom_text(data= emm.delta.inducedt0t4, aes(x= treatment, y= emmean, label= `.group`), nudge_x = 0.2, nudge_y = 0.2)+
   scale_x_discrete(labels= treat.labels)+
+  labs(subtitle = "" , caption = "Different letters indicate statistically significant differences \nbetween delta variation in each treatment between T0 and T4")+
+  ggtitle("Δ Respiration induced at T0 and T4", subtitle= "ANOVA Δ (Tukey) p-value : 0.002363\nEmmeans model")+
   theme_classic2()
 
 plotdelta_inducedt0t4
+induced_t0t4plot <- ggarrange(inducedt0t4_time, plotdelta_inducedt0t4+ guides(fill= "none") , ncol = 2)
 
-induced_t0t4plot <- ggarrange(inducedt0t4_time, plotdelta_inducedt0t4,
-                              ncol=2,
-                              common.legend = TRUE,
-                              legend = c("left", "none"), 
-                              labels = c("A", "B"), 
-                              font.label = list (size = 10, color= "black"))
-
-induced_t0t4plot
-
-induced_t0t4plot <- annotate_figure(induced_t0t4plot, 
-                                  top = text_grob("Induced respiration", color = "black", face = "bold", size = 10),
-                                  bottom = text_grob("Interaction and variation between beginning and end of the experiment", size=10))
+#induced_t0t4plot <- annotate_figure(induced_t0t4plot, top = text_grob("Induced respiration", color = "black", face = "bold", size = 10),bottom = text_grob("Interaction and variation between beginning and end of the experiment", size=10))
 
 induced_t0t4plot
 ggsave(induced_t0t4plot, file="soil_respiration_result/interac_induced_t4.png", width= 1900,height= 1200, units= "px")
