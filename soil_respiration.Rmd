@@ -109,7 +109,7 @@ basal_plotsd <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, col= trea
   ylab("mg C-CO2/kg dry soil")+
   scale_color_manual(values= treat.colors)+
   geom_point(size =2)+
-  theme_minimal()+
+  theme_clean()+
   geom_errorbar(aes(ymin=mg_co_basal_mean-mg_co_basal_sd,   ymax=mg_co_basal_mean+mg_co_basal_sd), size =0.5, width=0.2)+
   labs(title = "Basal respiration over the time.", subtitle = "", caption="Mean and SD")+
   theme(plot.title = element_text(size=12))
@@ -119,7 +119,7 @@ ggsave(basal_plotsd, file="soil_respiration_result/basal_duringtime.png", width=
 
 induced_plotsd <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, col= treatment, y=mg_co_induced_mean))+
   geom_line(linewidth=1.1)+
-  theme_minimal()+
+  theme_clean()+
   xlab("Time")+
   ylab("mg C-CO2/kg dry soil")+
   scale_color_manual(values= treat.colors)+
@@ -129,6 +129,10 @@ induced_plotsd <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, col= tr
   theme(plot.title = element_text(size=12))
 induced_plotsd
 ggsave(induced_plotsd, file="soil_respiration_result/induced_duringtime.png", width= 1900,height= 1200, units= "px")
+
+basal_induced_overtime <- ggarrange(basal_plotsd + theme(legend.position="bottom"), induced_plotsd+ theme(legend.position="none") , ncol = 2)
+
+ggsave(basal_induced_overtime, file="soil_respiration_result/basal_induced_overtime.png", width= 1900,height= 1200, units= "px")
 
 respiration_inducedplot2 <- soil_resp_mean%>% ggplot(aes(x=time, group= treatment, fill= treatment, y=mg_co_induced_mean))+
   geom_col(aes(fill= treatment), position= "dodge")+
@@ -173,10 +177,9 @@ plot_basal_t0 <- respirationt0 %>% ggplot(aes(x= factor(treatment, level= treat.
   scale_color_manual(values= treat.colors)+
   xlab("")+
   ylab("mg C-CO2/kg dry soil")+#basal
-  stat_summary(fun=mean, aes(x= treatment, y = mg_co_basal),
-               geom= "crossbar", colour= "black", width= 0.7, data=meanbasalt0)+
-  geom_text(data=tukey_basalt0, aes(x=treatment, y = mg_co_basal, label= groups), 
-            size= 4, colour="black", fontface = "bold", nudge_x= 0.2, nudge_y= 0.6)+
+  stat_summary(fun=mean, aes(x= treatment, y = mg_co_basal), geom= "crossbar", colour= "black", width= 0.7, data=meanbasalt0)+
+  geom_text(data=tukey_basalt0, aes(x=treatment, y = mg_co_basal, label= groups), size= 4, colour="black", fontface = "bold",   nudge_x= 0.2, nudge_y= 0.6)+
+  theme(axis.text.x = element_text(angle = 0, vjust = 3))+
   labs(subtitle = "" , caption = "Different letters indicate statistically significant differences between each treatment at T0.\nCrossbar indicate the average of the three samples ")+
   theme(plot.title = element_text(size=1))+
   scale_x_discrete(labels= treat.labels)+
