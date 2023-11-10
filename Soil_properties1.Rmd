@@ -55,7 +55,6 @@ library(ggthemes)
 
 
 # Data analysis octubre 2023
-Add the information of each method to obtain each parameter 
 
 
 ```{r colors, include=FALSE}
@@ -102,25 +101,29 @@ soil.summ$soil.id <- NULL
 
 #En este codigo veremos la evolucion de los distintos parametros en el tiempo. La función "aes" sirve para indicar en un grafico cual es tu X,y. Debes indicar en texto quien es quien.Toda la información de los datos referido al grafico es lo que va dentro del parentesis. Los adornos van fuera con el signo de +. La funcion "geom_line" sirve para elegir el tipo de grafico que quieres. 
 
-
+#add media y lo que es 
 org.mat.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= org.matter_mean))+
-  geom_line()+
-  theme_classic()+
+  geom_line( linewidth=1)+
+  theme_classic2()+
   xlab("")+
   ylab("Oxidable organic matter (%)")+
   scale_color_manual(values= treat.colors)+
   geom_point()+
-  geom_errorbar(aes(ymin=org.matter_mean-org.matter_sd, ymax=org.matter_mean+org.matter_sd), width=0.2)
+  geom_errorbar(aes(ymin=org.matter_mean-org.matter_sd, ymax=org.matter_mean+org.matter_sd), width=0.2)+
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5))+
+  guides(col=guide_legend(title="Treatment"))
 org.mat.plotsd
 
 phosp.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y=phosphorus_mean))+
   geom_line()+
-  theme_classic()+
+  theme_classic2()+
   xlab("")+
   ylab("Phosphorus mg/Kg")+
   scale_color_manual(values= treat.colors)+
   geom_point()+
-  geom_errorbar(aes(ymin=phosphorus_mean-phosphorus_sd, ymax=phosphorus_mean+phosphorus_sd), width=0.2)
+  geom_errorbar(aes(ymin=phosphorus_mean-phosphorus_sd, ymax=phosphorus_mean+phosphorus_sd), width=0.2)+
+   theme(axis.text.x = element_text(angle = 0, vjust = 0.5))+
+  guides(col=guide_legend(title="Treatment"))
 phosp.plotsd
 
 calcium.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= calcium_mean))+
