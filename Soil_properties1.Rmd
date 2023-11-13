@@ -55,11 +55,10 @@ library(ggthemes)
 
 
 # Data analysis octubre 2023
-Add the information of each method to obtain each parameter 
 
 
 ```{r colors, include=FALSE}
-treat.colors <- c("control"= "green4" ,"control.amf"  = "darkseagreen" , "chicken.manure"= "royalblue1", "cow.manure" = "red3","mo.pellet"= "darkorchid1","compost"="chocolate4","control.legumes"="darkolivegreen4")
+treat.colors <- c("control"= "green4" ,"control.amf"  = "darkseagreen" , "chicken.manure"= "royalblue1", "cow.manure" = "red3","mo.pellet"= "darkorchid1","compost"="chocolate4","control.legume"="darkolivegreen4")
 treat.colors
 treat.order <- c('control', 'control.amf', 'control.legume', "compost", "chicken.manure", "cow.manure", "mo.pellet") 
 treat.labels <- c("Control", "Control\nAMF", "Control\nLegume", "Compost", "Chicken\nmanure", "Cow\nmanure", "Pellet")
@@ -95,125 +94,174 @@ soil.summ$soil.id <- NULL
 
 ```
 
-### Evolucion de cada parametros en los distintos muestreos del experimento
+### Evolution of each parameter in the different times of the experiment
 
 
 ```{r over the time, include=FALSE}
 
 #En este codigo veremos la evolucion de los distintos parametros en el tiempo. La función "aes" sirve para indicar en un grafico cual es tu X,y. Debes indicar en texto quien es quien.Toda la información de los datos referido al grafico es lo que va dentro del parentesis. Los adornos van fuera con el signo de +. La funcion "geom_line" sirve para elegir el tipo de grafico que quieres. 
 
-
+#add media y lo que es 
 org.mat.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= org.matter_mean))+
-  geom_line()+
-  theme_classic()+
+  geom_line(linewidth=1)+
+  theme_clean()+
   xlab("")+
   ylab("Oxidable organic matter (%)")+
   scale_color_manual(values= treat.colors)+
   geom_point()+
-  geom_errorbar(aes(ymin=org.matter_mean-org.matter_sd, ymax=org.matter_mean+org.matter_sd), width=0.2)
+  geom_errorbar(aes(ymin=org.matter_mean-org.matter_sd, ymax=org.matter_mean+org.matter_sd), width=0.2)+
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5))+
+  guides(col=guide_legend(title="Treatment"))+
+  labs(title = "Oxidable organic matter over the time.", subtitle = "", caption="Mean and SD of each treatment")+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.caption = element_text(size = 10))
 org.mat.plotsd
+ggsave(org.mat.plotsd, file="soil_parameters_result/organicmatter.png", width= 1900,height= 1200, units= "px")
 
 phosp.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y=phosphorus_mean))+
-  geom_line()+
-  theme_classic()+
+  geom_line(linewidth=1)+
+  theme_clean()+
   xlab("")+
   ylab("Phosphorus mg/Kg")+
   scale_color_manual(values= treat.colors)+
   geom_point()+
-  geom_errorbar(aes(ymin=phosphorus_mean-phosphorus_sd, ymax=phosphorus_mean+phosphorus_sd), width=0.2)
+  geom_errorbar(aes(ymin=phosphorus_mean-phosphorus_sd, ymax=phosphorus_mean+phosphorus_sd), width=0.2)+
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5))+
+  guides(col=guide_legend(title="Treatment"))+
+  labs(title = "Phosphorus over the time.", subtitle = "", caption="Mean and SD of each treatment")+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.caption = element_text(size = 10))
 phosp.plotsd
-
+ggsave(phosp.plotsd, file="soil_parameters_result/phosphorus.png", width= 1900,height= 1200, units= "px")
 calcium.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= calcium_mean))+
-  geom_line()+
-  theme_classic()+
+  geom_line(linewidth=1)+
+  theme_clean()+
   xlab("")+
   ylab("Calcium mEq/kg")+
   scale_color_manual(values= treat.colors)+
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5))+
+  guides(col=guide_legend(title="Treatment"))+
   geom_point()+
-  geom_errorbar(aes(ymin=calcium_mean-calcium_sd, ymax=calcium_mean+calcium_sd), width=0.2)
+  geom_errorbar(aes(ymin=calcium_mean-calcium_sd, ymax=calcium_mean+calcium_sd), width=0.2)+
+  labs(title = "Calcium over the time.", subtitle = "", caption="Mean and SD of each treatment")+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.caption = element_text(size = 10))
 calcium.plotsd
-
+ggsave(calcium.plotsd, file="soil_parameters_result/calcium.png", width= 1900,height= 1200, units= "px")
 sodium.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= sodium_mean))+
-  geom_line()+
-  theme_classic()+
+  geom_line(linewidth=1)+
+  theme_clean()+
   xlab("")+
   ylab("Sodium mEq/kg")+
   scale_color_manual(values= treat.colors)+
   geom_point()+
-  geom_errorbar(aes(ymin=sodium_mean-sodium_sd, ymax=sodium_mean+sodium_sd), width=0.2)
+  geom_errorbar(aes(ymin=sodium_mean-sodium_sd, ymax=sodium_mean+sodium_sd), width=0.2)+
+  guides(col=guide_legend(title="Treatment"))+
+  geom_point()+
+  labs(title = "Sodium over the time.", subtitle = "", caption="Mean and SD of each treatment")+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.caption = element_text(size = 10))
 sodium.plotsd
-
+ggsave(sodium.plotsd, file="soil_parameters_result/sodium.png", width= 1900,height= 1200, units= "px")
 potassium.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= potassium_mean))+
-  geom_line()+
-  theme_classic()+
+  geom_line(linewidth=1)+
+  theme_clean()+
   xlab("")+
   ylab("Potassium mEq/kg")+
   scale_color_manual(values= treat.colors)+
   geom_point()+
-  geom_errorbar(aes(ymin=potassium_mean-potassium_sd, ymax=potassium_mean+potassium_sd), width=0.2)
+  guides(col=guide_legend(title="Treatment"))+
+  geom_errorbar(aes(ymin=potassium_mean-potassium_sd, ymax=potassium_mean+potassium_sd), width=0.2)+
+  labs(title = "Potassium over the time.", subtitle = "", caption="Mean and SD of each treatment")+
+  guides(col=guide_legend(title="Treatment"))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.caption = element_text(size = 10))
 potassium.plotsd
-
+ggsave(potassium.plotsd, file="soil_parameters_result/potassium.png", width= 1900,height= 1200, units= "px")
 pH_water.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= ph.water_mean))+
-  geom_line()+
-  theme_classic()+
+  geom_line(linewidth=1)+
+  theme_clean()+
   xlab("")+
   ylab("pH water udes.")+
   scale_color_manual(values= treat.colors)+
   geom_point()+
-  geom_errorbar(aes(ymin=ph.water_mean-ph.water_sd, ymax=ph.water_mean+ph.water_sd), width=0.2)
+  geom_errorbar(aes(ymin=ph.water_mean-ph.water_sd, ymax=ph.water_mean+ph.water_sd), width=0.2)+
+  labs(title = "pH water over the time.", subtitle = "", caption="Mean and SD of each treatment")+
+  guides(col=guide_legend(title="Treatment"))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.caption = element_text(size = 10))
 pH_water.plotsd
+ggsave(pH_water.plotsd, file="soil_parameters_result/phwater.png", width= 1900,height= 1200, units= "px")
 
 conductivity.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= conductivity_mean))+
-  geom_line()+
-  theme_classic()+
+  geom_line(linewidth=1)+
+  theme_clean()+
   xlab("")+
   ylab("Conductivity mS/cm")+
   scale_color_manual(values= treat.colors)+
   geom_point()+
-  geom_errorbar(aes(ymin=conductivity_mean-conductivity_sd, ymax=conductivity_mean+conductivity_sd), width=0.2)
+  geom_errorbar(aes(ymin=conductivity_mean-conductivity_sd, ymax=conductivity_mean+conductivity_sd), width=0.2)+
+  labs(title = "Conductivity over the time.", subtitle = "", caption="Mean and SD of each treatment")+
+  guides(col=guide_legend(title="Treatment"))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.caption = element_text(size = 10))
 conductivity.plotsd
-
+ggsave(conductivity.plotsd, file="soil_parameters_result/conductivity.png", width= 1900,height= 1200, units= "px")
 nitrogen.plotsd <- soil.summ.sd%>% ggplot(aes(x=time, group= treatment, col= treatment, y= nitrogen_mean))+
-  geom_line()+
-  theme_classic()+
+  geom_line(linewidth=1)+
+  theme_clean()+
   xlab("Time")+
   ylab("Nitrogen (%)")+
   scale_color_manual(values= treat.colors)+
   geom_point()+
-  geom_errorbar(aes(ymin=nitrogen_mean-nitrogen_sd, ymax=nitrogen_mean+nitrogen_sd), width=0.2)
+  geom_errorbar(aes(ymin=nitrogen_mean-nitrogen_sd, ymax=nitrogen_mean+nitrogen_sd), width=0.2)+
+   labs(title = "Nitrogen over the time.", subtitle = "", caption="Mean and SD of each treatment")+
+  guides(col=guide_legend(title="Treatment"))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.caption = element_text(size = 10))
 nitrogen.plotsd
+ggsave(nitrogen.plotsd, file="soil_parameters_result/nitrogen.png", width= 1900,height= 1200, units= "px")
 
 ```
+
 
 
 ```{r together, echo=FALSE}
 
-figureall <- ggarrange(org.mat.plotsd, phosp.plotsd, pH_water.plotsd, potassium.plotsd, sodium.plotsd,calcium.plotsd, nitrogen.plotsd, conductivity.plotsd,
-                    labels = c("A", "B", "C", "D", "E", "F", "G", "H"),
-                    font.label = list (size = 10, color= "black", position= "right"),
-                    common.legend = TRUE, legend = "bottom",
-                    vjust = 10,
-                    ncol = 3, nrow = 3)
-title <- text_grob("Soil properties over the time", 
-                                color ="black", face = "bold", size = 14)
+soilparameters1 <- ggarrange(org.mat.plotsd+ theme(legend.position="none"), 
+                            sodium.plotsd+ theme(legend.position="none"), 
+                            calcium.plotsd + theme(legend.position="none"),
+                            potassium.plotsd+ theme(legend.position="bottom"),
+                            phosp.plotsd + theme(legend.position="none"),
+                             ncol=2)
+soilparameters1
 
 
-figure_title <- annotate_figure(figureall, 
-                top=title, 
-                bottom = text_grob("Mean and sd of each treatments"))
+soilparameters2 <- ggarrange(nitrogen.plotsd + theme(legend.position="none"), 
+                            pH_water.plotsd + theme(legend.position="none"), 
+                            conductivity.plotsd+ theme(legend.position="right"),
+                            ncol=2)
+soilparameters2
 
-grid.draw(figure_title)
+ggsave(soilparameters1, file="soil_parameters_result/soilparameters1.png", width= 3800, height= 3600, units= "px")
+ggsave(soilparameters2, file="soil_parameters_result/soilparameters2.png", width= 3800, height= 3600, units= "px")
 
-ggsave(figure_title, file="soil_parameters_result/soilproperties_time.png", width= 1900,height= 1200, units= "px")
 
-figureall2.2 <- grid.arrange(org.mat.plotsd, phosp.plotsd, pH_water.plotsd, potassium.plotsd)
-figureall2.3 <- grid.arrange(sodium.plotsd,calcium.plotsd, nitrogen.plotsd, conductivity.plotsd)
+#respiration_basal_all <- ggarrange(plot_basal_t0 + theme(legend.position="none"), plot_basal_t1 + theme(legend.position="none"), plot_basal_t2 + theme(legend.position="none"), plot_basal_t3+ theme(legend.position="none"), plot_basal_t4 + theme(legend.position="none") , ncol = 3)
 
-ggsave(figureall2.2, file="soil_parameters_result/soilproperties_time2_2.png", width= 1900,height= 1200, units= "px")
-ggsave(figureall2.3, file="soil_parameters_result/soilproperties_time2_3.png", width= 1900,height= 1200, units= "px")
+#figureall <- ggarrange(org.mat.plotsd, phosp.plotsd, pH_water.plotsd, potassium.plotsd, sodium.plotsd,calcium.plotsd, nitrogen.plotsd, conductivity.plotsd,labels = c("A", "B", "C", "D", "E", "F", "G", "H"),font.label = list (size = 10, color= "black", position= "right"),common.legend = TRUE, legend = "bottom",vjust = 10,col = 3, nrow = 3)title <- text_grob("Soil properties over the time",color ="black", face = "bold", size = 14)figure_title <- annotate_figure(figureall, top=title, bottom = text_grob("Mean and sd of each treatments"))grid.draw(figure_title)
+
 ```
 
-### Analisis estadistico.
+### Statistical analysis.
 
 ### Check the correlation between the variables to analyse the most interesting ones.
 
@@ -245,40 +293,43 @@ Para comprobar si hay diferencias significativas o no.
 #comprobamos la normalidad de los datos por tratamiento y no entre tratamientos. Los datos al interaccionar entre tratamietnos no son normales, ya que por los procesos biologicos son mas altos en algunos tratamientos que otros. Asumiendo esto, los analisis estadisticos se haran igualmente con aproximacion parametrica. 
 
 soilt0 <- subset(soil_prop, soil_prop$time== "t0")
-str(soilt0)
-
 shapiro.test(soilt0$org.matter)#ahora vamos a comprobar la normalidad de los datos. Los datos no son normales. 
 soil_prop %>% group_by(treatment) %>% shapiro_test(org.matter) #aqui comprobamos la normalidad de los datos de materia organica en cada tratamiento. Todos son normales.
 
 ggqqplot(data = soil_prop, "org.matter", facet.by = "treatment")
+leveneTest(org.matter~ treatment, data=soilt0) #test de Levene para el analisis de la varianza
 
 anova_orgmattert0 <- aov(org.matter ~ treatment, data=soilt0) #hay diferencias significativas
-summary(anova_orgmattert0)
-plot(anova_orgmattert0, which=2)
-leveneTest(org.matter~ treatment, data=soilt0) #test de Levene para el analisis de la varianza
+anova_orgmattert0<-summary(aov(org.matter ~ treatment, data=soilt0))
+pvalue_anova_orgmattert0 <- anova_orgmattert0[[1]][["Pr(>F)"]][1]
 
 #Puesto que hay direferencias sig. vamos a comprobar entre que tratamientos. POST-HOC.
 
 #### hsd tukey from agricolae::
-tukey_orgmatter <- HSD.test(anova_orgmattert0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_orgmatter <- HSD.test(aov(org.matter ~ treatment, data=soilt0), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 tukey_orgmatter
 
 #crear un grafico con la media de la los valores de materia organica de t0, y la letra de HSDTukey)
-
 avgm <- aggregate(org.matter ~ treatment, data=soilt0, FUN= mean)
-plot_orgmatter_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), 
-                                           y= org.matter, col=treatment))+
-  geom_point(size= 6)+
+plot_orgmatter_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= org.matter, fill=treatment))+
+  geom_point(size= 7, pch= 21, col= "black", aes(fill= treatment), position= position_jitter(width=0.1, height=0))+
+  scale_fill_manual(values= treat.colors)+
   scale_color_manual(values= treat.colors)+
   ylab("Oxidable organic matter (%)")+
   xlab("")+
+  theme_classic2()+
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5))+
   scale_x_discrete(labels= treat.labels)+
-  theme_clean()+
-  stat_summary(fun=mean, aes(x= treatment, y = org.matter),
-               geom= "crossbar", width=0.5, colour= "grey20", data=avgm)+
-  geom_text(data=tukey_orgmatter, aes(x=treatment, y = org.matter, label= groups), color="black", nudge_x= 0.2, nudge_y= 0.2)+
-  labs(title = "Differences in the percentage of oxidizable organic matter T0.", 
-       subtitle = "Three measures of each treatment", caption = "Anova p-value: 2.5e-13 (HSDTukey)", size = 10 )
+  guides(fill=guide_legend(title="Treatment"))+
+  stat_summary(fun=mean, aes(x= treatment, y = org.matter),geom= "crossbar", width=0.5, colour= "grey20", data=avgm)+
+  geom_text(data=tukey_orgmatter, aes(x=treatment, y = org.matter, label= groups), color="black", nudge_x= 0.2, nudge_y= 0.25)+
+  labs(title = "", subtitle = "", caption = "Different letters indicate statistically significant differences between each treatment at T0.\nCrossbar indicate the average of the three samples", size = 10 )+
+  ggtitle("Oxidizable organic matter T0 (%)", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_anova_orgmattert0, scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
+
 plot_orgmatter_t0
 ggsave(plot_orgmatter_t0, file="soil_parameters_result/org_matter_t0.png", width= 1900,height= 1200, units= "px")
 
@@ -288,25 +339,34 @@ ggsave(plot_orgmatter_t0, file="soil_parameters_result/org_matter_t0.png", width
 shapiro.test(soilt0$phosphorus)#data no normal 
 soilt0 %>% group_by(treatment) %>% shapiro_test(phosphorus) #all treatment are normal
 ggqqplot(data = soil_prop, "phosphorus", facet.by = "treatment")
-anova_phosphto <- aov(phosphorus ~ treatment, data=soilt0)
-summary(anova_phosphto)
-plot(anova_phosphto, which=2)
-leveneTest(phosphorus~ treatment, data= soilt0)#se cumple el supuesto de homogenicidad de varianzas.
-tukey_phosphorus <- HSD.test(anova_phosphto, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+leveneTest(phosphorus~ treatment, data= soilt0)#equal variance
+anova_phospht0 <- aov(phosphorus ~ treatment, data=soilt0)
+anova_phospht0<- summary(aov(phosphorus ~ treatment, data=soilt0))
+pvalue_anova_phospht0 <- anova_phospht0[[1]][["Pr(>F)"]][1]
+tukey_phosphorus <- HSD.test(aov(phosphorus ~ treatment, data=soilt0), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+
 
 avgpho <- aggregate(phosphorus ~ treatment, data=soilt0, FUN= mean)
-plot_phosphorus_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= phosphorus, col=treatment))+
-  geom_point(size= 6)+
+plot_phosphorus_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= phosphorus, fill=treatment))+
+  geom_point(size= 7, pch= 21, col= "black", aes(fill= treatment), position= position_jitter(width=0.1, height=0))+
+  scale_fill_manual(values= treat.colors)+
   scale_color_manual(values= treat.colors)+
   ylab("Phosphorus mg/Kg")+
   xlab("")+
+  theme_classic2()+
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5))+
   scale_x_discrete(labels= treat.labels)+
-  theme_clean()+
+  guides(fill=guide_legend(title="Treatment"))+
   stat_summary(fun=mean, aes(x= treatment, y = phosphorus),
                geom= "crossbar",  width=0.5, colour= "grey20", data=avgpho)+
   geom_text(data=tukey_phosphorus, aes(x=treatment, y = phosphorus, label= groups), 
             colour="black", nudge_x= 0.2, nudge_y= 3)+
-  labs(title = "Differences in phosphorus T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: 0.000186 (HSDTukey)" )
+  labs(title = "", subtitle = "", caption = "Different letters indicate statistically significant differences between each treatment at T0.\nCrossbar indicate the average of the three samples", size = 10 )+
+  ggtitle("Phosphorus T0", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_anova_phospht0, scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
 plot_phosphorus_t0
 ggsave(plot_phosphorus_t0, file="soil_parameters_result/phosphorus_t0.png", width= 1900,height= 1200, units= "px")
 ```
@@ -315,83 +375,113 @@ ggsave(plot_phosphorus_t0, file="soil_parameters_result/phosphorus_t0.png", widt
 shapiro.test(soilt0$ph.water)
 soilt0 %>% group_by(treatment) %>% shapiro_test(ph.water) #normal data
 ggqqplot(data = soil_prop, "ph.water", facet.by = "treatment")
+leveneTest(ph.water~ treatment, data= soilt0)#equal variance
 
 anova_phwatert0 <- aov(ph.water ~ treatment, data=soilt0)
-summary(anova_phwatert0)
-plot(anova_phwatert0, which=2)
-leveneTest(ph.water~ treatment, data= soilt0)#se cumple el supuesto de homogenicidad de varianzas.
-
-tukey_phwater <- HSD.test(anova_phwatert0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+anova_phwatert0<- summary(aov(ph.water ~ treatment, data=soilt0))
+pvalue_anova_phwatert0<- anova_phwatert0[[1]][["Pr(>F)"]][1]
+tukey_phwater <- HSD.test(aov(ph.water ~ treatment, data=soilt0), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 
 avgphwater <- aggregate(ph.water ~ treatment, data=soilt0, FUN= mean)
-plot_phwater_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= ph.water, col=treatment))+
-  geom_point(size= 6)+
+plot_phwater_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= ph.water, fill=treatment))+
+  geom_point(size= 7, pch= 21, col= "black", aes(fill= treatment), position= position_jitter(width=0.1, height=0))+
   scale_color_manual(values= treat.colors)+
+  scale_fill_manual(values= treat.colors)+
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5))+
+  scale_x_discrete(labels= treat.labels)+
+  guides(fill=guide_legend(title="Treatment"))+
   ylab("pH water udes.")+
   xlab("")+
   theme_classic2()+
-  scale_x_discrete(labels= treat.labels)+
   stat_summary(fun=mean, aes(x= treatment, y = ph.water),
                geom= "crossbar",  width=0.5, colour= "grey20", data=avgphwater)+
   geom_text(data=tukey_phwater, aes(x=treatment, y = ph.water, label= groups), 
             colour="black", nudge_x= 0.2, nudge_y= 0.05)+
-  labs(title = "Differences in pH water udes. T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: 4.21e-07 (HSDTukey)" )
-
+  labs(title = "", subtitle = "", caption = "Different letters indicate statistically significant differences between each treatment at T0.\nCrossbar indicate the average of the three samples", size = 10 )+
+  ggtitle("pH water T0", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_anova_phwatert0, scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
 plot_phwater_t0
 ggsave(plot_phwater_t0, file="soil_parameters_result/phwater_t0.png", width= 1900,height= 1200, units= "px")
 ```
 
 ```{r conductivity stats, echo=FALSE}
 shapiro.test(soilt0$conductivity) #data no normal 
-soil_prop %>% group_by(treatment) %>% shapiro_test(conductivity) #all treatment are normal
-ggqqplot(data = soil_prop, "conductivity", facet.by = "treatment")
-anova_conductivityt0 <- aov(conductivity ~ treatment, data=soilt0)
-summary(anova_conductivityt0)
-plot(anova_conductivityt0, which=2)
-leveneTest(conductivity~ treatment, data= soilt0) #no equal variance
-tukey_conductivity <- HSD.test(anova_conductivityt0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-avgconduc <- aggregate(conductivity ~ treatment, data=soilt0, FUN= mean)
+soil_prop %>% group_by(treatment) %>% shapiro_test(conductivity) #all treatment are normal except one
+soil_prop$sqrt_conductivity <- sqrt(soil_prop$conductivity) #transformation data
+soil_prop %>% group_by(treatment) %>% shapiro_test(sqrt_conductivity) #all treatment are normal now indepndt of time
+soilt0 %>% group_by(treatment) %>% shapiro_test(conductivity)
+soilt0$sqrt_conductivity <- sqrt(soilt0$conductivity)
+shapiro.test(soilt0$sqrt_conductivity)
+soilt0 %>% group_by(treatment) %>% shapiro_test(sqrt_conductivity)
+leveneTest(sqrt_conductivity~ treatment, data= soilt0) # equal variance
 
-plot_conduc_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= conductivity, col=treatment))+
-  geom_point(size= 6)+
+anova_conductivityt0 <- aov(sqrt_conductivity~ treatment, data=soilt0)
+anova_conductivityt0<- summary(aov(sqrt_conductivity ~ treatment, data=soilt0))
+pvalue_anova_conductivityt0<- anova_conductivityt0[[1]][["Pr(>F)"]][1]
+
+tukey_conductivity <- HSD.test(aov(sqrt_conductivity~ treatment, data=soilt0), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+
+avgconduc <- aggregate(sqrt_conductivity ~ treatment, data=soilt0, FUN= mean)
+
+plot_conduc_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= sqrt_conductivity, fill=treatment))+
+  geom_point(size= 7, pch= 21, col= "black", aes(fill= treatment), position= position_jitter(width=0.1, height=0))+
   scale_color_manual(values= treat.colors)+
+  scale_fill_manual(values= treat.colors)+
   ylab("Conductivity mS/cm.")+
   xlab("")+
   theme_classic2()+
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5))+
   scale_x_discrete(labels= treat.labels)+
-  stat_summary(fun=mean, aes(x= treatment, y = conductivity),
+  guides(fill=guide_legend(title="Treatment"))+
+  stat_summary(fun=mean, aes(x= treatment, y = sqrt_conductivity),
                geom= "crossbar",  width=0.5, colour= "grey20", data=avgconduc)+
-  geom_text(data=tukey_conductivity, aes(x=treatment, y = conductivity, label= groups), 
+  geom_text(data=tukey_conductivity, aes(x=treatment, y = sqrt_conductivity, label= groups), 
             colour="black", nudge_x= 0.2, nudge_y= 0.05)+
-  labs(title = "Differences in conductivity. T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: 1.89e-07 (HSDTukey)" )
+  labs(title = "", subtitle = "", caption = "Different letters indicate statistically significant differences between each treatment at T0.\nCrossbar indicate the average of the three samples", size = 10 )+
+  ggtitle("Conductivity T0", subtitle= paste("Data transformed. ANOVA (HSDTukey) p-value: ", format(pvalue_anova_conductivityt0, scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
 plot_conduc_t0
+
 ggsave(plot_conduc_t0, file="soil_parameters_result/conduc_t0.png", width= 1900,height= 1200, units= "px")
 ```
 
 
 ```{r stats calcium, echo=FALSE}
 shapiro.test(soilt0$calcium)#normal data
-anova_calciumt0 <- aov(calcium ~ treatment, data=soilt0)
-summary(anova_calciumt0)
-plot(anova_calciumt0, which=2)
 leveneTest(calcium~ treatment, data= soilt0)#equal variance
-
-tukey_calcium <- HSD.test(anova_calciumt0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+anova_calciumt0 <- aov(calcium ~ treatment, data=soilt0)
+anova_calciumt0<- summary(aov(calcium ~ treatment, data=soilt0))
+pvalue_anova_calciumt0<- anova_calciumt0[[1]][["Pr(>F)"]][1]
+tukey_calcium <- HSD.test(aov(calcium ~ treatment, data=soilt0), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 tukey_calcium
 avgcalcium <- aggregate(calcium ~ treatment, data=soilt0, FUN= mean)
 
-plot_calcium_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= calcium, col=treatment))+
-  geom_point(size= 6)+
+plot_calcium_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= calcium, fill=treatment))+
+  geom_point(size= 7, pch= 21, col= "black", aes(fill= treatment), position= position_jitter(width=0.1, height=0))+
   scale_color_manual(values= treat.colors)+
+  scale_fill_manual(values= treat.colors)+
   ylab("Calcium mEq/kg.")+
   xlab("")+
   theme_classic2()+
   scale_x_discrete(labels= treat.labels)+
+  guides(fill=guide_legend(title="Treatment"))+
   stat_summary(fun=mean, aes(x= treatment, y = calcium),
                geom= "crossbar",  width=0.5, colour= "grey20", data=avgcalcium)+
   geom_text(data=tukey_calcium, aes(x=treatment, y = calcium, label= groups), 
-            colour="black", nudge_x= 0.2, nudge_y= 0.05)+
-  labs(title = "Differences in calcium T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: 3.5e-06 (HSDTukey)" )
+            colour="black", nudge_x= 0.2, nudge_y= 3)+
+  labs(title = "", subtitle = "", caption = "Different letters indicate statistically significant differences between each treatment at T0.\nCrossbar indicate the average of the three samples", size = 10 )+
+  ggtitle("Calcium T0", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_anova_calciumt0, scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
+ 
 plot_calcium_t0
 ggsave(plot_calcium_t0, file="soil_parameters_result/calcium_t0.png", width= 1900,height= 1200, units= "px")
 
@@ -399,53 +489,67 @@ ggsave(plot_calcium_t0, file="soil_parameters_result/calcium_t0.png", width= 190
 
 ```{r stats sodium, echo=FALSE}
 shapiro.test(soilt0$sodium)#normal data
+leveneTest(sodium~ treatment, data= soilt0) #equal variance
 anova_sodiumt0 <- aov(sodium ~ treatment, data=soilt0)
-summary(anova_sodiumt0)
-plot(anova_sodiumt0, which=2)
-leveneTest(sodium~ treatment, data= soilt0)
+anova_sodiumt0<- summary(aov(sodium ~ treatment, data=soilt0))
+pvalue_anova_sodiumt0<- anova_sodiumt0[[1]][["Pr(>F)"]][1]
 
-tukey_sodium <- HSD.test(anova_sodiumt0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-tukey_sodium
+tukey_sodium <- HSD.test(aov(sodium ~ treatment, data=soilt0), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 avgsodium <- aggregate(sodium ~ treatment, data=soilt0, FUN= mean)
 
-plot_sodium_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= sodium, col=treatment))+
-  geom_point(size= 6)+
+plot_sodium_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= sodium, fill=treatment))+
+  geom_point(size= 7, pch= 21, col= "black", aes(fill= treatment), position= position_jitter(width=0.1, height=0))+
   scale_color_manual(values= treat.colors)+
+  scale_fill_manual(values= treat.colors)+
   ylab("sodium mEq/kg.")+
   xlab("")+
   theme_classic2()+
   scale_x_discrete(labels= treat.labels)+
+  guides(fill=guide_legend(title="Treatment"))+
   stat_summary(fun=mean, aes(x= treatment, y = sodium),
                geom= "crossbar",  width=0.5, colour= "grey20", data=avgsodium)+
   geom_text(data=tukey_sodium, aes(x=treatment, y = sodium, label= groups), 
             colour="black", nudge_x= 0.2, nudge_y= 0.2)+
-  labs(title = "Differences in sodium T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: ns (HSDTukey)" )
+  labs(title = "", subtitle = "", caption = "Different letters indicate statistically significant differences between each treatment at T0.\nCrossbar indicate the average of the three samples", size = 10 )+
+  ggtitle("Sodium T0", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_anova_sodiumt0, scientific= FALSE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
+  
 plot_sodium_t0
 ggsave(plot_sodium_t0, file="soil_parameters_result/sodium_t0.png", width= 1900,height= 1200, units= "px")
 ```
 
 ```{r stats potassium, echo=FALSE}
 shapiro.test(soilt0$potassium) #normal data
-anova_potassiumt0 <- aov(potassium ~ treatment, data=soilt0)
-summary(anova_potassiumt0)
-plot(anova_potassiumt0, which=2)
 leveneTest(potassium~ treatment, data= soilt0) #equal variance
+anova_potassiumt0 <- aov(potassium ~ treatment, data=soilt0)
+anova_potassiumt0<- summary(aov(potassium ~ treatment, data=soilt0))
+pvalue_anova_potassiumt0<- anova_potassiumt0[[1]][["Pr(>F)"]][1]
 
-tukey_potassium <- HSD.test(anova_potassiumt0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_potassium <- HSD.test(aov(potassium ~ treatment, data=soilt0), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 avgpotassium <- aggregate(potassium ~ treatment, data=soilt0, FUN= mean)
 
-plot_potassium_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= potassium, col=treatment))+
-  geom_point(size= 6)+
+plot_potassium_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= potassium, fill=treatment))+
+  geom_point(size= 7, pch= 21, col= "black", aes(fill= treatment), position= position_jitter(width=0.1, height=0))+
   scale_color_manual(values= treat.colors)+
+  scale_fill_manual(values= treat.colors)+
   ylab("potassium mEq/kg.")+
   xlab("")+
   theme_classic2()+
   scale_x_discrete(labels= treat.labels)+
+  guides(fill=guide_legend(title="Treatment"))+
   stat_summary(fun=mean, aes(x= treatment, y = potassium),
                geom= "crossbar",  width=0.5, colour= "grey20", data=avgpotassium)+
   geom_text(data=tukey_potassium, aes(x=treatment, y = potassium, label= groups), 
             colour="black", nudge_x= 0.2, nudge_y= 0.6)+
-  labs(title = "Differences in potassium T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: 1.16e-05 (HSDTukey)" )
+  labs(title = "", subtitle = "", caption = "Different letters indicate statistically significant differences between each treatment at T0.\nCrossbar indicate the average of the three samples", size = 10 )+
+  ggtitle("Potassium T0", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_anova_potassiumt0, scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
 
 plot_potassium_t0
 ggsave(plot_potassium_t0, file="soil_parameters_result/potassium_t0.png", width= 1900,height= 1200, units= "px")
@@ -455,33 +559,41 @@ ggsave(plot_potassium_t0, file="soil_parameters_result/potassium_t0.png", width=
 
 ```{r stats nitrogent0, echo=FALSE}
 shapiro.test(soilt0$nitrogen)#data no normal 
-soil_prop %>% group_by(treatment) %>% shapiro_test(nitrogen) #all the treatments are normal
-ggqqplot(data = soil_prop, "nitrogen", facet.by = "treatment")
-anova_nitrogen0 <- aov(nitrogen ~ treatment, data=soilt0)
-summary(anova_nitrogen0)
-plot(anova_nitrogen0, which=2)
-leveneTest(nitrogen~ treatment, data= soilt0)
+soil_prop %>% group_by(treatment) %>% shapiro_test(nitrogen) #all the treatments are normal except one
+soilt0$log_nitrogen <- log(soilt0$nitrogen) #transformation
+shapiro.test(soilt0$log_nitrogen)
+soil_prop$log_nitrogen <- log(soil_prop$nitrogen)#transformation
+soil_prop %>% group_by(treatment) %>% shapiro_test(log_nitrogen)#all the treatments are normal
+leveneTest(log_nitrogen~ treatment, data= soilt0) # equal variance
 
-tukey_nitrogen <- HSD.test(anova_nitrogen0, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-avgnitrogen <- aggregate(nitrogen ~ treatment, data=soilt0, FUN= mean)
+anova_nitrogen0 <- aov(log_nitrogen ~ treatment, data=soilt0)
+anova_nitrogen0 <- summary(aov(log_nitrogen ~ treatment, data=soilt0))
+pvalue_anova_nitrogent0<- anova_nitrogen0[[1]][["Pr(>F)"]][1]
+tukey_nitrogen <- HSD.test(aov(log_nitrogen ~ treatment, data=soilt0), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+avgnitrogen <- aggregate(log_nitrogen ~ treatment, data=soilt0, FUN= mean)
+avgnitrogen
 
-plot_nitrogen_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= nitrogen, col=treatment))+
-  geom_point(size= 6)+
+plot_nitrogen_t0 <- soilt0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= log_nitrogen, col=treatment))+
+   geom_point(size= 7, pch= 21, col= "black", aes(fill= treatment), position= position_jitter(width=0.1, height=0))+
   scale_color_manual(values= treat.colors)+
+  scale_fill_manual(values= treat.colors)+
   ylab("nitrogen (%)")+
   xlab("")+
   theme_classic2()+
   scale_x_discrete(labels= treat.labels)+
-  stat_summary(fun=mean, aes(x= treatment, y = nitrogen),
+  stat_summary(fun=mean, aes(x= treatment, y = log_nitrogen),
                geom= "crossbar",  width=0.5, colour= "grey20", data=avgnitrogen)+
-  geom_text(data=tukey_nitrogen, aes(x=treatment, y = nitrogen, label= groups), 
-            colour="black", nudge_x= 0.2, nudge_y= 0.01)+
-  labs(title = "Differences in nitrogen T0.", subtitle = "Three measures of each treatment" , caption = "Anova p-value: 3.65e-09 (HSDTukey)" )
-
+  geom_text(data=tukey_nitrogen, aes(x=treatment, y = log_nitrogen, label= groups), 
+            colour="black", nudge_x= 0.2, nudge_y= 0.05)+
+  guides(fill=guide_legend(title="Treatment"))+
+  labs(title = "", subtitle = "", caption = "Different letters indicate statistically significant differences between each treatment at T0.\nCrossbar indicate the average of the three samples", size = 10 )+
+  ggtitle("Nitrogen T0", subtitle= paste("Data transformed. ANOVA (HSDTukey) p-value: ", format(pvalue_anova_nitrogent0, scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
 plot_nitrogen_t0
 ggsave(plot_nitrogen_t0, file="soil_parameters_result/nitrogen_t0.png", width= 1900,height= 1200, units= "px")
-
-ggsave(plot_nitrogen_t0, file="prueba/nitrogen_t0.png", width= 1900,height= 1200, units= "px")
 
 ```
 
@@ -492,31 +604,33 @@ ggsave(plot_nitrogen_t0, file="prueba/nitrogen_t0.png", width= 1900,height= 1200
 soilt4 <- subset(soil_prop, soil_prop$time== "t4")
 
 shapiro.test(soilt4$org.matter) #normal data
+leveneTest(org.matter~ treatment, data=soilt4) #equal variances
 anova_orgmattert4 <- aov(org.matter ~ treatment, data=soilt4) #sig. different
-summary(anova_orgmattert4)
-plot(anova_orgmattert4, which=2)
-leveneTest(org.matter~ treatment, data=soilt4) #equal variances 
+anova_orgmattert4<- summary(aov(org.matter ~ treatment, data=soilt4))
+pvalue_anova_orgmattert4<- anova_orgmattert4[[1]][["Pr(>F)"]][1]
 
-#### hsd tukey from agricolae::
-tukey_orgmattert4 <- HSD.test(anova_orgmattert4, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_orgmattert4 <- HSD.test(aov(org.matter ~ treatment, data=soilt4), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 avgmt4 <- aggregate(org.matter ~ treatment, data=soilt4, FUN= mean)
-
-avgmt4
-plot_orgmatter_t4 <- soilt4 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= org.matter, col=treatment))+
-  geom_point(shape= 15, size=5)+
+plot_orgmatter_t4 <- soilt4 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= org.matter, fill=treatment))+
+  geom_point(size= 7, pch= 22, col= "black", aes(fill= treatment), position= position_jitter(width=0.1, height=0))+
   scale_color_manual(values= treat.colors)+
+  scale_fill_manual(values= treat.colors)+
   ylab("Oxidable organic matter (%)")+
   xlab("")+
   scale_x_discrete(labels= treat.labels)+
-  theme_clean()+
+  theme_classic2()+
+  guides(fill=guide_legend(title="Treatment"))+
   stat_summary(fun=mean, aes(x= treatment, y = org.matter),
                geom= "crossbar", width=0.6, colour= "black", data=avgmt4)+
   geom_text(data=tukey_orgmattert4, aes(x=treatment, y = org.matter, label= groups), color="black", nudge_x= 0.2, nudge_y= 0.2)+
-  labs(title = "Differences in the percentage of oxidizable organic matter T4.", 
-       subtitle = "Three measures of each treatment", caption = "Anova p-value: 9.82e-08 (HSDTukey)", size = 10 )
+  labs(title = "", subtitle = "", caption = "Different letters indicate statistically significant differences between each treatment at T4.\nCrossbar indicate the average of the three samples", size = 10 )+
+  ggtitle("Oxidizable organic matter T4", subtitle= paste("Data transformed. ANOVA (HSDTukey) p-value: ", format(pvalue_anova_orgmattert4, scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
 plot_orgmatter_t4
-
-
+ggsave(plot_orgmatter_t4, file="soil_parameters_result/orgmatter_t4.png", width= 1900,height= 1200, units= "px")
 ```
 
 
@@ -525,66 +639,115 @@ shapiro.test(soilt4$phosphorus) #no normal data
 soilt4 %>% group_by(treatment) %>% shapiro_test(phosphorus) # all treatments normal
 ggqqplot(data = soil_prop, "phosphorus", facet.by = "treatment")
 
-anova_phosht4 <- aov(phosphorus ~ treatment, data=soilt4) #sig. different
-summary(anova_phosht4)
-plot(anova_phosht4, which=2)
-leveneTest(phosphorus~ treatment, data=soilt4) #equal variances 
+leveneTest(phosphorus~ treatment, data= soilt4)#equal variance
+anova_phospht4 <- aov(phosphorus ~ treatment, data=soilt4)
+anova_phospht4<- summary(aov(phosphorus ~ treatment, data=soilt4))
+pvalue_anova_phospht4 <- anova_phospht4[[1]][["Pr(>F)"]][1]
+tukey_phosphorus <- HSD.test(aov(phosphorus ~ treatment, data=soilt4), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 
-tukey_phosphorust4 <- HSD.test(anova_phosht4, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
-avgpho4 <- aggregate(phosphorus ~ treatment, data=soilt4, FUN= mean)
 
-plot_phosphorus_t4 <- soilt4 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= phosphorus, col=treatment))+
-  geom_point(shape= 15, size=5)+
-  scale_colour_manual(values= treat.colors)+
+avgpho <- aggregate(phosphorus ~ treatment, data=soilt4, FUN= mean)
+plot_phosphorus_t4 <- soilt4 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= phosphorus, fill=treatment))+
+  geom_point(size= 7, pch= 22, col= "black", aes(fill= treatment), position= position_jitter(width=0.1, height=0))+
+  scale_fill_manual(values= treat.colors)+
+  scale_color_manual(values= treat.colors)+
   ylab("Phosphorus mg/Kg")+
   xlab("")+
+  theme_classic2()+
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5))+
   scale_x_discrete(labels= treat.labels)+
-  theme_clean()+
+  guides(fill=guide_legend(title="Treatment"))+
   stat_summary(fun=mean, aes(x= treatment, y = phosphorus),
-               geom= "crossbar", width=0.6, colour= "black", data=avgpho4)+
-  geom_text(data=tukey_phosphorust4, aes(x=treatment, y = phosphorus, label= groups), color="black", nudge_x= 0.2, nudge_y= 3)+
-  labs(title = "Differences in phosphorus T4.", 
-       subtitle = "Three measures of each treatment", caption = "Anova p-value: 7.49e-09 (HSDTukey)", size = 10 )
-
-
+               geom= "crossbar",  width=0.5, colour= "grey20", data=avgpho)+
+  geom_text(data=tukey_phosphorus, aes(x=treatment, y = phosphorus, label= groups), 
+            colour="black", nudge_x= 0.2, nudge_y= 3)+
+  labs(title = "", subtitle = "", caption = "Different letters indicate statistically significant differences between each treatment at t4.\nCrossbar indicate the average of the three samples", size = 10 )+
+  ggtitle("Phosphorus T4", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_anova_phospht4, scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
 plot_phosphorus_t4
+ggsave(plot_phosphorus_t4, file="soil_parameters_result/phosphorus_t4.png", width= 1900,height= 1200, units= "px")
 ```
 
 
 
 ```{r stats ph water t4, echo=FALSE}
 shapiro.test(soilt4$ph.water) #no normal data
-soil_prop %>% group_by(treatment) %>% shapiro_test(ph.water) # each treatments are normal 
-ggqqplot(data = soil_prop, "ph.water", facet.by = "treatment")
+soil_prop %>% group_by(treatment) %>% shapiro_test(ph.water) #no normal all treatments except one
 
-anova_phwatert4 <- aov(ph.water ~ treatment, data=soilt4) #sig. different
-summary(anova_phwatert4)
-plot(anova_phwatert4, which=2)
-leveneTest(ph.water~ treatment, data=soilt4) #equal variances 
+soilt4$log_ph.water <- log2(soilt4$ph.water) #transformation
+shapiro.test(soilt4$log_ph.water)
+soilt4 %>% group_by(treatment) %>% shapiro_test(log_ph.water)
+soil_prop$log_ph.water <- log2(soil_prop$ph.water)#transformation
+soil_prop %>% group_by(treatment) %>% shapiro_test(log_ph.water)#all the treatments are normal except one
+soilt4$sqrt_ph.water <- sqrt(soilt4$ph.water)
+shapiro.test(soilt4$sqrt_ph.water)
+soilt4 %>% group_by(treatment) %>% shapiro_test(sqrt_ph.water)
+soil_prop$sqrt_ph.water <- sqrt(soil_prop$ph.water)
+soil_prop %>% group_by(treatment) %>% shapiro_test(sqrt_ph.water)#all the treatments are normal except one
+soilt4$inv_ph.water <- 1/(soilt4$ph.water)
+shapiro.test(soilt4$inv_ph.water)
+soilt4 %>% group_by(treatment) %>% shapiro_test(inv_ph.water)
+soil_prop$inv_ph.water <- 1/(soil_prop$ph.water)#transformation
+soil_prop %>% group_by(treatment) %>% shapiro_test(inv_ph.water)#all the treatments are normal except one
+soilt4$sum_ph.water <- 1+(soilt4$ph.water)
+shapiro.test(soilt4$sum_ph.water)
+soilt4 %>% group_by(treatment) %>% shapiro_test(sum_ph.water)
+soil_prop$sum_ph.water <- 1+(soil_prop$ph.water)#transformation
+soil_prop %>% group_by(treatment) %>% shapiro_test(sum_ph.water)#all the treatments are normal except one
+soilt4$mul_ph.water <- 3*(soilt4$ph.water)
+shapiro.test(soilt4$mul_ph.water)
+soilt4 %>% group_by(treatment) %>% shapiro_test(mul_ph.water)
+soil_prop$mul_ph.water <- 3*(soil_prop$ph.water)#transformation
+soil_prop %>% group_by(treatment) %>% shapiro_test(mul_ph.water)#all the treatments are normal except one
 
-tukey_phwatert4 <- HSD.test(anova_phwatert4, "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 
-avgphwatert4 <- aggregate(ph.water ~ treatment, data=soilt4, FUN= mean)
+
+anova_phwatert4 <- aov(sqrt_ph.water ~ treatment, data=soilt4)
+anova_phwatert4<- summary(aov(sqrt_ph.water ~ treatment, data=soilt4))
+pvalue_anova_phwatert4<- anova_phwatert4[[1]][["Pr(>F)"]][1]
+tukey_phwatert4 <- HSD.test(aov(sqrt_ph.water ~ treatment, data=soilt4), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_phwatert4
+
+avgphwatert4 <- aggregate(sqrt_ph.water ~ treatment, data=soilt4, FUN= mean)
 avgphwatert4
-plot_phwater_t4 <- soilt4 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= ph.water, col=treatment))+
-  geom_point(shape= 15, size=5)+
-  scale_colour_manual(values= treat.colors)+
+soilt4$sqrt_ph.water
+plot_phwater_t4 <- soilt4 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= sqrt_ph.water, fill=treatment))+
+  geom_point(size= 7, pch= 21, col= "black", aes(fill= treatment), position= position_jitter(width=0.1, height=0))+
+  scale_color_manual(values= treat.colors)+
+  scale_fill_manual(values= treat.colors)+
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5))+
+  scale_x_discrete(labels= treat.labels)+
+  guides(fill=guide_legend(title="Treatment"))+
   ylab("pH water udes.")+
   xlab("")+
-  scale_x_discrete(labels= treat.labels)+
-  theme_clean()+
-  stat_summary(fun=mean, aes(x= treatment, y = ph.water),
-               geom= "crossbar", width=0.6, colour= "black", data=avgphwatert4)+
-  geom_text(data=tukey_phwatert4, aes(x=treatment, y = ph.water, label= groups), color="black", nudge_x= 0.2, nudge_y= 0.05)+
-  labs(title = "Differences in pH water udes. T4.", 
-       subtitle = "Three measures of each treatment", caption = "Anova p-value: 0.00313 (HSDTukey)", size = 10 )
-
+  theme_classic2()+
+  stat_summary(fun=mean, aes(x= treatment, y = sqrt_ph.water),
+               geom= "crossbar",  width=0.5, colour= "grey20", data=avgphwatert4)+
+  geom_text(data=tukey_phwatert4, aes(x=treatment, y = sqrt_ph.water, label= groups), 
+            colour="black", nudge_x= 0.2, nudge_y= 0.01)+
+  labs(title = "", subtitle = "", caption = "Different letters indicate statistically significant differences between each treatment at t4.\nCrossbar indicate the average of the three samples", size = 10)+
+  ggtitle("pH water t4", subtitle= paste("Data transformed. ANOVA (HSDTukey) p-value: ", format(pvalue_anova_phwatert4, scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
 plot_phwater_t4
+ggsave(plot_phwater_t4, file="soil_parameters_result/phwater_t4.png", width= 1900,height= 1200, units= "px")
+
 ```
 
 ```{r stats conductivity t4, include=FALSE}
 shapiro.test(soilt4$conductivity) #no normal data
-soil_prop %>% group_by(treatment) %>% shapiro_test(conductivity) # each treatments are normal 
+soil_prop %>% group_by(treatment) %>% shapiro_test(conductivity) # no normal
+soilt4$log_conductivity <- log10(soilt4$conductivity)
+shapiro.test(soilt4$log_conductivity)
+soilt4 %>% group_by(treatment) %>% shapiro_test(log_conductivity)
+soil_prop$log_conductivity <- log10(soil_prop$conductivity)
+shapiro.test(soil_prop$conductivity)
+soil_prop %>% group_by(treatment) %>% shapiro_test(log_conductivity)
 ggqqplot(data = soil_prop, "conductivity", facet.by = "treatment")
 
 anova_conductivityt4 <- aov(conductivity ~ treatment, data=soilt4) #sig. different
