@@ -51,6 +51,8 @@ library(rstatix)
 library(AICcmodavg)
 library(ggthemes)
 
+library(lme4)
+
 ```
 
 
@@ -940,8 +942,9 @@ anova_orgt0t4int <- aov(org.matter ~ time * treatment +rep, data=soilt0t4) #add 
 anova_orgt0t4int<- summary(aov(org.matter ~ time * treatment +rep, data=soilt0t4))
 pvalue_anova_orgt0t4int<- anova_orgt0t4int[[1]][["Pr(>F)"]][1]
 
-orglmer <- lmer(org.matter~ time + (1+ time|treatment), data=soilt0t4)#model time + (1+ time|treatment)
+orglmer <- lmer(org.matter~ time + (1|treatment), data=soilt0t4)#model time + (1+ time|treatment)
 anova(orglm)
+
 
 emm_org <- emmeans(orglm, pairwise ~ time | treatment)
 emm_org
