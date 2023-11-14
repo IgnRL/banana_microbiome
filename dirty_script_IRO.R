@@ -1,19 +1,33 @@
-ibrary(ggplot2)
-library(gridExtra)
-library(tidyr)
+library(lme4)
 
-actualIris <- data.frame(Sepal.Length=6.1, Sepal.Width=3.1, Petal.Length=5.0, Petal.Width=1.7)
+size <- c(3,4,5,6,4,5,6,7,7,8,9,10)
+pop <- c("A","A","A","A","B","B","B","B","C","C","C","C")
+
+lm.model <- lm(size ~ pop)
+summary(lm.model)
+aov.model <- aov(size~pop)
+summary(aov.model)
+
+aov.lm <- aov(lm.model)
+summary(lm.model)
+summary(aov.model)
+summary(aov.lm)
 
 
-labels <- c(paste('Petal Length\none-tailed test=', round(sum(actualIris$Sepal.Length < iris$Sepal.Length)/nrow(iris), 2)),
-            paste('Petal Width\none-tailed test=', round(sum(actualIris$Sepal.Width < iris$Sepal.Width)/nrow(iris), 2)),
-            paste('Sepal Length\none-tailed test=', round(sum(actualIris$Petal.Length < iris$Petal.Length)/nrow(iris), 2)),
-            paste('Sepal Width\none-tailed test=', round(sum(actualIris$Petal.Width < iris$Petal.Width)/nrow(iris), 2)))
+treat.pot <- paste(data$treatment, data$rep, sep= "_")
+data <- data.frame(data, treat.pot)
+abc.pot <- summary(aov(shannon ~ time*treatment+ Error(rep), data = data))
+unique.pot <- summary(aov(shannon ~ time*treatment+ Error(treat.pot), data = data))
 
-tmp <- iris[,-5] %>% gather(Type, value)
-actuals <- data.frame(col1=colnames(actualIris), col2=as.numeric(actualIris[1,]))
-tmp$Actual <- actuals$col2[match(tmp$Type, actuals$col1)]
-tmp$Type <- factor(tmp$Type, levels = c('Petal.Length', 'Petal.Width', 'Sepal.Length', 'Sepal.Width'), 
-                   labels = labels)
-ggplot(tmp, aes(value)) + facet_wrap(~Type, scales="free", nrow = 1) + geom_histogram() + 
-  geom_vline(aes(xintercept=Actual), colour="blue", lwd=2) 
+
+lm1 <- lmer(shannon ~ time*treatment + (1|rep), data = data)
+summary(lm1)
+aov1 <- aov(shannon ~time*treatment + Error(rep), data= data)
+summary(aov1)
+
+lm2 <- lmer(shannon ~ time*treatment + (1|treat.pot), data = data)
+summary(lm2)
+aov2<- aov(shannon ~time*treatment + Error(treat.pot), data= data)
+summary(aov2)
+
+

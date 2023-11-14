@@ -25,6 +25,10 @@ library(phyloseq)
 library(vegan)
 library(here)
 library(geomtextpath)
+library(nlme)
+library(ggpmisc)
+library(knitr)
+library(kableExtra)
 ```
 
 
@@ -138,8 +142,6 @@ plot.seq.depth.time <- sample.table97 %>%
   labs(y= "N.sequences", x= "Time", title = "Sequencing depth of the different treatments and soils")+
   theme_classic2()
 plot.seq.depth.time
-
-
 ```
 
 As seen in the graphs above, there is uneven sequencing depth among treatments (Wilcoxon test on the means of the sequencing depth of the treatments), this might lead to differences in the representation of the samples. This can also be visualized with the use of rarefaction plots. 
@@ -263,132 +265,218 @@ zotu97.rar
 
 ## Alpha diversity {.tabset}
 
+
+```{r}
+data <- sample_data(zotu97.rar)
+#Create binding variable for treatment and repetition (unique identifier (might not be necessary))
+treat.pot <- paste(data$treatment, data$rep, sep= "_")
+data <- data.frame(data, treat.pot)
+
+data %>% 
+  group_by(time) %>%
+  shapiro_test(shannon)
+ggqqplot(data=data, "shannon", facet.by= "time")
+
+data %>% 
+  group_by(treatment) %>%
+  shapiro_test(shannon)
+ggqqplot(data=data, "shannon", facet.by= "treatment")
+
+data %>% 
+  group_by(time) %>%
+  shapiro_test(evenness)
+ggqqplot(data=data, "evenness", facet.by= "time")
+
+data %>% 
+  group_by(treatment) %>%
+  shapiro_test(evenness)
+ggqqplot(data=data, "evenness", facet.by= "treatment")
+
+data %>% 
+  group_by(time) %>%
+  shapiro_test(richness)
+ggqqplot(data=data, "richness", facet.by= "time")
+
+data %>% 
+  group_by(treatment) %>%
+  shapiro_test(richness)
+ggqqplot(data=data, "richness", facet.by= "treatment")
+
+
+# Overall the data behaves as a normall distribution. 
+```
+
+
 ### Shanon
 
 ```{r shannon}
-data <- sample_data(zotu97.rar)
+
+#Repeated measures anova
+anova.shannon <- summary(aov(shannon ~ time*treatment+ Error(rep), data = data))
+#extract pvalue and other stats
+pval.shannon <- anova.shannon[[2]][[1]] %>% data.frame() %>% rownames_to_column(var= "Variable")
+#adjust the format
+pval.shannon <- pval.shannon %>% rename_at('Pr..F.', ~'p.value')
+pval.shannon$p.value <- format.pval(pval.shannon$p.value, digits = 3)
+pval.shannon$F.value <- round(pval.shannon$F.value,2)
+pval.shannon$Sum.Sq <- NULL
+pval.shannon$Mean.Sq <- NULL
+pval.shannon
+#convert into kable
+#pval.shannon <- kableExtra::kable_styling(kable(pval.shannon, caption= "Repeated measures ANOVA", align = "c"),full_width = F)
 
 
-
-shannon_treat_facet <- data %>% ggplot(aes(x= factor(treatment, level= treat.order), y= shannon, color= time)) +
+shannon_time_facet <- data %>% ggplot(aes(x= factor(treatment, level= treat.order), y= shannon, color= treatment)) +
   geom_point()+
-  scale_color_manual(values= time.colors)+
+  scale_color_manual(values= treat.colors)+
   facet_wrap(~time)+
   theme_classic2()+
-  scale_x_discrete(labels= treat.labels) 
-shannon_treat_facet
-ggsave(shannon_treat_facet, file= "ITS_results/shannon_treat_facet.png", width = 4000, unit= "px")
-
-
-shannon_time_facet <- data %>% ggplot(aes(x= time, y= shannon, color= treatment, group = 1)) +
-  geom_point()+
-  scale_color_manual(values= treat.colors)+
-  geom_smooth(aes(col= treatment), method = "lm", se = FALSE, size = 1) + 
-  facet_wrap(~factor(treatment, level= treat.order))+
-  theme_classic2()
-ggsave(shannon_time_facet, file= "ITS_results/shannon_time_facet.png", width = 3000, unit= "px")
+  stat_summary(aes(x= treatment, y = shannon, group = treatment, col= treatment),fun= mean, geom = "crossbar")+
+  scale_x_discrete(labels= treat.labels)+
+  xlab(NULL)+ylab("Shannon index")+
+  theme(legend.position = "bottom")
 shannon_time_facet
+ggsave(shannon_time_facet, file= "ITS_results/shannon_time_facet.png", width = 4000, unit= "px")
 
-data %>% ggplot(aes(x= treatment, y= shannon, color= time, group= time)) +
-  geom_point()+
-  scale_color_manual(values= time.colors)+
-  scale_fill_manual(values= time.colors)+
-  geom_smooth(aes(color= time, fill= time), alpha= 0, method= "lm")+
-  theme_classic2()+
-  scale_x_discrete(labels= treat.labels)
-
-data %>% ggplot(aes(x= time, y= shannon, color= treatment)) +
+shannon_treat_facet <- data %>% ggplot(aes(x= time, y= shannon, color= treatment, group = treat.pot)) +
   geom_point()+
   scale_color_manual(values= treat.colors)+
-  scale_fill_manual(values= treat.colors)+
-  theme_classic2()
+  geom_line(aes(col=treatment), alpha= 0.3)+
+  stat_summary(aes(x= time, y = shannon, group = treatment, col= treatment),fun= mean, geom = "smooth", linetype= 1)+
+  facet_wrap(~factor(treatment, level= treat.order))+
+  xlab(NULL)+ylab("Shannon index")+
+  theme_classic2()+guides(color= "none")
+shannon_treat_facet
+ggsave(shannon_treat_facet, file= "ITS_results/shannon_treat_facet.png", width = 3000, unit= "px")
+
+#Create an empty plot (theme_void()) to plot the table using geom_table() and add it to the multiplot in grid.arrange()
+df <- tibble(x = 0, y = 0, tb = list(pval.shannon))
+
+stat.table <- ggplot()+
+  geom_table(data=df, aes(x=x, y=y, label= tb),size= 10, table.theme = ttheme_gtsimple(size= 10))+
+  theme_void()
+stat.table
+
+shannon.plots <- grid.arrange(shannon_treat_facet, shannon_time_facet,stat.table,layout_matrix = rbind(c(1,1,1),c(1,1,1),c(1,3,3), c(2,2,2),c(2,2,2)))
+ggsave(shannon.plots, file="ITS_results/shannon_treat_facet.png", width=4000, height= 4000, units = "px")
 ```
 
 ![](ITS_results/shannon_treat_facet.png)
+
 ![](ITS_results/shannon_time_facet.png)
 
 ### Evenness
 
 ```{r evenness}
-data <- sample_data(zotu97.rar)
 
-evenness_treat_facet <- data %>% ggplot(aes(x= treatment, y= evenness, color= time)) +
+#Repeated measures anova
+anova.evenness <- summary(aov(evenness ~ time*treatment+ Error(rep), data = data))
+#extract pvalue and other stats
+pval.evenness <- anova.evenness[[2]][[1]] %>% data.frame() %>% rownames_to_column(var= "Variable")
+#adjust the format
+pval.evenness <- pval.evenness %>% rename_at('Pr..F.', ~'p.value')
+pval.evenness$p.value <- format.pval(pval.evenness$p.value, digits = 3)
+pval.evenness$F.value <- round(pval.evenness$F.value,2)
+pval.evenness$Sum.Sq <- NULL
+pval.evenness$Mean.Sq <- NULL
+pval.evenness
+#convert into kable
+#pval.evenness <- kableExtra::kable_styling(kable(pval.evenness, caption= "Repeated measures ANOVA", align = "c"),full_width = F)
+
+
+evenness_time_facet <- data %>% ggplot(aes(x= factor(treatment, level= treat.order), y= evenness, color= treatment)) +
   geom_point()+
-  scale_color_manual(values= time.colors)+
+  scale_color_manual(values= treat.colors)+
   facet_wrap(~time)+
   theme_classic2()+
-  scale_x_discrete(labels= treat.labels)
-ggsave(evenness_treat_facet, file= "ITS_results/evenness_treat_facet.png", width = 4000, unit= "px")
-evenness_treat_facet
-
-evenness_time_facet <- data %>% ggplot(aes(x= time, y= evenness, color= treatment, group = 1)) +
-  geom_point()+
-  scale_color_manual(values= treat.colors)+
-  geom_smooth(aes(col= treatment), method = "lm", se = FALSE, size = 1) + 
-  facet_wrap(~factor(treatment, level= treat.order))+
-  theme_classic2()
-ggsave(evenness_time_facet, file= "ITS_results/evenness_time_facet.png", width = 3000, unit= "px")
+  stat_summary(aes(x= treatment, y = evenness, group = treatment, col= treatment),fun= mean, geom = "crossbar")+
+  scale_x_discrete(labels= treat.labels)+
+  xlab(NULL)+ylab("evenness index")+
+  theme(legend.position = "bottom")
 evenness_time_facet
+ggsave(evenness_time_facet, file= "ITS_results/evenness_time_facet.png", width = 4000, unit= "px")
 
-data %>% ggplot(aes(x= treatment, y= evenness, color= time, group= time)) +
-  geom_point()+
-  scale_color_manual(values= time.colors)+
-  scale_fill_manual(values= time.colors)+
-  geom_smooth(aes(color= time, fill= time), alpha= 0, method= "lm")+
-  theme_classic2()+
-  scale_x_discrete(labels= treat.labels)
-
-data %>% ggplot(aes(x= time, y= evenness, color= treatment, group= treatment)) +
+evenness_treat_facet <- data %>% ggplot(aes(x= time, y= evenness, color= treatment, group = treat.pot)) +
   geom_point()+
   scale_color_manual(values= treat.colors)+
-  theme_classic2()+
-  geom_smooth(aes(color= treatment), alpha= 0, method= "lm")
+  geom_line(aes(col=treatment), alpha= 0.3)+
+  stat_summary(aes(x= time, y = evenness, group = treatment, col= treatment),fun= mean, geom = "smooth", linetype= 1)+
+  facet_wrap(~factor(treatment, level= treat.order))+
+  xlab(NULL)+ylab("evenness index")+
+  theme_classic2()+guides(color= "none")
+evenness_treat_facet
+ggsave(evenness_treat_facet, file= "ITS_results/evenness_treat_facet.png", width = 3000, unit= "px")
 
+#Create an empty plot (theme_void()) to plot the table using geom_table() and add it to the multiplot in grid.arrange()
+df <- tibble(x = 0, y = 0, tb = list(pval.evenness))
+
+stat.table <- ggplot()+
+  geom_table(data=df, aes(x=x, y=y, label= tb),size= 10, table.theme = ttheme_gtsimple(size= 10))+
+  theme_void()
+stat.table
+
+evenness.plots <- grid.arrange(evenness_treat_facet, evenness_time_facet,stat.table,layout_matrix = rbind(c(1,1,1),c(1,1,1),c(1,3,3), c(2,2,2),c(2,2,2)))
+ggsave(evenness.plots, file="ITS_results/evenness_treat_facet.png", width=4000, height= 4000, units = "px")
 ```
 
 ![](ITS_results/evenness_treat_facet.png)
+
 ![](ITS_results/evenness_time_facet.png)
 
-### Richness
+### Richnness
 
 ```{r richness}
-data <- sample_data(zotu97.rar)
 
-richness_treat_facet <- data %>% ggplot(aes(x= factor(treatment, level= treat.order), y= richness, color= treatment)) +
+#Repeated measures anova
+anova.richness <- summary(aov(richness ~ time*treatment+ Error(rep), data = data))
+#extract pvalue and other stats
+pval.richness <- anova.richness[[2]][[1]] %>% data.frame() %>% rownames_to_column(var= "Variable")
+#adjust the format
+pval.richness <- pval.richness %>% rename_at('Pr..F.', ~'p.value')
+pval.richness$p.value <- format.pval(pval.richness$p.value, digits = 3)
+pval.richness$F.value <- round(pval.richness$F.value,2)
+pval.richness$Sum.Sq <- NULL
+pval.richness$Mean.Sq <- NULL
+pval.richness
+#convert into kable
+#pval.richness <- kableExtra::kable_styling(kable(pval.richness, caption= "Repeated measures ANOVA", align = "c"),full_width = F)
+
+
+richness_time_facet <- data %>% ggplot(aes(x= factor(treatment, level= treat.order), y= richness, color= treatment)) +
   geom_point()+
   scale_color_manual(values= treat.colors)+
   facet_wrap(~time)+
   theme_classic2()+
-  scale_x_discrete(labels= treat.labels)
-
-ggsave(richness_treat_facet, file= "ITS_results/richness_treat_facet.png", width = 4000, unit= "px")
-
-richness_time_facet <- data %>% ggplot(aes(x=time, y= richness, color= treatment, group = 1)) +
-  geom_point()+
-  scale_color_manual(values= treat.colors)+
-  geom_smooth(aes(col= treatment), method = "lm", se = FALSE, size = 1) + 
-  facet_wrap(~factor(treatment, level= treat.order))+
-  theme_classic2()
+  stat_summary(aes(x= treatment, y = richness, group = treatment, col= treatment),fun= mean, geom = "crossbar")+
+  scale_x_discrete(labels= treat.labels)+
+  xlab(NULL)+ylab("richness index")+
+  theme(legend.position = "bottom")
 richness_time_facet
-ggsave(richness_time_facet, file= "ITS_results/richness_time_facet.png", width = 3000, unit= "px")
+ggsave(richness_time_facet, file= "ITS_results/richness_time_facet.png", width = 4000, unit= "px")
 
-data %>% ggplot(aes(x= treatment, y= richness, color= time, group= time)) +
-  geom_point()+
-  scale_color_manual(values= time.colors)+
-  scale_fill_manual(values= time.colors)+
-  geom_smooth(aes(color= time, fill= time), alpha= 0, method= "lm")+
-  theme_classic2()+
-  scale_x_discrete(labels= treat.labels)
-
-data %>% ggplot(aes(x= time, y= richness, color= treatment, group= treatment)) +
+richness_treat_facet <- data %>% ggplot(aes(x= time, y= richness, color= treatment, group = treat.pot)) +
   geom_point()+
   scale_color_manual(values= treat.colors)+
-  theme_classic2()+
-  geom_smooth(aes(color= treatment), alpha= 0, method= "lm")
+  geom_line(aes(col=treatment), alpha= 0.3)+
+  stat_summary(aes(x= time, y = richness, group = treatment, col= treatment),fun= mean, geom = "smooth", linetype= 1)+
+  facet_wrap(~factor(treatment, level= treat.order))+
+  xlab(NULL)+ylab("richness index")+
+  theme_classic2()+guides(color= "none")
+richness_treat_facet
+ggsave(richness_treat_facet, file= "ITS_results/richness_treat_facet.png", width = 3000, unit= "px")
+
+#Create an empty plot (theme_void()) to plot the table using geom_table() and add it to the multiplot in grid.arrange()
+df <- tibble(x = 0, y = 0, tb = list(pval.richness))
+
+stat.table <- ggplot()+
+  geom_table(data=df, aes(x=x, y=y, label= tb),size= 10, table.theme = ttheme_gtsimple(size= 10))+
+  theme_void()
+stat.table
+
+richness.plots <- grid.arrange(richness_treat_facet, richness_time_facet,stat.table,layout_matrix = rbind(c(1,1,1),c(1,1,1),c(1,3,3), c(2,2,2),c(2,2,2)))
+ggsave(richness.plots, file="ITS_results/richness_treat_facet.png", width=4000, height= 4000, units = "px")
 ```
 
 ![](ITS_results/richness_treat_facet.png)
 
-
 ![](ITS_results/richness_time_facet.png)
-Missing stats
