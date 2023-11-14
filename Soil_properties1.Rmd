@@ -50,8 +50,7 @@ library(ggrepel)
 library(rstatix)
 library(AICcmodavg)
 library(ggthemes)
-library(lmerTest)
-library(lme4)
+
 ```
 
 
