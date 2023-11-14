@@ -29,6 +29,7 @@ library(nlme)
 library(ggpmisc)
 library(knitr)
 library(kableExtra)
+library(car)
 ```
 
 
@@ -326,6 +327,7 @@ pval.shannon
 #pval.shannon <- kableExtra::kable_styling(kable(pval.shannon, caption= "Repeated measures ANOVA", align = "c"),full_width = F)
 
 
+
 shannon_time_facet <- data %>% ggplot(aes(x= factor(treatment, level= treat.order), y= shannon, color= treatment)) +
   geom_point()+
   scale_color_manual(values= treat.colors)+
@@ -358,12 +360,14 @@ stat.table <- ggplot()+
 stat.table
 
 shannon.plots <- grid.arrange(shannon_treat_facet, shannon_time_facet,stat.table,layout_matrix = rbind(c(1,1,1),c(1,1,1),c(1,3,3), c(2,2,2),c(2,2,2)))
-ggsave(shannon.plots, file="ITS_results/shannon_treat_facet.png", width=4000, height= 4000, units = "px")
+ggsave(shannon.plots, file="ITS_results/shannon_all_facet.png", width=4000, height= 4000, units = "px")
 ```
 
 ![](ITS_results/shannon_treat_facet.png)
 
 ![](ITS_results/shannon_time_facet.png)
+
+![](ITS_results/shannon_all_facet.png)
 
 ### Evenness
 
@@ -416,12 +420,14 @@ stat.table <- ggplot()+
 stat.table
 
 evenness.plots <- grid.arrange(evenness_treat_facet, evenness_time_facet,stat.table,layout_matrix = rbind(c(1,1,1),c(1,1,1),c(1,3,3), c(2,2,2),c(2,2,2)))
-ggsave(evenness.plots, file="ITS_results/evenness_treat_facet.png", width=4000, height= 4000, units = "px")
+ggsave(evenness.plots, file="ITS_results/evenness_all_facet.png", width=4000, height= 4000, units = "px")
 ```
 
 ![](ITS_results/evenness_treat_facet.png)
 
 ![](ITS_results/evenness_time_facet.png)
+
+![](ITS_results/evenness_all_facet.png)
 
 ### Richnness
 
@@ -474,9 +480,39 @@ stat.table <- ggplot()+
 stat.table
 
 richness.plots <- grid.arrange(richness_treat_facet, richness_time_facet,stat.table,layout_matrix = rbind(c(1,1,1),c(1,1,1),c(1,3,3), c(2,2,2),c(2,2,2)))
-ggsave(richness.plots, file="ITS_results/richness_treat_facet.png", width=4000, height= 4000, units = "px")
+ggsave(richness.plots, file="ITS_results/richness_all_facet.png", width=4000, height= 4000, units = "px")
 ```
 
 ![](ITS_results/richness_treat_facet.png)
 
 ![](ITS_results/richness_time_facet.png)
+
+![](ITS_results/richness_all_facet.png)
+
+Is the diversity the same at the beginning that at the end? t5-t0 for each treatment
+
+```{r delta t for shannon}
+
+datat0 <- subset(data, data$time== "T0")
+datat5<- subset(data, data$time== "T5")
+stopifnot(identical(datat5$treat.pot, datat0$treat.pot))
+d.time <- data.frame(datat0[, c("time", "treatment", "rep", "treat.pot","shannon", "richness", "evenness")], datat5[, c("time", "shannon", "richness", "evenness")])
+row.names(d.time) <- NULL
+d.time <- rename(d.time, shannon.t0= shannon, richness.t0= richness, evenness.t0= evenness,shannon.t5= shannon.1, richness.t5= richness.1, evenness.t5= evenness.1)
+d.time$delta.shannon <- d.time$shannon.t5-d.time$shannon.t0
+d.time$delta.richness<- d.time$richness.t5-d.time$richness.t0
+d.time$delta.evenness<- d.time$evenness.t5-d.time$evenness.t0
+
+
+
+divt5t0 <- filter(data, time == "T0"| time == "T5")
+
+
+
+diff.div.shannon <- divt5t0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= shannon)) +
+                                        geom_boxplot(aes(fill=treatment, alpha= time),position= "dodge")+
+  scale_fill_manual(values= treat.colors)
+
+diff.div.shannon
+```
+
