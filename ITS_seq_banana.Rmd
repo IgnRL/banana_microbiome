@@ -34,6 +34,7 @@ library(kableExtra)
 library(car)
 library(lmerTest)
 library(emmeans)
+library(multcomp)
 ```
 
 
@@ -312,12 +313,13 @@ ggqqplot(data=data, "richness", facet.by= "treatment")
 ```
 
 
-### Shanon
+### Statistical analysis
 
-```{r shannon}
+```{r stats}
+
+#########SHANNON###############
 lmer.shannon <- lmer(shannon ~ time*treatment+(1|treat.pot) , data = data)
 #Repeated measures anova
-lmer.richness <- lmer(richness ~ time*treatment +(1|treat.pot), data= data)
 anova.shannon <- anova(lmer.shannon) %>% as.data.frame()
 
 #extract pvalue and other stats
@@ -337,43 +339,85 @@ treat.pval.shannon <- pval.shannon$p.value[2]
 int.pval.shannon <- pval.shannon$p.value[3]
 #convert into kable
 #pval.shannon <- kableExtra::kable_styling(kable(pval.shannon, caption= "Repeated measures ANOVA", align = "c"),full_width = F)
-emmeans(model, list(pairwise ~ Group), adjust = "tukey")
 
-emmeans.shannon <- cld(emmeans(lmer.shannon, ~ treatment), Letters = letters, reversed= TRUE)
-save(emmeans.shannon, file= "ITS_results/emmeans.shannon.RDa")
-install.packages("emmeans", dependencies = TRUE)
+emmeans.shannon.treatment <- cld(emmeans(lmer.shannon, ~treatment), Letters = letters, reversed= TRUE)
+save(emmeans.shannon, file= "ITS_results/emmeans_treat_shannon.RDa")
+emmeans.shannon <- load(file="ITS_results/emmeans_treat_shannon.RDa")
 
-
-
-
-whinnie <- data.frame(
-  Speaker = c("Pooh", "Pooh", "Pooh", "Pooh", "Pooh", "Pooh", "Pooh", "Pooh", "Pooh", "Pooh", "Piglet", "Piglet", "Piglet", "Piglet", "Piglet", "Piglet", "Piglet", "Piglet", "Piglet", "Piglet","Tigger", "Tigger", "Tigger", "Tigger", "Tigger", "Tigger", "Tigger", "Tigger", "Tigger", "Tigger"),
-  Likert = c(3, 5, 4, 4, 4, 4, 4, 4, 5, 5, 2, 4, 2, 2, 1, 2, 3, 2, 2, 3,4, 4, 4, 4, 5, 3, 5, 4, 4, 3))
+emmeans.shannon.time <- cld(emmeans(lmer.shannon,~time), Letters = letters, reversed= TRUE)
+save(emmeans.shannon.treatment, file= "ITS_results/emmeans_time_shannon.RDa")
+emmeans.shannon.treatment <- load(file="ITS_results/emmeans_time_shannonshannon.RDa")
 
 
 
-whinnie$Speaker = factor(whinnie$Speaker,
-                      levels=unique(whinnie$Speaker))
-whinnie$Likert.f = factor(whinnie$Likert,
-                       ordered = TRUE)
-str(whinnie)
-summary(whinnie)
+########## RICHNESS###############
+lmer.richness <- lmer(richness ~ time*treatment+(1|treat.pot) , data = data)
+#Repeated measures anova
+anova.richness <- anova(lmer.richness) %>% as.data.frame()
 
-library(ordinal)
+#extract pvalue and other stats
+pval.richness <- anova.richness %>% rownames_to_column(var= "Variable")
+#adjust the format
+pval.richness <- pval.richness %>% rename_at('Pr(>F)', ~'p.value')
+pval.richness <- pval.richness %>% rename_at('F value', ~'F.value')
+pval.richness <- pval.richness %>% rename_at('NumDF', ~'df')
+pval.richness$p.value <- format.pval(pval.richness$p.value, digits = 3)
+pval.richness$F.value <- round(pval.richness$F.value,2)
+pval.richness$`Sum Sq` <- NULL
+pval.richness$`Mean Sq` <- NULL
+pval.richness$`DenDF` <- NULL
+pval.richness
+time.pval.richness <- pval.richness$p.value[1]
+treat.pval.richness <- pval.richness$p.value[2]
+int.pval.richness <- pval.richness$p.value[3]
+#convert into kable
+#pval.richness <- kableExtra::kable_styling(kable(pval.richness, caption= "Repeated measures ANOVA", align = "c"),full_width = F)
 
-model = clm(Likert.f ~ Speaker,
-            data = whinnie)
 
-anova(model, type="II")
-
-marginal = emmeans(lm1,
-                   ~ Treatment)
-
-pairs(marginal,
-      adjust="tukey")
+emmeans.richness.treatment <- cld(emmeans(lmer.richness, ~treatment), Letters = letters, reversed= TRUE)
+save(emmeans.richness.treatment, file= "ITS_results/emmeans_treat_richness.RDa")
+emmeans.richness.treatment <- load(file="ITS_results/emmeans_treat_richness.RDa")
+emmeans.richness.time <- cld(emmeans(lmer.richness,~time), Letters = letters, reversed= TRUE)
+save(emmeans.richness.time, file= "ITS_results/emmeans_time_richness.RDa")
+emmeans.richness.time <- load(file="ITS_results/emmeans_time_richness.RDa")
 
 
+#########EVENNESS###########
+lmer.evenness <- lmer(evenness ~ time*treatment+(1|treat.pot) , data = data)
+#Repeated measures anova
+anova.evenness <- anova(lmer.evenness) %>% as.data.frame()
 
+#extract pvalue and other stats
+pval.evenness <- anova.evenness %>% rownames_to_column(var= "Variable")
+#adjust the format
+pval.evenness <- pval.evenness %>% rename_at('Pr(>F)', ~'p.value')
+pval.evenness <- pval.evenness %>% rename_at('F value', ~'F.value')
+pval.evenness <- pval.evenness %>% rename_at('NumDF', ~'df')
+pval.evenness$p.value <- format.pval(pval.evenness$p.value, digits = 3)
+pval.evenness$F.value <- round(pval.evenness$F.value,2)
+pval.evenness$`Sum Sq` <- NULL
+pval.evenness$`Mean Sq` <- NULL
+pval.evenness$`DenDF` <- NULL
+pval.evenness
+time.pval.evenness <- pval.evenness$p.value[1]
+treat.pval.evenness <- pval.evenness$p.value[2]
+int.pval.evenness <- pval.evenness$p.value[3]
+#convert into kable
+#pval.evenness <- kableExtra::kable_styling(kable(pval.evenness, caption= "Repeated measures ANOVA", align = "c"),full_width = F)
+
+
+emmeans.evenness.treatment <- cld(emmeans(lmer.evenness, ~treatment), Letters = letters, reversed= TRUE)
+save(emmeans.evenness.treatment, file= "ITS_results/emmeans_treat_evenness.RDa")
+emmeans.evenness.treatment <- load(file="ITS_results/emmeans_treat_evenness.RDa")
+emmeans.evenness.time <- cld(emmeans(lmer.evenness,~time), Letters = letters, reversed= TRUE)
+save(emmeans.evenness.time, file= "ITS_results/emmeans_time_evenness.RDa")
+emmeans.evenness.time <- load(file="ITS_results/emmeans_time_evenness.RDa")
+```
+
+
+### Shannon
+
+```{r shannon}
 shannon_time_facet <- data %>% ggplot(aes(x= factor(treatment, level= treat.order), y= shannon, color= treatment)) +
   geom_point()+
   scale_color_manual(values= treat.colors)+
