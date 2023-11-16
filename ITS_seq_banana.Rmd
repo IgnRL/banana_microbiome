@@ -339,8 +339,8 @@ int.pval.shannon <- pval.shannon$p.value[3]
 #pval.shannon <- kableExtra::kable_styling(kable(pval.shannon, caption= "Repeated measures ANOVA", align = "c"),full_width = F)
 emmeans(model, list(pairwise ~ Group), adjust = "tukey")
 
-emmeans(lmer.richness, ~ treatment)
-
+emmeans.shannon <- cld(emmeans(lmer.shannon, ~ treatment), Letters = letters, reversed= TRUE)
+save(emmeans.shannon, file= "ITS_results/emmeans.shannon.RDa")
 install.packages("emmeans", dependencies = TRUE)
 
 
