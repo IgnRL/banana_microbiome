@@ -1,0 +1,784 @@
+---
+title: "Soil properties interaction T0 T4"
+author: "Raquel Correa"
+date: "2023-11-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+``` {r, include=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(ggpubr)
+library(gridExtra)
+library(corrplot)
+library(agricolae)
+library(emmeans)
+library(multcomp)
+library(multcompView)
+library(data.table)
+library(tidyverse)
+
+library(phyloseq)
+
+library(vegan)
+library(ape)
+library(here)
+library(readxl)
+library(ggpubr)
+library(geomtextpath)
+library(knitr)
+library(gridExtra)
+library(Biostrings)
+library(seqinr)
+library(FSA)
+library(agricolae)
+library(MASS)
+library(grid)
+library(gridExtra)
+library(emmeans)
+library(multcomp)
+library(broom)
+library(viridis)
+
+#install.packages("ALDEx2")
+library(ALDEx2)
+library(FactoMineR)
+library(factoextra)
+library(kableExtra)
+library(scales)
+library(dunn.test)
+library(car)
+library(corrplot)
+library(eulerr)
+library(ggforce)
+library(ggrepel)
+library(rstatix)
+library(AICcmodavg)
+library(ggthemes)
+library(lme4)
+library(lmerTest)
+```
+
+### Differences between the beginning at the end of the experiment (T0 vs T4)
+
+```{r colors, include=FALSE}
+treat.colors <- c("control"= "green4" ,"control.amf"  = "darkseagreen" , "chicken.manure"= "royalblue1", "cow.manure" = "red3","mo.pellet"= "darkorchid1","compost"="chocolate4","control.legume"="darkolivegreen4")
+treat.colors
+treat.order <- c('control', 'control.amf', 'control.legume', "compost", "chicken.manure", "cow.manure", "mo.pellet") 
+treat.labels <- c("Control", "Control\nAMF", "Control\nLegume", "Compost", "Chicken\nmanure", "Cow\nmanure", "Pellet")
+
+```
+
+```{r Import, include=FALSE}
+#Esto se ha hecho para cargar el Excel de los datos iniciales (ojo, para poner el directorio de donde esta tu archivo excel, se tiene que cambiar \, por /), y para hacer la media de cada tratamiento, ya que de cada tratamiento hay 3 repeticiones. El simbolo %>% se llaman tuberias (the pipe) vienen de la libreria (tinyverse) (esta libreria sirve para mantener R más ordenado). Las tuberias funcionan usando el resultado de una operación(out) y convirtiendolo en el imput de otra. En el caso del codigo  "soil.summ <- soil_prop %>% group_by(treatment,  time) %>% summarise(across(.cols=everything(), .fns=mean),.groups = "drop")" quiere decir lo siguiente: hemos creado un objeto nuevo que es soil.summ, que es_ el archivo de excel soil_prop el que hacemos una serie de operaciones en cadena (tuberia) donde agrupamos solamente por tratamiento y tiempo (group_by,) y en ese agrupamiento queremos de todas las columnas, .cols=every, que haga la funcion de la media (fns=mean). NULL significa que no tenga en cuenta esas columnas. $ es para seleccionar cosas especificas. 
+
+soil_prop <- readxl::read_excel("C:/Users/raquel.correa/Documents/banana_microbiome/raw_files/soil_prop_2.xlsx")
+
+treat.pot <- paste(soil_prop$treatment, soil_prop$rep, sep= "_") #para mantener el error
+
+soil_prop <- data.frame(soil_prop, treat.pot)
+
+soil.summ <- soil_prop %>% group_by(treatment,  time) %>% 
+  summarise(across(.cols=everything(),.fns=mean),.groups = "drop")
+
+soil.summ.sd <- soil_prop %>% group_by(treatment,  time) %>% 
+  summarise(across(.cols=everything(),.fns=list(mean = mean, sd = sd)),.groups = "drop")
+
+soil.summ$rep <- NULL
+soil.summ$soil.id <- NULL
+
+```
+
+
+```{r stats orgmatter t0t4, include=TRUE}
+soilt0t4 <- soil_prop %>% filter(time == "t0" | time == "t4") #data only t0 and t4
+soilt0t4
+soil_t0t4_mean <- soilt0t4 %>% group_by(treatment,  time) %>% 
+  summarise(across(.cols=everything(),.fns=list(mean = mean, sd = sd)),.groups = "drop")
+
+shapiro.test(soilt0t4$org.matter) #no normal data
+soilt0t4 %>% group_by(treatment) %>% shapiro_test(org.matter) # each treatments are normal 
+ggqqplot(data = soilt0t4, "org.matter", facet.by = "treatment")
+leveneTest(org.matter ~ time * treatment, data=soilt0t4) #equal variances 
+
+#anova_orgt0t4 <- aov(org.matter ~ time + treatment, data=soilt0t4) #anova two ways
+#summary(anova_orgt0t4)
+model_orgt0t4 <- lmerTest:lmer(org.matter~ time*treatment + (1|treat.pot), data=soilt0t4) 
+#model time + (1+ time|treatment)
+
+anova_orgt0t4int <- aov(org.matter ~ time * treatment +rep, data=soilt0t4) #add rep= "block" To control for the effect of the differences between the 3 replicates # interaction between them?
+
+anova_orgt0t4int<- summary(aov(org.matter ~ time * treatment +rep, data=soilt0t4))
+pvalue_anova_orgt0t4int<- anova_orgt0t4int[[1]][["Pr(>F)"]][1]
+
+
+
+
+#lmerTest::lmer(org.matter~ time+( 1| treatment), data = soilt0t4)
+
+emm_org <- emmeans(orglm, pairwise ~ time | treatment)
+emm_org
+emm_org$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)#el adjust es para el metodo de los pvalues
+
+orgcontras <- data.frame(emm_org$contrasts)#data frame para sacar el valor del contraste 
+orgcontras
+orgemmeans <- data.frame(emm_org$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")#para sacar el valor solo de emmeans
+orgemmeans
+
+emm_org <- cld(emmeans(orglm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)#dif sig y las letras se lo indicas 
+emm_org #tabla con los resultados. Se hacen dataframe para sacar las columnas que queremos y poder unirlas en los graficos 
+
+pval.org.mat.time <- data.frame(treatment= orgcontras$treatment, pval= orgcontras$p.value, emmean= orgemmeans$emmean)
+pval.org.mat.time
+pval.org.mat.time$sign <- ifelse(pval.org.mat.time$pval>0.05, paste("ns"),
+                                 ifelse(pval.org.mat.time$pval>0.01, paste("*"),
+                                        ifelse(pval.org.mat.time$pval> 0.001,
+                                               paste("**"), paste("***"))))#para add la significancia con el condicional ifelse
+
+
+orgmattert0t4_time <- soil_t0t4_mean %>% ggplot(aes(x=factor(treatment, level= treat.order), y= org.matter_mean), col=time)+
+  geom_col(aes(fill= time), col= "black", position= "dodge")+
+  xlab("")+
+  ylab("oxidable organic matter (%)")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)+
+  geom_text(data = pval.org.mat.time, aes(x= treatment, y= emmean, label= sign), nudge_x= 0, nudge_y= 0.5)+
+  geom_errorbar(data=soil_t0t4_mean, aes(ymin=org.matter_mean-org.matter_sd, 
+                                            ymax=org.matter_mean+org.matter_sd, group= time), position=position_dodge(0.9),
+                                            linewidth =0.2, width=0.2)+
+  labs(title = "", subtitle = "", caption = "Different (*) indicate statistically significant differences between treatments at T0 and T4.\nData comes to Emmeans of each treatment in these time and SD", size = 10)+
+  ggtitle("OM (%) in T0 and T4", subtitle= paste("ANOVA two was interact -Time- (HSDTukey) p-value: ", format(pvalue_anova_orgt0t4int, scientific= TRUE, digits=2 ), sep= ""))+
+  guides(fill=guide_legend(title="Treatment"))+
+  scale_fill_manual(values = c("#458B74", "#66CDAA"))+ # Add your desired colors
+  guides(fill=guide_legend(title="Time"))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
+
+orgmattert0t4_time
+ggsave(orgmattert0t4_time, file="soil_parameters_result/orgmattert0t4_time.png", width= 1900,height= 1200, units= "px")
+
+
+#para hacer el delta, es decir cuanto ha variado la materia organica.. Hay que tener los archivos x separado  
+mat.org.t0 <- subset(soilt0t4, soilt0t4$time == "t0")
+mat.org.t0 <- data.frame( treatment=mat.org.t0$treatment, org.matter.t0= mat.org.t0$org.matter)
+mat.org.t4 <- subset(soilt0t4, soilt0t4$time == "t4")
+mat.org.t4 <- data.frame( treatment=mat.org.t4$treatment, org.matter.t4= mat.org.t4$org.matter)
+
+delta.mat.org <- data.frame(treatment= mat.org.t0$treatment,t4= mat.org.t4$org.matter.t4 ,t0= mat.org.t0$org.matter.t0)
+delta.mat.org$delta <- delta.mat.org$t4-delta.mat.org$t0
+#delta.mat.org$ratio <- delta.mat.org$t4/delta.mat.org$t0
+delta.mat.org
+# Create a 'time' variable
+delta.mat.org$time <- rep(c("t0", "t4"), length.out = nrow(delta.mat.org))
+
+delta.mat.org
+delta.org.lmer <- lmer(delta~ time + (1+ time|treatment), data=delta.mat.org)#mixed-effects model,
+anova(delta.org.lm)#p value 6.927e-06
+
+emm_delta_org_lm <- emmeans(delta.org.lm, pairwise ~  treatment)
+emm_delta_org_lm
+emm_delta_org_lm$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)
+emm_delta_org_lm <- cld(emmeans(delta.org.lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+emm_delta_org_lm
+
+
+plotdeltaorg <- delta.mat.org %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 23, size= 7)+
+  xlab("")+
+  ylab("Delta variation between t4-t0")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
+  scale_fill_manual(values= treat.colors)+
+  geom_text(data= emm_delta_org_lm, aes(x= treatment, y= emmean, label= `.group`), nudge_x = 0.2, nudge_y = 0.2)+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()
+plotdeltaorg
+
+
+#unir los dos graficos
+orgt0t4 <- ggarrange(orgmattert0t4_time, plotdeltaorg)
+
+orgt0t4
+```
+
+```{r prueba, echo=FALSE}
+
+```
+
+
+```{r stas phosphorus t0t4, echo=FALSE}
+shapiro.test(soilt0t4$phosphorus) #no normal data
+soilt0t4 %>% group_by(treatment) %>% shapiro_test(phosphorus) # no normal data. the group of each data are normal in t0 and t4.
+anova_phosphot0t4int <- aov(phosphorus ~ time * treatment, data=soilt0t4)# interaction between them
+summary(anova_phosphot0t4int)
+leveneTest(phosphorus ~ time * treatment, data=soilt0t4) #equal variances 
+#model
+
+
+phospholm <- lm(phosphorus ~ time*treatment, data=soilt0t4)#model
+anova(phospholm)
+
+emm_phospo <- emmeans(phospholm, pairwise ~ time | treatment)
+emm_phospo
+emm_phospo$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)#el adjust es para el metodo de los pvalues
+
+phospocontras <- data.frame(emm_phospo$contrasts)#data frame para sacar el valor del contraste 
+phospoemmeans <- data.frame(emm_phospo$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")#para sacar el valor solo de emmeans
+phospoemmeans
+
+emm_phospo <- cld(emmeans(phospholm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+emm_phospo 
+
+pval.phospo.time <- data.frame(treatment= phospocontras$treatment, pval= phospocontras$p.value, emmean= phospoemmeans)
+pval.phospo.time
+pval.phospo.time$sign <- ifelse(pval.phospo.time$pval>0.05, paste("ns"),
+                                 ifelse(pval.phospo.time$pval>0.01, paste("*"),
+                                        ifelse(pval.phospo.time$pval> 0.001,
+                                               paste("**"), paste("***"))))#para add la significancia con el condicional ifelse
+
+
+phospot0t4_time <- soil_t0t4_mean %>% ggplot(aes(x=factor(treatment, level= treat.order), y= phosphorus_mean))+
+  geom_col(aes(fill= time),position= "dodge")+
+  xlab("")+
+  ylab("Phosphorus mg/kg")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)+
+  geom_text(data = pval.phospo.time, aes(x= treatment, y= emmean.emmean, label= sign), nudge_x= 0, nudge_y= 8)+
+  geom_errorbar(data=soil_t0t4_mean, aes(ymin=phosphorus_mean-phosphorus_sd, 
+                                            ymax=phosphorus_mean+phosphorus_sd, group= time), position=position_dodge(0.9),
+                                            linewidth =0.2, width=0.2)
+
+phospot0t4_time
+
+orglmer <- lmerTest::lmer(phosphorus~time*treatment + (1|treatment), data= soilt0t4)
+#delta variation 
+phosp.t0 <- subset(soilt0t4, soilt0t4$time == "t0")
+phosp.t0 <- data.frame(treatment=phosp.t0$treatment, phospho.t0= phosp.t0$phosphorus)
+phosp.t4 <- subset(soilt0t4, soilt0t4$time == "t4")
+phosp.t4 <- data.frame(treatment=phosp.t4$treatment, phospho.t4= phosp.t4$phosphorus)
+
+delta.phosp <- data.frame(treatment=phosp.t0$treatment,t4=phosp.t4$phospho.t4,t0=phosp.t0$phospho.t0)
+delta.phosp$delta <- delta.mat.org$t4-delta.mat.org$t0
+
+delta.phosp
+
+delta.phosp.lm <- lm(delta~ treatment, data=delta.phosp)#model
+anova(delta.phosp.lm )
+
+emm.delta.phosp <- emmeans(delta.phosp.lm, pairwise ~  treatment)
+emm.delta.phosp$contrasts %>% rbind(adjust= "fdr") %>% 
+  summary(infer = TRUE)
+emm.delta.phosp <- cld(emmeans(delta.phosp.lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+emm.delta.phosp
+emm.delta.phosp$.group#letras 
+
+plotdeltapho <- delta.phosp %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 23, size= 7)+
+  xlab("")+
+  ylab("Delta variation between t4-t0")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
+  scale_fill_manual(values= treat.colors)+
+  geom_text(data= emm.delta.phosp, aes(x= treatment, y= emmean, label= `.group`), nudge_x = 0.2, nudge_y = 0.2)+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()
+plotdeltapho
+
+phospot0t4 <- ggarrange(phospot0t4_time, plotdeltapho)
+
+
+```
+
+
+
+
+```{r stats ph water t0t4, echo=FALSE}
+shapiro.test(soilt0t4$ph.water) #no normal data
+soilt0t4 %>% group_by(treatment) %>% shapiro_test(ph.water) # each treatment are normal.
+anova_phwatert0t4 <- aov(ph.water~ time + treatment, data=soilt0t4) #anova two ways
+anova_phwatert0t4int <- aov(ph.water ~ time * treatment, data=soilt0t4) #add rep= "block" To control for the effect of the differences between the 3 replicates # interaction between them?
+summary(anova_phwatert0t4int)
+leveneTest(ph.water ~ time * treatment, data=soilt0t4) #equal variances p 0.48
+
+ph_water_lm <- lm(ph.water ~ time*treatment, data=soilt0t4)#model
+anova(ph_water_lm)
+
+emm_ph_water <- emmeans(ph_water_lm, pairwise ~ time | treatment)
+emm_ph_water
+emm_ph_water$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)#el adjust es para el metodo de los pvalues
+
+ph_watercontras <- data.frame(emm_ph_water$contrasts)#data frame para sacar el valor del contraste 
+ph_wateremmeans <- data.frame(emm_ph_water$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")#para sacar el valor solo de emmeans
+ph_wateremmeans
+
+emm_ph_water <- cld(emmeans(ph_water_lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+emm_ph_water 
+
+pval.ph_water.time <- data.frame(treatment= ph_watercontras$treatment, pval= ph_watercontras$p.value, emmean= ph_wateremmeans)
+pval.ph_water.time
+pval.ph_water.time$sign <- ifelse(pval.ph_water.time$pval>0.05, paste("ns"),
+                                 ifelse(pval.ph_water.time$pval>0.01, paste("*"),
+                                        ifelse(pval.ph_water.time$pval> 0.001,
+                                               paste("**"), paste("***"))))#para add la significancia con el condicional ifelse
+
+
+ph_watert0t4_time <- soil_t0t4_mean %>% ggplot(aes(x=factor(treatment, level= treat.order), y= ph.water_mean))+
+  geom_col(aes(fill= time),position= "dodge")+
+  xlab("")+
+  ylab("pH water udes.")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)+
+  geom_text(data = pval.ph_water.time, aes(x= treatment, y= emmean.emmean, label= sign), nudge_x= 0, nudge_y= 0.5)+
+  geom_errorbar(data=soil_t0t4_mean, aes(ymin=ph.water_mean-ph.water_sd, 
+                                            ymax=ph.water_mean+ph.water_sd, group= time), position=position_dodge(0.9),
+                                            linewidth =0.2, width=0.2)
+
+ph_watert0t4_time
+
+
+#delta variation 
+ph_water.t0 <- subset(soilt0t4, soilt0t4$time == "t0")
+ph_water.t0 <- data.frame(treatment=ph_water.t0$treatment, ph_water.t0= ph_water.t0$ph.water)
+ph_water.t4 <- subset(soilt0t4, soilt0t4$time == "t4")
+ph_water.t4 <- data.frame(treatment=ph_water.t4$treatment, ph_water.t4= ph_water.t4$ph.water)
+
+delta.ph_water <- data.frame(treatment=ph_water.t0$treatment,t4=ph_water.t4$ph_water.t4,t0=ph_water.t0$ph_water.t0)
+delta.ph_water$delta <- delta.ph_water$t4-delta.ph_water$t0
+
+delta.ph_water
+
+delta.ph_water.lm <- lm(delta~ treatment, data=delta.ph_water)#model
+anova(delta.ph_water.lm )
+
+emm.delta.ph_water <- emmeans(delta.ph_water.lm, pairwise ~  treatment)
+emm.delta.ph_water$contrasts %>% rbind(adjust= "fdr") %>% 
+  summary(infer = TRUE)
+emm.delta.ph_water <- cld(emmeans(delta.ph_water.lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+emm.delta.ph_water
+emm.delta.ph_water$.group#letras 
+
+plotdeltaphwater <- delta.ph_water %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 23, size= 7)+
+  xlab("")+
+  ylab("Delta variation between t4-t0")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
+  scale_fill_manual(values= treat.colors)+
+  geom_text(data= emm.delta.ph_water, aes(x= treatment, y= emmean, label= `.group`), nudge_x = 0.2, nudge_y = 0.2)+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()
+plotdeltaphwater
+
+ph_watert0t4 <- ggarrange(ph_watert0t4_time, plotdeltaphwater)
+ph_watert0t4
+```
+
+```{r stats conductivity t0t4, echo=FALSE}
+shapiro.test(soilt0t4$conductivity) #no normal data
+soilt0t4 %>% group_by(treatment) %>% shapiro_test(conductivity) # each treatment are normal.
+anova_conduct0t4 <- aov(conductivity~ time + treatment, data=soilt0t4) #anova two ways
+summary(anova_conduct0t4)
+anova_conduct0t4int <- aov(conductivity ~ time * treatment, data=soilt0t4) #add rep= "block" To control for the effect of the differences between the 3 replicates # interaction between them?
+summary(anova_conduct0t4int)
+leveneTest(conductivity ~ time * treatment, data=soilt0t4) #equal variances p 0.07068
+
+conduct_lm <- lm(conductivity ~ time*treatment, data=soilt0t4)#model
+anova(conduct_lm)
+
+emm_conduct <- emmeans(conduct_lm, pairwise ~ time | treatment)
+emm_conduct
+emm_conduct$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)#el adjust es para el metodo de los pvalues
+
+conductcontras <- data.frame(emm_conduct$contrasts)#data frame para sacar el valor del contraste 
+conductemmeans <- data.frame(emm_conduct$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")#para sacar el valor solo de emmeans
+conductemmeans
+
+emm_conduct <- cld(emmeans(conduct_lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+emm_conduct 
+
+pval.conduct.time <- data.frame(treatment= conductcontras$treatment, pval= conductcontras$p.value, emmean= conductemmeans)
+pval.conduct.time
+pval.conduct.time$sign <- ifelse(pval.conduct.time$pval>0.05, paste("ns"),
+                                 ifelse(pval.conduct.time$pval>0.01, paste("*"),
+                                        ifelse(pval.conduct.time$pval> 0.001,
+                                               paste("**"), paste("***"))))#para add la significancia con el condicional ifelse
+
+
+conductt0t4_time <- soil_t0t4_mean %>% ggplot(aes(x=factor(treatment, level= treat.order), y= conductivity_mean))+
+  geom_col(aes(fill= time),position= "dodge")+
+  xlab("")+
+  ylab("conductivity mS/cm.")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)+
+  geom_text(data = pval.conduct.time, aes(x= treatment, y= emmean.emmean, label= sign), nudge_x= 0, nudge_y= 0.2)+
+  geom_errorbar(data=soil_t0t4_mean, aes(ymin=conductivity_mean-conductivity_sd, ymax=conductivity_mean+conductivity_sd,
+                                         group= time), position=position_dodge(0.9),
+                                        linewidth =0.2, width=0.2)
+
+conductt0t4_time
+#delta variation 
+conduct.t0 <- subset(soilt0t4, soilt0t4$time == "t0")
+conduct.t0
+conduct.t0 <- data.frame(treatment=conduct.t0$treatment, conduct.t0= conduct.t0$conductivity)
+conduct.t4 <- subset(soilt0t4, soilt0t4$time == "t4")
+conduct.t4 <- data.frame(treatment=conduct.t4$treatment, conduct.t4= conduct.t4$conductivity)
+
+delta.conduct <- data.frame(treatment=conduct.t0$treatment,t4=conduct.t4$conduct.t4,t0=conduct.t0$conduct.t0)
+delta.conduct$delta <- delta.conduct$t4-delta.conduct$t0
+
+delta.conduct
+
+delta.conduct.lm <- lm(delta~ treatment, data=delta.conduct)#model
+anova(delta.conduct.lm )
+
+emm.delta.conduct <- emmeans(delta.conduct.lm, pairwise ~  treatment)
+emm.delta.conduct$contrasts %>% rbind(adjust= "fdr") %>% 
+  summary(infer = TRUE)
+emm.delta.conduct <- cld(emmeans(delta.conduct.lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+emm.delta.conduct
+emm.delta.conduct$.group#letras 
+
+plotdelta_conduc <- delta.conduct %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 23, size= 7)+
+  xlab("")+
+  ylab("Delta variation between t4-t0")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
+  scale_fill_manual(values= treat.colors)+
+  geom_text(data= emm.delta.conduct, aes(x= treatment, y= emmean, label= `.group`), nudge_x = 0.2, nudge_y = 0.2)+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()
+plotdelta_conduc
+
+conductt0t4 <- ggarrange(conductt0t4_time, plotdelta_conduc)
+conductt0t4
+
+```
+
+
+```{r stas calcium t0t4, echo=FALSE}
+shapiro.test(soilt0t4$calcium) # normal data
+anova_calciumt0t4 <- aov(calcium~ time + treatment, data=soilt0t4) #anova two ways
+summary(anova_calciumt0t4)
+anova_calciumt0t4int <- aov(calcium ~ time * treatment + rep, data=soilt0t4) #add rep= "block" To control for the effect of the differences between the 3 replicates # interaction between them?
+summary(anova_calciumt0t4int)
+leveneTest(calcium ~ time * treatment, data=soilt0t4) #equal variances
+calcium_lm <- lm(calcium ~ time*treatment, data=soilt0t4)#model
+anova(calcium_lm)
+
+emm_calcium <- emmeans(calcium_lm, pairwise ~ time | treatment)
+emm_calcium
+emm_calcium$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)#el adjust es para el metodo de los pvalues
+
+calciumcontras <- data.frame(emm_calcium$contrasts)#data frame para sacar el valor del contraste 
+calciumemmeans <- data.frame(emm_calcium$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")#para sacar el valor solo de emmeans
+calciumemmeans
+
+emm_calcium <- cld(emmeans(calcium_lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+emm_calcium 
+
+pval.calcium.time <- data.frame(treatment= calciumcontras$treatment, pval= calciumcontras$p.value, emmean= calciumemmeans)
+pval.calcium.time
+pval.calcium.time$sign <- ifelse(pval.calcium.time$pval>0.05, paste("ns"),
+                                 ifelse(pval.calcium.time$pval>0.01, paste("*"),
+                                        ifelse(pval.calcium.time$pval> 0.001,
+                                               paste("**"), paste("***"))))#para add la significancia con el condicional ifelse
+
+
+calciumt0t4_time <- soil_t0t4_mean %>% ggplot(aes(x=factor(treatment, level= treat.order), y= calcium_mean))+
+  geom_col(aes(fill= time),position= "dodge")+
+  xlab("")+
+  ylab("calcium mEq/kg.")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)+
+  geom_text(data = pval.calcium.time, aes(x= treatment, y= emmean.emmean, label= sign), nudge_x= 0, nudge_y= 10)+
+  geom_errorbar(data=soil_t0t4_mean, aes(ymin=calcium_mean-calcium_sd, ymax=calcium_mean+calcium_sd,
+                                         group= time), position=position_dodge(0.9),
+                                        linewidth =0.2, width=0.2)
+
+calciumt0t4_time
+#delta variation 
+calcium.t0 <- subset(soilt0t4, soilt0t4$time == "t0")
+calcium.t0 <- data.frame(treatment=calcium.t0$treatment, calcium.t0= calcium.t0$calcium)
+calcium.t4 <- subset(soilt0t4, soilt0t4$time == "t4")
+calcium.t4 <- data.frame(treatment=calcium.t4$treatment, calcium.t4= calcium.t4$calcium)
+
+delta.calcium <- data.frame(treatment=calcium.t0$treatment,t4=calcium.t4$calcium.t4,t0=calcium.t0$calcium.t0)
+delta.calcium$delta <- delta.calcium$t4-delta.calcium$t0
+
+delta.calcium
+
+delta.calcium.lm <- lm(delta~ treatment, data=delta.calcium)#model
+anova(delta.calcium.lm )
+
+emm.delta.calcium <- emmeans(delta.calcium.lm, pairwise ~  treatment)
+emm.delta.calcium$contrasts %>% rbind(adjust= "fdr") %>% 
+  summary(infer = TRUE)
+
+emm.delta.calcium <- cld(emmeans(delta.calcium.lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+emm.delta.calcium
+emm.delta.calcium$.group#letras 
+
+plotdelta_calcium <- delta.calcium %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 23, size= 7)+
+  xlab("")+
+  ylab("Delta variation between t4-t0")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
+  scale_fill_manual(values= treat.colors)+
+  geom_text(data= emm.delta.calcium, aes(x= treatment, y= emmean, label= `.group`), nudge_x = 0.2, nudge_y = 0.2)+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()
+plotdelta_calcium
+
+calciumt0t4 <- ggarrange(calciumt0t4_time, plotdelta_calcium)
+calciumt0t4
+
+```
+
+```{r stats sodium t0t4, echo=FALSE}
+shapiro.test(soilt0t4$sodium) # no normal data
+soilt0t4 %>% group_by(treatment) %>% shapiro_test(sodium) # each treatment are normal in the different times. 
+anova_sodiumt0t4 <- aov(sodium~ time + treatment, data=soilt0t4) #anova two ways
+summary(anova_sodiumt0t4)
+anova_sodiumt0t4int <- aov(sodium ~ time * treatment + rep, data=soilt0t4) #add rep= "block" To control for the effect of the differences between the 3 replicates # interaction between them?
+summary(anova_sodiumt0t4int)
+leveneTest(sodium ~ time * treatment, data=soilt0t4) #equal variances p 0.48
+
+sodium_lm <- lm(sodium ~ time*treatment, data=soilt0t4)#model
+anova(sodium_lm)
+
+emm_sodium <- emmeans(sodium_lm, pairwise ~ time | treatment)
+emm_sodium
+emm_sodium$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)#el adjust es para el metodo de los pvalues
+
+sodiumcontras <- data.frame(emm_sodium$contrasts)#data frame para sacar el valor del contraste 
+sodiumemmeans <- data.frame(emm_sodium$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")#para sacar el valor solo de emmeans
+sodiumemmeans
+
+emm_sodium <- cld(emmeans(sodium_lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+emm_sodium 
+
+pval.sodium.time <- data.frame(treatment= sodiumcontras$treatment, pval= sodiumcontras$p.value, emmean= sodiumemmeans)
+pval.sodium.time
+pval.sodium.time$sign <- ifelse(pval.sodium.time$pval>0.05, paste("ns"),
+                                 ifelse(pval.sodium.time$pval>0.01, paste("*"),
+                                        ifelse(pval.sodium.time$pval> 0.001,
+                                               paste("**"), paste("***"))))#para add la significancia con el condicional ifelse
+
+
+sodiumt0t4_time <- soil_t0t4_mean %>% ggplot(aes(x=factor(treatment, level= treat.order), y= sodium_mean))+
+  geom_col(aes(fill= time),position= "dodge")+
+  xlab("")+
+  ylab("Sodium mEq/kg.")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)+
+  geom_text(data = pval.sodium.time, aes(x= treatment, y= emmean.emmean, label= sign), nudge_x= 0, nudge_y= 10)+
+  geom_errorbar(data=soil_t0t4_mean, aes(ymin=sodium_mean-sodium_sd, ymax=sodium_mean+sodium_sd,
+                                         group= time), position=position_dodge(0.9),
+                                        linewidth =0.2, width=0.2)
+
+sodiumt0t4_time
+#delta variation 
+sodium.t0 <- subset(soilt0t4, soilt0t4$time == "t0")
+sodium.t0 <- data.frame(treatment=sodium.t0$treatment, sodium.t0= sodium.t0$sodium)
+sodium.t4 <- subset(soilt0t4, soilt0t4$time == "t4")
+sodium.t4 <- data.frame(treatment=sodium.t4$treatment, sodium.t4= sodium.t4$sodium)
+
+delta.sodium <- data.frame(treatment=sodium.t0$treatment,t4=sodium.t4$sodium.t4,t0=sodium.t0$sodium.t0)
+delta.sodium$delta <- delta.sodium$t4-delta.sodium$t0
+
+delta.sodium
+
+delta.sodium.lm <- lm(delta~ treatment, data=delta.sodium)#model
+anova(delta.sodium.lm )
+
+emm.delta.sodium <- emmeans(delta.sodium.lm, pairwise ~  treatment)
+emm.delta.sodium$contrasts %>% rbind(adjust= "fdr") %>% 
+  summary(infer = TRUE)
+
+emm.delta.sodium <- cld(emmeans(delta.sodium.lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+emm.delta.sodium
+emm.delta.sodium$.group#letras 
+
+plotdelta_sodium <- delta.sodium %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 23, size= 7)+
+  xlab("")+
+  ylab("Delta variation between t4-t0")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
+  scale_fill_manual(values= treat.colors)+
+  geom_text(data= emm.delta.sodium, aes(x= treatment, y= emmean, label= `.group`), nudge_x = 0.2, nudge_y = 0.2)+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()
+plotdelta_sodium
+
+sodiumt0t4 <- ggarrange(sodiumt0t4_time, plotdelta_sodium)
+sodiumt0t4
+```
+
+```{r stats potassium t0t4, echo=FALSE}
+shapiro.test(soilt0t4$potassium) #normal data
+anova_potassiumt0t4 <- aov(potassium~ time + treatment, data=soilt0t4) #anova two ways
+summary(anova_potassiumt0t4)
+anova_potassiumt0t4int <- aov(potassium ~ time * treatment + rep, data=soilt0t4) #add rep= "block" To control for the effect of the differences between the 3 replicates # interaction between them?
+summary(anova_potassiumt0t4int)
+leveneTest(potassium ~ time * treatment, data=soilt0t4) #equal variances
+
+potassium_lm <- lm(potassium ~ time*treatment, data=soilt0t4)#model
+anova(potassium_lm)
+
+emm_potassium <- emmeans(potassium_lm, pairwise ~ time | treatment)
+emm_potassium
+emm_potassium$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)#el adjust es para el metodo de los pvalues
+
+potassiumcontras <- data.frame(emm_potassium$contrasts)#data frame para sacar el valor del contraste 
+potassiumemmeans <- data.frame(emm_potassium$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")#para sacar el valor solo de emmeans
+potassiumemmeans
+
+emm_potassium <- cld(emmeans(potassium_lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+emm_potassium 
+
+pval.potassium.time <- data.frame(treatment= potassiumcontras$treatment, pval= potassiumcontras$p.value, emmean= potassiumemmeans)
+pval.potassium.time
+pval.potassium.time$sign <- ifelse(pval.potassium.time$pval>0.05, paste("ns"),
+                                 ifelse(pval.potassium.time$pval>0.01, paste("*"),
+                                        ifelse(pval.potassium.time$pval> 0.001,
+                                               paste("**"), paste("***"))))#para add la significancia con el condicional ifelse
+
+
+potassiumt0t4_time <- soil_t0t4_mean %>% ggplot(aes(x=factor(treatment, level= treat.order), y= potassium_mean))+
+  geom_col(aes(fill= time),position= "dodge")+
+  xlab("")+
+  ylab("potassium mEq/kg.")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)+
+  geom_text(data = pval.potassium.time, aes(x= treatment, y= emmean.emmean, label= sign), nudge_x= 0, nudge_y= 1)+
+  geom_errorbar(data=soil_t0t4_mean, aes(ymin=potassium_mean-potassium_sd, ymax=potassium_mean+potassium_sd,
+                                         group= time), position=position_dodge(0.9),
+                                        linewidth =0.2, width=0.2)
+
+potassiumt0t4_time
+#delta variation 
+potassium.t0 <- subset(soilt0t4, soilt0t4$time == "t0")
+potassium.t0 <- data.frame(treatment=potassium.t0$treatment, potassium.t0= potassium.t0$potassium)
+potassium.t4 <- subset(soilt0t4, soilt0t4$time == "t4")
+potassium.t4 <- data.frame(treatment=potassium.t4$treatment, potassium.t4= potassium.t4$potassium)
+
+delta.potassium <- data.frame(treatment=potassium.t0$treatment,t4=potassium.t4$potassium.t4,t0=potassium.t0$potassium.t0)
+delta.potassium$delta <- delta.potassium$t4-delta.potassium$t0
+
+delta.potassium
+
+delta.potassium.lm <- lm(delta~ treatment, data=delta.potassium)#model
+anova(delta.potassium.lm )
+
+emm.delta.potassium <- emmeans(delta.potassium.lm, pairwise ~  treatment)
+emm.delta.potassium$contrasts %>% rbind(adjust= "fdr") %>% 
+  summary(infer = TRUE)
+
+emm.delta.potassium <- cld(emmeans(delta.potassium.lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+emm.delta.potassium
+emm.delta.potassium$.group#letras 
+
+plotdelta_potassium <- delta.potassium %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 23, size= 7)+
+  xlab("")+
+  ylab("Delta variation between t4-t0")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
+  scale_fill_manual(values= treat.colors)+
+  geom_text(data= emm.delta.potassium, aes(x= treatment, y= emmean, label= `.group`), nudge_x = 0.2, nudge_y = 0.2)+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()
+plotdelta_potassium
+
+potassiumt0t4 <- ggarrange(potassiumt0t4_time, plotdelta_potassium)
+potassiumt0t4
+
+
+```
+
+
+```{r stats nitrogen t0t4, echo=FALSE}
+shapiro.test(soilt0t4$nitrogen) #normal data
+anova_nitrogent0t4 <- aov(nitrogen~ time + treatment, data=soilt0t4) #anova two ways
+summary(anova_nitrogent0t4)
+anova_nitrogent0t4int <- aov(nitrogen ~ time * treatment + rep, data=soilt0t4) #add rep= "block" To control for the effect of the differences between the 3 replicates # interaction between them?
+summary(anova_nitrogent0t4int)
+leveneTest(nitrogen ~ time * treatment, data=soilt0t4) #equal variances
+nitrogen_lm <- lm(nitrogen ~ time*treatment, data=soilt0t4)#model
+anova(nitrogen_lm)
+
+emm_nitrogen <- emmeans(nitrogen_lm, pairwise ~ time | treatment)
+emm_nitrogen
+emm_nitrogen$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)#el adjust es para el metodo de los pvalues
+
+nitrogencontras <- data.frame(emm_nitrogen$contrasts)#data frame para sacar el valor del contraste 
+nitrogenemmeans <- data.frame(emm_nitrogen$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")#para sacar el valor solo de emmeans
+nitrogenemmeans
+
+emm_nitrogen <- cld(emmeans(nitrogen_lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+emm_nitrogen 
+
+pval.nitrogen.time <- data.frame(treatment= nitrogencontras$treatment, pval= nitrogencontras$p.value, emmean= nitrogenemmeans)
+pval.nitrogen.time
+pval.nitrogen.time$sign <- ifelse(pval.nitrogen.time$pval>0.05, paste("ns"),
+                                 ifelse(pval.nitrogen.time$pval>0.01, paste("*"),
+                                        ifelse(pval.nitrogen.time$pval> 0.001,
+                                               paste("**"), paste("***"))))#para add la significancia con el condicional ifelse
+
+
+nitrogent0t4_time <- soil_t0t4_mean %>% ggplot(aes(x=factor(treatment, level= treat.order), y= nitrogen_mean))+
+  geom_col(aes(fill= time),position= "dodge")+
+  xlab("")+
+  ylab("nitrogen (%).")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)+
+  geom_text(data = pval.nitrogen.time, aes(x= treatment, y= emmean.emmean, label= sign), nudge_x= 0, nudge_y= 0.02)+
+  geom_errorbar(data=soil_t0t4_mean, aes(ymin=nitrogen_mean-nitrogen_sd, ymax=nitrogen_mean+nitrogen_sd,
+                                         group= time), position=position_dodge(0.9),
+                                        linewidth =0.2, width=0.2)
+
+nitrogent0t4_time
+#delta variation 
+nitrogen.t0 <- subset(soilt0t4, soilt0t4$time == "t0")
+nitrogen.t0 <- data.frame(treatment=nitrogen.t0$treatment, nitrogen.t0= nitrogen.t0$nitrogen)
+nitrogen.t4 <- subset(soilt0t4, soilt0t4$time == "t4")
+nitrogen.t4 <- data.frame(treatment=nitrogen.t4$treatment, nitrogen.t4= nitrogen.t4$nitrogen)
+
+delta.nitrogen <- data.frame(treatment=nitrogen.t0$treatment,t4=nitrogen.t4$nitrogen.t4,t0=nitrogen.t0$nitrogen.t0)
+delta.nitrogen$delta <- delta.nitrogen$t4-delta.nitrogen$t0
+
+delta.nitrogen
+
+delta.nitrogen.lm <- lm(delta~ treatment, data=delta.nitrogen)#model
+anova(delta.nitrogen.lm )
+
+emm.delta.nitrogen <- emmeans(delta.nitrogen.lm, pairwise ~  treatment)
+emm.delta.nitrogen$contrasts %>% rbind(adjust= "fdr") %>% 
+  summary(infer = TRUE)
+
+emm.delta.nitrogen <- cld(emmeans(delta.nitrogen.lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+emm.delta.nitrogen
+emm.delta.nitrogen$.group#letras 
+
+plotdelta_nitrogen <- delta.nitrogen %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 23, size= 7)+
+  xlab("")+
+  ylab("Delta variation between t4-t0")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
+  scale_fill_manual(values= treat.colors)+
+  geom_text(data= emm.delta.nitrogen, aes(x= treatment, y= emmean, label= `.group`), nudge_x = 0.2, nudge_y = 0)+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()
+plotdelta_nitrogen
+
+nitrogent0t4 <- ggarrange(nitrogent0t4_time, plotdelta_nitrogen)
+nitrogent0t4
+
+
+```
+

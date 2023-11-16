@@ -51,7 +51,7 @@ library(rstatix)
 library(AICcmodavg)
 library(ggthemes)
 
-library(lme4)
+library(lmerTest)
 
 ```
 
@@ -83,7 +83,7 @@ The analyses of these parameters were carried out by the Laboratory Unit of the 
 ```{r Import, include=FALSE}
 #Esto se ha hecho para cargar el Excel de los datos iniciales (ojo, para poner el directorio de donde esta tu archivo excel, se tiene que cambiar \, por /), y para hacer la media de cada tratamiento, ya que de cada tratamiento hay 3 repeticiones. El simbolo %>% se llaman tuberias (the pipe) vienen de la libreria (tinyverse) (esta libreria sirve para mantener R más ordenado). Las tuberias funcionan usando el resultado de una operación(out) y convirtiendolo en el imput de otra. En el caso del codigo  "soil.summ <- soil_prop %>% group_by(treatment,  time) %>% summarise(across(.cols=everything(), .fns=mean),.groups = "drop")" quiere decir lo siguiente: hemos creado un objeto nuevo que es soil.summ, que es_ el archivo de excel soil_prop el que hacemos una serie de operaciones en cadena (tuberia) donde agrupamos solamente por tratamiento y tiempo (group_by,) y en ese agrupamiento queremos de todas las columnas, .cols=every, que haga la funcion de la media (fns=mean). NULL significa que no tenga en cuenta esas columnas. $ es para seleccionar cosas especificas. 
 
-soil_prop <- readxl::read_excel("C:/Users/raquel.correa/Documents/banana_microbiome/raw_files/soil_prop_2.xlsx")
+soil_prop <- readxl::read_excel("raw_files/soil_prop_2.xlsx")
 
 soil.summ <- soil_prop %>% group_by(treatment,  time) %>% 
   summarise(across(.cols=everything(),.fns=mean),.groups = "drop")
@@ -942,8 +942,8 @@ anova_orgt0t4int <- aov(org.matter ~ time * treatment +rep, data=soilt0t4) #add 
 anova_orgt0t4int<- summary(aov(org.matter ~ time * treatment +rep, data=soilt0t4))
 pvalue_anova_orgt0t4int<- anova_orgt0t4int[[1]][["Pr(>F)"]][1]
 
-orglmer <- lmer(org.matter~ time + (1|treatment), data=soilt0t4)#model time + (1+ time|treatment)
-anova(orglm)
+orglmer <- lmer(org.matter~ time*treatment + (1|rep), data=soilt0t4)#model time + (1+ time|treatment)
+anova(orglmer)
 
 
 emm_org <- emmeans(orglm, pairwise ~ time | treatment)
