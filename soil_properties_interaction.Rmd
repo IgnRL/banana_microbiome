@@ -11,7 +11,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 
-
 ``` {r, include=FALSE}
 library(ggplot2)
 library(tidyverse)
@@ -67,6 +66,7 @@ library(lmerTest)
 ```
 
 ### Differences between the beginning at the end of the experiment (T0 vs T4)
+
 
 ```{r colors, include=FALSE}
 treat.colors <- c("control"= "green4" ,"control.amf"  = "darkseagreen" , "chicken.manure"= "royalblue1", "cow.manure" = "red3","mo.pellet"= "darkorchid1","compost"="chocolate4","control.legume"="darkolivegreen4")
@@ -210,10 +210,6 @@ ggsave(plotdeltaorg, file="soil_parameters_result/deltaorgmattert0t4.png", width
 orgt0t4 <- ggarrange(orgmattert0t4_time, plotdeltaorg)
 
 orgt0t4
-```
-
-```{r prueba, echo=FALSE}
-
 ```
 
 
