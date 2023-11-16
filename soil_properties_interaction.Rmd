@@ -126,7 +126,6 @@ orgcontras
 orgemmeans <- data.frame(emm_org$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")#para sacar el valor solo de emmeans
 orgemmeans
 
-class(model_orgt0t4)
 emm_org <- cld(emmeans(model_orgt0t4, specs = pairwise~treatment), Letters= letters, reversed= TRUE)#dif sig y las letras se lo indicas 
 emm_org #tabla con los resultados. Se hacen dataframe para sacar las columnas que queremos y poder unirlas en los graficos 
 
@@ -148,8 +147,8 @@ orgmattert0t4_time <- soil_t0t4_mean %>% ggplot(aes(x=factor(treatment, level= t
   geom_errorbar(data=soil_t0t4_mean, aes(ymin=org.matter_mean-org.matter_sd, 
                                             ymax=org.matter_mean+org.matter_sd, group= time), position=position_dodge(0.9),
                                             linewidth =0.2, width=0.2)+
-  labs(title = "", subtitle = "", caption = "Different (*) indicate statistically significant differences between treatments at T0 and T4.\nData comes to Emmeans of each treatment in these time and SD", size = 10)+
-  ggtitle("OM (%) in T0 and T4", subtitle= paste("ANOVA two was interact -Time- (HSDTukey) p-value: ", format(anova_modelorgt0t4$`Pr(>F)`[[1]], scientific= TRUE, digits=2 ), sep= ""))+
+  labs(title = "", subtitle = "", caption = "Different (*) indicate statistically significant differences between treatments at T0 and T4.\nData mean Emmeans and SD", size = 10)+
+  ggtitle("OM (%) in T0 and T4", subtitle= paste("LMEs-Emmeans-Anova III-Time(Tukey) p-value: ", format(anova_modelorgt0t4$`Pr(>F)`[[1]], scientific= TRUE, digits=2 ), sep= ""))+
   guides(fill=guide_legend(title="Treatment"))+
   scale_fill_manual(values = c("#458B74", "#66CDAA"))+ # Add your desired colors
   guides(fill=guide_legend(title="Time"))+
@@ -174,9 +173,9 @@ delta.mat.org$delta <- delta.mat.org$t4-delta.mat.org$t0
 #delta.mat.org$ratio <- delta.mat.org$t4/delta.mat.org$t0
 delta.mat.org
 # Create a 'time' variable
-delta.mat.org$time <- rep(c("t0", "t4"), length.out = nrow(delta.mat.org))
+#delta.mat.org$time <- rep(c("t0", "t4"), length.out = nrow(delta.mat.org))
 
-delta.mat.org
+
 delta.org.lmer <- lmer(delta~ time + (1+ time|treatment), data=delta.mat.org)#mixed-effects model,
 anova(delta.org.lm)#p value 6.927e-06
 
