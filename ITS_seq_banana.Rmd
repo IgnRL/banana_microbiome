@@ -9,6 +9,8 @@ output: html_document
 knitr::opts_chunk$set(include = FALSE)
 ```
 
+## Libraries
+
 ```{r libraries, include=FALSE}
 library(readxl)
 library(agricolae)
@@ -30,6 +32,8 @@ library(ggpmisc)
 library(knitr)
 library(kableExtra)
 library(car)
+library(lmerTest)
+library(emmeans)
 ```
 
 
@@ -311,20 +315,62 @@ ggqqplot(data=data, "richness", facet.by= "treatment")
 ### Shanon
 
 ```{r shannon}
-
+lmer.shannon <- lmer(shannon ~ time*treatment+(1|treat.pot) , data = data)
 #Repeated measures anova
-anova.shannon <- summary(aov(shannon ~ time*treatment+ Error(rep), data = data))
+lmer.richness <- lmer(richness ~ time*treatment +(1|treat.pot), data= data)
+anova.shannon <- anova(lmer.shannon) %>% as.data.frame()
+
 #extract pvalue and other stats
-pval.shannon <- anova.shannon[[2]][[1]] %>% data.frame() %>% rownames_to_column(var= "Variable")
+pval.shannon <- anova.shannon %>% rownames_to_column(var= "Variable")
 #adjust the format
-pval.shannon <- pval.shannon %>% rename_at('Pr..F.', ~'p.value')
+pval.shannon <- pval.shannon %>% rename_at('Pr(>F)', ~'p.value')
+pval.shannon <- pval.shannon %>% rename_at('F value', ~'F.value')
+pval.shannon <- pval.shannon %>% rename_at('NumDF', ~'df')
 pval.shannon$p.value <- format.pval(pval.shannon$p.value, digits = 3)
 pval.shannon$F.value <- round(pval.shannon$F.value,2)
-pval.shannon$Sum.Sq <- NULL
-pval.shannon$Mean.Sq <- NULL
+pval.shannon$`Sum Sq` <- NULL
+pval.shannon$`Mean Sq` <- NULL
+pval.shannon$`DenDF` <- NULL
 pval.shannon
+time.pval.shannon <- pval.shannon$p.value[1]
+treat.pval.shannon <- pval.shannon$p.value[2]
+int.pval.shannon <- pval.shannon$p.value[3]
 #convert into kable
 #pval.shannon <- kableExtra::kable_styling(kable(pval.shannon, caption= "Repeated measures ANOVA", align = "c"),full_width = F)
+emmeans(model, list(pairwise ~ Group), adjust = "tukey")
+
+emmeans(lmer.richness, ~ treatment)
+
+install.packages("emmeans", dependencies = TRUE)
+
+
+
+
+whinnie <- data.frame(
+  Speaker = c("Pooh", "Pooh", "Pooh", "Pooh", "Pooh", "Pooh", "Pooh", "Pooh", "Pooh", "Pooh", "Piglet", "Piglet", "Piglet", "Piglet", "Piglet", "Piglet", "Piglet", "Piglet", "Piglet", "Piglet","Tigger", "Tigger", "Tigger", "Tigger", "Tigger", "Tigger", "Tigger", "Tigger", "Tigger", "Tigger"),
+  Likert = c(3, 5, 4, 4, 4, 4, 4, 4, 5, 5, 2, 4, 2, 2, 1, 2, 3, 2, 2, 3,4, 4, 4, 4, 5, 3, 5, 4, 4, 3))
+
+
+
+whinnie$Speaker = factor(whinnie$Speaker,
+                      levels=unique(whinnie$Speaker))
+whinnie$Likert.f = factor(whinnie$Likert,
+                       ordered = TRUE)
+str(whinnie)
+summary(whinnie)
+
+library(ordinal)
+
+model = clm(Likert.f ~ Speaker,
+            data = whinnie)
+
+anova(model, type="II")
+
+marginal = emmeans(lm1,
+                   ~ Treatment)
+
+pairs(marginal,
+      adjust="tukey")
 
 
 
