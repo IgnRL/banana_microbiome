@@ -79,7 +79,7 @@ treat.labels <- c("Control", "Control\nAMF", "Control\nLegume", "Compost", "Chic
 ```{r Import, include=FALSE}
 #Esto se ha hecho para cargar el Excel de los datos iniciales (ojo, para poner el directorio de donde esta tu archivo excel, se tiene que cambiar \, por /), y para hacer la media de cada tratamiento, ya que de cada tratamiento hay 3 repeticiones. El simbolo %>% se llaman tuberias (the pipe) vienen de la libreria (tinyverse) (esta libreria sirve para mantener R más ordenado). Las tuberias funcionan usando el resultado de una operación(out) y convirtiendolo en el imput de otra. En el caso del codigo  "soil.summ <- soil_prop %>% group_by(treatment,  time) %>% summarise(across(.cols=everything(), .fns=mean),.groups = "drop")" quiere decir lo siguiente: hemos creado un objeto nuevo que es soil.summ, que es_ el archivo de excel soil_prop el que hacemos una serie de operaciones en cadena (tuberia) donde agrupamos solamente por tratamiento y tiempo (group_by,) y en ese agrupamiento queremos de todas las columnas, .cols=every, que haga la funcion de la media (fns=mean). NULL significa que no tenga en cuenta esas columnas. $ es para seleccionar cosas especificas. 
 
-soil_prop <- readxl::read_excel("C:/Users/raquel.correa/Documents/banana_microbiome/raw_files/soil_prop_2.xlsx")
+soil_prop <- readxl::read_excel("C:/Users/Raquel/Documents/banana_microbiome/raw_files/soil_prop_2.xlsx")
 
 treat.pot <- paste(soil_prop$treatment, soil_prop$rep, sep= "_") #para mantener el error
 
@@ -110,20 +110,14 @@ leveneTest(org.matter ~ time * treatment, data=soilt0t4) #equal variances
 
 #anova_orgt0t4 <- aov(org.matter ~ time + treatment, data=soilt0t4) #anova two ways
 #summary(anova_orgt0t4)
-model_orgt0t4 <- lmerTest:lmer(org.matter~ time*treatment + (1|treat.pot), data=soilt0t4) 
-#model time + (1+ time|treatment)
+model_orgt0t4 <- lmer(org.matter~ time*treatment + (1|treat.pot), data=soilt0t4) 
+summary(model_orgt0t4)
 
-anova_orgt0t4int <- aov(org.matter ~ time * treatment +rep, data=soilt0t4) #add rep= "block" To control for the effect of the differences between the 3 replicates # interaction between them?
-
-anova_orgt0t4int<- summary(aov(org.matter ~ time * treatment +rep, data=soilt0t4))
-pvalue_anova_orgt0t4int<- anova_orgt0t4int[[1]][["Pr(>F)"]][1]
+anova_modelorgt0t4 <- anova(model_orgt0t4)
+anova_modelorgt0t4
 
 
-
-
-#lmerTest::lmer(org.matter~ time+( 1| treatment), data = soilt0t4)
-
-emm_org <- emmeans(orglm, pairwise ~ time | treatment)
+emm_org <- emmeans(model_orgt0t4, pairwise ~ time | treatment)
 emm_org
 emm_org$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)#el adjust es para el metodo de los pvalues
 
@@ -132,7 +126,8 @@ orgcontras
 orgemmeans <- data.frame(emm_org$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")#para sacar el valor solo de emmeans
 orgemmeans
 
-emm_org <- cld(emmeans(orglm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)#dif sig y las letras se lo indicas 
+class(model_orgt0t4)
+emm_org <- cld(emmeans(model_orgt0t4, specs = pairwise~treatment), Letters= letters, reversed= TRUE)#dif sig y las letras se lo indicas 
 emm_org #tabla con los resultados. Se hacen dataframe para sacar las columnas que queremos y poder unirlas en los graficos 
 
 pval.org.mat.time <- data.frame(treatment= orgcontras$treatment, pval= orgcontras$p.value, emmean= orgemmeans$emmean)
@@ -154,7 +149,7 @@ orgmattert0t4_time <- soil_t0t4_mean %>% ggplot(aes(x=factor(treatment, level= t
                                             ymax=org.matter_mean+org.matter_sd, group= time), position=position_dodge(0.9),
                                             linewidth =0.2, width=0.2)+
   labs(title = "", subtitle = "", caption = "Different (*) indicate statistically significant differences between treatments at T0 and T4.\nData comes to Emmeans of each treatment in these time and SD", size = 10)+
-  ggtitle("OM (%) in T0 and T4", subtitle= paste("ANOVA two was interact -Time- (HSDTukey) p-value: ", format(pvalue_anova_orgt0t4int, scientific= TRUE, digits=2 ), sep= ""))+
+  ggtitle("OM (%) in T0 and T4", subtitle= paste("ANOVA two was interact -Time- (HSDTukey) p-value: ", format(anova_modelorgt0t4$`Pr(>F)`[[1]], scientific= TRUE, digits=2 ), sep= ""))+
   guides(fill=guide_legend(title="Treatment"))+
   scale_fill_manual(values = c("#458B74", "#66CDAA"))+ # Add your desired colors
   guides(fill=guide_legend(title="Time"))+
@@ -164,6 +159,7 @@ orgmattert0t4_time <- soil_t0t4_mean %>% ggplot(aes(x=factor(treatment, level= t
     plot.caption = element_text(size = 8))
 
 orgmattert0t4_time
+
 ggsave(orgmattert0t4_time, file="soil_parameters_result/orgmattert0t4_time.png", width= 1900,height= 1200, units= "px")
 
 
