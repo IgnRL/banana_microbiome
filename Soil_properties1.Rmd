@@ -50,8 +50,8 @@ library(ggrepel)
 library(rstatix)
 library(AICcmodavg)
 library(ggthemes)
-
 library(lme4)
+library(lmerTest)
 
 ```
 
@@ -678,31 +678,12 @@ ggsave(plot_phosphorus_t4, file="soil_parameters_result/phosphorus_t4.png", widt
 shapiro.test(soilt4$ph.water) #no normal data
 soil_prop %>% group_by(treatment) %>% shapiro_test(ph.water) #no normal all treatments except one
 
-soilt4$log_ph.water <- log2(soilt4$ph.water) #transformation
-shapiro.test(soilt4$log_ph.water)
-soilt4 %>% group_by(treatment) %>% shapiro_test(log_ph.water)
-soil_prop$log_ph.water <- log2(soil_prop$ph.water)#transformation
-soil_prop %>% group_by(treatment) %>% shapiro_test(log_ph.water)#all the treatments are normal except one
+
 soilt4$sqrt_ph.water <- sqrt(soilt4$ph.water)
 shapiro.test(soilt4$sqrt_ph.water)
 soilt4 %>% group_by(treatment) %>% shapiro_test(sqrt_ph.water)
 soil_prop$sqrt_ph.water <- sqrt(soil_prop$ph.water)
 soil_prop %>% group_by(treatment) %>% shapiro_test(sqrt_ph.water)#all the treatments are normal except one
-soilt4$inv_ph.water <- 1/(soilt4$ph.water)
-shapiro.test(soilt4$inv_ph.water)
-soilt4 %>% group_by(treatment) %>% shapiro_test(inv_ph.water)
-soil_prop$inv_ph.water <- 1/(soil_prop$ph.water)#transformation
-soil_prop %>% group_by(treatment) %>% shapiro_test(inv_ph.water)#all the treatments are normal except one
-soilt4$sum_ph.water <- 1+(soilt4$ph.water)
-shapiro.test(soilt4$sum_ph.water)
-soilt4 %>% group_by(treatment) %>% shapiro_test(sum_ph.water)
-soil_prop$sum_ph.water <- 1+(soil_prop$ph.water)#transformation
-soil_prop %>% group_by(treatment) %>% shapiro_test(sum_ph.water)#all the treatments are normal except one
-soilt4$mul_ph.water <- 3*(soilt4$ph.water)
-shapiro.test(soilt4$mul_ph.water)
-soilt4 %>% group_by(treatment) %>% shapiro_test(mul_ph.water)
-soil_prop$mul_ph.water <- 3*(soil_prop$ph.water)#transformation
-soil_prop %>% group_by(treatment) %>% shapiro_test(mul_ph.water)#all the treatments are normal except one
 
 
 anova_phwatert4 <- aov(sqrt_ph.water ~ treatment, data=soilt4)
@@ -943,8 +924,9 @@ anova_orgt0t4int<- summary(aov(org.matter ~ time * treatment +rep, data=soilt0t4
 pvalue_anova_orgt0t4int<- anova_orgt0t4int[[1]][["Pr(>F)"]][1]
 
 orglmer <- lmer(org.matter~ time + (1|treatment), data=soilt0t4)#model time + (1+ time|treatment)
-anova(orglm)
 
+
+#lmerTest::lmer(org.matter~ time+( 1| treatment), data = soilt0t4)
 
 emm_org <- emmeans(orglm, pairwise ~ time | treatment)
 emm_org
@@ -1081,7 +1063,7 @@ phospot0t4_time <- soil_t0t4_mean %>% ggplot(aes(x=factor(treatment, level= trea
 
 phospot0t4_time
 
-
+orglmer <- lmerTest::lmer(phosphorus~time*treatment + (1|treatment), data= soilt0t4)
 #delta variation 
 phosp.t0 <- subset(soilt0t4, soilt0t4$time == "t0")
 phosp.t0 <- data.frame(treatment=phosp.t0$treatment, phospho.t0= phosp.t0$phosphorus)
