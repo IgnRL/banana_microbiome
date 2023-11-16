@@ -107,7 +107,6 @@ shapiro.test(soilt0t4$org.matter) #no normal data
 soilt0t4 %>% group_by(treatment) %>% shapiro_test(org.matter) # each treatments are normal 
 ggqqplot(data = soilt0t4, "org.matter", facet.by = "treatment")
 leveneTest(org.matter ~ time * treatment, data=soilt0t4) #equal variances 
-
 #anova_orgt0t4 <- aov(org.matter ~ time + treatment, data=soilt0t4) #anova two ways
 #summary(anova_orgt0t4)
 model_orgt0t4 <- lmer(org.matter~ time*treatment + (1|treat.pot), data=soilt0t4) 
@@ -172,13 +171,14 @@ delta.mat.org <- data.frame(treatment= mat.org.t0$treatment,t4= mat.org.t4$org.m
 delta.mat.org$delta <- delta.mat.org$t4-delta.mat.org$t0
 #delta.mat.org$ratio <- delta.mat.org$t4/delta.mat.org$t0
 delta.mat.org
+
 # Create a 'time' variable
 #delta.mat.org$time <- rep(c("t0", "t4"), length.out = nrow(delta.mat.org))
 
 
-delta.org.lmer <- lmer(delta~ time + (1+ time|treatment), data=delta.mat.org)#mixed-effects model,
-anova(delta.org.lm)#p value 6.927e-06
-
+delta.org.lm <- lm(delta ~ treatment, data=delta.mat.org) #modelo normal 
+anova_deltaorgt0t4 <-anova(delta.org.lm)#p value 6.927e-06
+anova_deltaorgt0t4
 emm_delta_org_lm <- emmeans(delta.org.lm, pairwise ~  treatment)
 emm_delta_org_lm
 emm_delta_org_lm$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)
@@ -189,14 +189,22 @@ emm_delta_org_lm
 plotdeltaorg <- delta.mat.org %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
   geom_point(pch= 23, size= 7)+
   xlab("")+
-  ylab("Delta variation between t4-t0")+
+  ylab("OM (%) Δ variation between t4-t0")+
   geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
   scale_fill_manual(values= treat.colors)+
   geom_text(data= emm_delta_org_lm, aes(x= treatment, y= emmean, label= `.group`), nudge_x = 0.2, nudge_y = 0.2)+
+  guides(fill=guide_legend(title="Treatment"))+
   scale_x_discrete(labels= treat.labels)+
-  theme_classic2()
-plotdeltaorg
+  theme_classic2()+
+  labs(title = "", subtitle = "", caption = "Different letters indicate statistically significant differences between treatments in the delta variation (T4-T0).", size = 10)+
+  ggtitle("OM (%) Δ variation T0 and T4", subtitle= paste("LinealModel-Emmeans-Anova Treatment(Tukey) p-value: ", format(anova_deltaorgt0t4$`Pr(>F)`[[1]], scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
 
+plotdeltaorg
+ggsave(plotdeltaorg, file="soil_parameters_result/deltaorgmattert0t4.png", width= 1900,height= 1200, units= "px")
 
 #unir los dos graficos
 orgt0t4 <- ggarrange(orgmattert0t4_time, plotdeltaorg)
