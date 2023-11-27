@@ -158,7 +158,7 @@ orgmattert0t4_time <- soil_t0t4_mean %>% ggplot(aes(x=factor(treatment, level= t
 
 orgmattert0t4_time
 
-ggsave(orgmattert0t4_time, file="soil_parameters_result/orgmattert0t4_time.png", width= 1900,height= 1200, units= "px")
+#ggsave(orgmattert0t4_time, file="soil_parameters_result/orgmattert0t4_time.png", width= 1900,height= 1200, units= "px")
 
 
 #para hacer el delta, es decir cuanto ha variado la materia organica.. Hay que tener los archivos x separado  

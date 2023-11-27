@@ -54,6 +54,8 @@ library(ggthemes)
 library(patchwork)
 library(egg)
 library(cowplot)
+library(lme4)
+library(lmerTest)
 ```
 
 
@@ -528,24 +530,24 @@ shapiro.test(respirationt0t4$mg_co_basal)#normal data
 leveneTest(mg_co_basal ~ time * treatment, data=respirationt0t4) #equal variances
 #modelo 
 
-model_respibasalt0t4 <- lmer(mg_co_basal~ time*treatment + (1|treat.pot), data=soil_resp)
+model_respibasalt0t4 <- lmer(mg_co_basal~ time*treatment + (1|treat.pot), data=respirationt0t4)
 summary(model_respibasalt0t4)
 
 anova_model_respibasalt0t4 <- anova(model_respibasalt0t4)
 anova_model_respibasalt0t4
 emm_respibasalt0t4 <- emmeans(model_respibasalt0t4, pairwise ~ time | treatment)
-emm_respibasalt0t4
+summary(emm_respibasalt0t4)
 
 
 emm_respibasalt0t4$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)#el adjust es para el metodo de los pvalues
-basalt0t4contras <- data.frame(emm_respibasalt0t4$contrasts)#data frame para sacar el valor del contraste 
-basalt0t4contras
+basalt0t4contraste <- data.frame(emm_respibasalt0t4$contrasts)#data frame para sacar el valor del contraste 
+basalt0t4contraste
 basalt0t4emmeans <- data.frame(emm_respibasalt0t4$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")
 basalt0t4emmeans
 
 emm_respibasalt0t4 <- cld(emmeans(model_respibasalt0t4, specs = pairwise~treatment), Letters= letters, reversed= TRUE) #add letters
-emm_basalt0t4
-pval_basalt0t4_time <- data.frame(treatment= basalt0t4contras$treatment, pval= basalt0t4contras$p.value, emmean= basalt0t4emmeans$emmean)
+emm_respibasalt0t4
+pval_basalt0t4_time <- data.frame(treatment= basalt0t4contraste$treatment, pval= basalt0t4contraste$p.value, emmean= basalt0t4emmeans$emmean)
 pval_basalt0t4_time$sign <- ifelse(pval_basalt0t4_time$pval>0.05, paste("ns"),
                                  ifelse(pval_basalt0t4_time$pval>0.01, paste("*"),
                                         ifelse(pval_basalt0t4_time$pval> 0.001,
@@ -571,7 +573,8 @@ delta_basalt0t4$delta <- delta_basalt0t4$t4-delta_basalt0t4$t0
 
 delta_basalt0t4
 
-delta_basalt0t4_lm <- lm(delta~ treatment, data=delta_basalt0t4)#model
+
+delta_basalt0t4_modelo <- lm(delta~ treatment, data=delta_basalt0t4)#model
 anova(delta_basalt0t4_lm)
 
 emm.delta.basalt0t4 <- emmeans(delta_basalt0t4_lm, pairwise ~  treatment)
