@@ -35,6 +35,8 @@ library(car)
 library(lmerTest)
 library(emmeans)
 library(multcomp)
+library(FactoMineR)
+library(factoextra)
 ```
 
 
@@ -319,9 +321,11 @@ ggqqplot(data=data, "richness", facet.by= "treatment")
 
 #########SHANNON###############
 lmer.shannon <- lmer(shannon ~ time*treatment+(1|treat.pot) , data = data)
+glmer.shannon <- glmer(shannon~time* treatment+(1|treat.pot), data= data)
 #Repeated measures anova
 anova.shannon <- anova(lmer.shannon) %>% as.data.frame()
-
+anova.glmer.shannon <- anova(glmer.shannon)
+summary(glmer.shannon)
 #extract pvalue and other stats
 pval.shannon <- anova.shannon %>% rownames_to_column(var= "Variable")
 #adjust the format
@@ -341,13 +345,6 @@ int.pval.shannon <- pval.shannon$p.value[3]
 #pval.shannon <- kableExtra::kable_styling(kable(pval.shannon, caption= "Repeated measures ANOVA", align = "c"),full_width = F)
 
 emmeans.shannon.treatment <- cld(emmeans(lmer.shannon, ~treatment), Letters = letters, reversed= TRUE)
-save(emmeans.shannon, file= "ITS_results/emmeans_treat_shannon.RDa")
-emmeans.shannon <- load(file="ITS_results/emmeans_treat_shannon.RDa")
-
-emmeans.shannon.time <- cld(emmeans(lmer.shannon,~time), Letters = letters, reversed= TRUE)
-save(emmeans.shannon.treatment, file= "ITS_results/emmeans_time_shannon.RDa")
-emmeans.shannon.treatment <- load(file="ITS_results/emmeans_time_shannonshannon.RDa")
-
 
 
 ########## RICHNESS###############
@@ -370,17 +367,9 @@ pval.richness
 time.pval.richness <- pval.richness$p.value[1]
 treat.pval.richness <- pval.richness$p.value[2]
 int.pval.richness <- pval.richness$p.value[3]
-#convert into kable
-#pval.richness <- kableExtra::kable_styling(kable(pval.richness, caption= "Repeated measures ANOVA", align = "c"),full_width = F)
 
 
 emmeans.richness.treatment <- cld(emmeans(lmer.richness, ~treatment), Letters = letters, reversed= TRUE)
-save(emmeans.richness.treatment, file= "ITS_results/emmeans_treat_richness.RDa")
-emmeans.richness.treatment <- load(file="ITS_results/emmeans_treat_richness.RDa")
-emmeans.richness.time <- cld(emmeans(lmer.richness,~time), Letters = letters, reversed= TRUE)
-save(emmeans.richness.time, file= "ITS_results/emmeans_time_richness.RDa")
-emmeans.richness.time <- load(file="ITS_results/emmeans_time_richness.RDa")
-
 
 #########EVENNESS###########
 lmer.evenness <- lmer(evenness ~ time*treatment+(1|treat.pot) , data = data)
@@ -402,16 +391,9 @@ pval.evenness
 time.pval.evenness <- pval.evenness$p.value[1]
 treat.pval.evenness <- pval.evenness$p.value[2]
 int.pval.evenness <- pval.evenness$p.value[3]
-#convert into kable
-#pval.evenness <- kableExtra::kable_styling(kable(pval.evenness, caption= "Repeated measures ANOVA", align = "c"),full_width = F)
-
 
 emmeans.evenness.treatment <- cld(emmeans(lmer.evenness, ~treatment), Letters = letters, reversed= TRUE)
-save(emmeans.evenness.treatment, file= "ITS_results/emmeans_treat_evenness.RDa")
-emmeans.evenness.treatment <- load(file="ITS_results/emmeans_treat_evenness.RDa")
-emmeans.evenness.time <- cld(emmeans(lmer.evenness,~time), Letters = letters, reversed= TRUE)
-save(emmeans.evenness.time, file= "ITS_results/emmeans_time_evenness.RDa")
-emmeans.evenness.time <- load(file="ITS_results/emmeans_time_evenness.RDa")
+
 ```
 
 
@@ -604,5 +586,89 @@ diff.div.shannon <- divt5t0 %>% ggplot(aes(x= factor(treatment, level= treat.ord
   scale_fill_manual(values= treat.colors)
 
 diff.div.shannon
+```
+
+# Beta diversity (CLR PCA)
+
+
+```{r CLR transformation, include=FALSE}
+#Work with relative abundances
+zotu.rel<-  transform_sample_counts(zotu97, function(x) x / sum(x))
+zotu.rel %>% otu_table()
+
+sample.data.pca <- sample_data(zotu.rel) %>% data.frame() 
+rownames(sample.data.pca) <- NULL
+sample.data.pca <- column_to_rownames(sample.data.pca, var= "sample_ID")
+t.otu <- zotu.rel %>% otu_table() %>% data.frame() %>% t()
+t.otu.clr <- decostand(t.otu, method = "clr", pseudocount = 1)
+pca.clr <- prcomp(t.otu.clr, scale=TRUE)
+plot(pca.clr)
+pca.simple <- PCA(t.otu.clr)
+pca.clr$center
+pca_scores <- as.data.frame(pca.clr$x)
+pca_scores$sample_ID <- rownames(pca_scores)
+pca_scores$sample_ID <- gsub("\\.", "-", pca_scores$sample_ID)
+rownames(pca_scores) <- pca_scores$sample_ID
+
+pca_scores <- merge(pca_scores, sample.data.pca, by = 0)
+merg
+dist.pca <- vegdist(data.frame(pca.clr$x),na.rm=TRUE)
+```
+
+
+```{r CLR transformed PCA, include=FALSE}
+# Plot PCA scores using the first two principal components
+ggplot(pca_scores, aes(PC1, PC2, color = time)) +
+  geom_point() +
+  labs(x = "PC1", y = "PC2", title = "PCA Plot")
+
+scaled_otu_abundance <- scale(t.otu.clr)
+correlation <- cor(scaled_otu_abundance, pca_scores[, 2:3])
+
+
+ggplot(pca_scores, aes(PC1, PC2, color = treatment)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray50") +
+  geom_text(data = as.data.frame(correlation), aes(label = rownames(correlation)), 
+            size = 2, hjust = -0.2, vjust = -0.2, color = "red") +
+  labs(x = "PC1", y = "PC2", title = "Biplot")
+
+pca
+fviz_eig(pca.clr)
+contrib1 <- fviz_contrib(pca.clr, axes = c(1), "var",fill ="coral3",color = "coral3", top = 200)
+
+contrib1.data <- contrib1$data 
+contrib1.data <- contrib1.data %>% arrange(-contrib) %>% subset(., contrib> 100/nrow(contrib1.data))
+contrib1.data$OTU <- contrib1.data$name
+
+
+contrib2 <- fviz_contrib(pca.clr, axes = c(2), "var",fill ="blue3",top = 200)
+
+contrib2.data <- contrib2$data 
+contrib2.data <- contrib2.data %>% arrange(-contrib) %>% subset(., contrib> 200/nrow(contrib2.data))
+contrib2.data$OTU <- contrib2.data$name
+
+contrib1.2 <- fviz_contrib(pca.clr, axes = c(1,2), "var",fill ="purple3",top = 50)
+grid.arrange(contrib1,contrib1.2, contrib2, ncol=3)
+```
+
+
+```{r}
+biplot.treat<- fviz_pca_biplot(pca.clr, 
+                geom = c("point"),
+                col.ind = sample_data(zotu.rel)$treatment,
+                repel = TRUE,
+                pointshape=16,pointsize=(size = 5),
+                select.var = list(contrib = 5),
+                invisible= "quali",
+                label= "var",
+                col.var= "gray4",
+                title = "Treatment",
+                addEllipses = TRUE, labelsize= 5)+
+  theme_gray() +
+  guides(color = guide_legend(override.aes = list(size = 4)))+
+    theme(title = element_text(size=30) ,axis.text.x = element_text(size = 15),  axis.text.y = element_text(size = 15), legend.text=element_text(size=15))
+  biplot.treat
 ```
 
