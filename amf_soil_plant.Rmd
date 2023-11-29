@@ -1,0 +1,191 @@
+---
+title: "amf_soil_plant"
+author: "raquel"
+date: "2023-11-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r library, include=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(ggpubr)
+library(gridExtra)
+library(corrplot)
+library(agricolae)
+library(emmeans)
+library(multcomp)
+library(multcompView)
+library(data.table)
+library(tidyverse)
+library(phyloseq)
+library(vegan)
+library(ape)
+library(here)
+library(readxl)
+library(ggpubr)
+library(geomtextpath)
+library(knitr)
+library(gridExtra)
+library(Biostrings)
+library(seqinr)
+library(FSA)
+library(agricolae)
+library(MASS)
+library(grid)
+library(gridExtra)
+library(emmeans)
+library(multcomp)
+library(broom)
+library(viridis)
+library(ALDEx2)
+library(FactoMineR)
+library(factoextra)
+library(kableExtra)
+library(scales)
+library(dunn.test)
+library(car)
+library(corrplot)
+library(eulerr)
+library(ggforce)
+library(ggrepel)
+library(rstatix)
+library(AICcmodavg)
+library(ggthemes)
+library(patchwork)
+library(egg)
+library(cowplot)
+library(lme4)
+library(lmerTest)
+```
+
+
+```{r banana colours, include=FALSE}
+treat.colors <- c("control"= "green4" ,"control.amf"  = "darkseagreen" , "chicken.manure"= "royalblue1", "cow.manure" = "red3","mo.pellet"= "darkorchid1","compost"="chocolate4","control.legume"="darkolivegreen4")
+
+treat.order <- c('control', 'control.amf', 'control.legume', "compost", "chicken.manure", "cow.manure", "mo.pellet") 
+treat.labels <- c("Control", "Control\nAMF", "Control\nLegume", "Compost", "Chicken\nmanure", "Cow\nmanure", "Pellet")
+
+```
+
+```{r data, include=FALSE}
+
+amf_soil <- readxl::read_excel("raw_files/spore_amf_soil.xlsx")
+
+amf_soil_mean <- amf_soil %>% 
+  group_by(treatment, time) %>% 
+  summarise(across(everything(), list(mean = ~ mean(., na.rm = TRUE), sd = ~ sd(., na.rm = TRUE))), .groups = "drop")
+amf_soil_mean
+
+
+```
+
+
+### Evolution of soil respiration over time 
+
+
+```{r analysis data, echo=FALSE}
+
+
+
+spore_soil_time <- amf_soil_mean%>% ggplot(aes(x=time, group= treatment, col= treatment, y=spore_soil_mean))+
+  geom_line(linewidth=1.1)+
+  xlab("Time")+
+  ylab("spore 20gr soil")+
+  scale_color_manual(values= treat.colors)+
+  geom_point(size =2)+
+  theme_classic2()+
+  geom_errorbar(aes(ymin=spore_soil_mean-spore_soil_sd,   ymax=spore_soil_mean+spore_soil_sd), size =0.5, width=0.2)+
+  labs(title = "quantification spore/g soil.", subtitle = "", caption="Mean and SD")+
+  theme(plot.title = element_text(size=12))
+spore_soil_time
+
+colonization_time <- amf_soil_mean%>% ggplot(aes(x=time, group= treatment, col= treatment, y=colonization_mean))+
+  geom_line(linewidth=1.1)+
+  xlab("Time")+
+  ylab("% colonization")+
+  scale_color_manual(values= treat.colors)+
+  geom_point(size =2)+
+  theme_classic2()+
+  geom_errorbar(aes(ymin=colonization_mean-colonization_sd,   ymax=colonization_mean+colonization_sd), size =0.5, width=0.2)+
+  labs(title = "% colonization .", subtitle = "", caption="Mean and SD")+
+  theme(plot.title = element_text(size=12))
+colonization_time
+
+#correlation
+
+
+```
+
+```{r correlation, echo=FALSE}
+amf_prop_cor <- amf_soil_mean
+
+amf_prop_cor$treatment <- NULL
+amf_prop_cor$time <- NULL
+cor.matrix <- amf_prop_cor %>% cor()
+
+cor.mat.test <- cor.mtest(cor.matrix)
+
+correlation <- corrplot(cor.matrix, p.mat=cor.mat.test$p, sig.level = 0.05, order= "hclust", type= "upper", method= "number", insig = "pch", pch=4,number.cex = 0.75)
+```
+
+
+```{r colonizacion, echo=FALSE}
+
+colonizationt5 <- subset(amf_soil, amf_soil$time == "t5")
+colonizationt5mean <- subset(amf_soil_mean, amf_soil_mean$time == "t5")
+shapiro.test(colonizationt5$colonization)#data normal
+leveneTest(colonization~ treatment, data=colonizationt5) #equal 
+colonization_lm <- lm(colonization~ treatment, data=colonizationt5)
+anova_colonization_lm <- anova(colonization_lm)
+anova_colonization_lm
+
+colonizationt5 <- colonizationt5mean %>% ggplot(aes(x=factor(treatment, level= treat.order), y= colonization_mean), col=treatment)+
+  geom_col(aes(fill= treatment), col= "black", position= "dodge")+
+  scale_fill_manual(values= treat.colors)+
+  xlab("")+
+  ylab("% colonization.")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)+
+  #geom_text(data = pval.calcium_emmeans, aes(x= treatment, y= emmean, label= sign), nudge_x= 0, nudge_y= 15)+
+  geom_errorbar(data=colonizationt5mean, aes(ymin=colonization_mean-colonization_sd, 
+                                            ymax=colonization_mean+colonization_sd, group= time), position=position_dodge(0.9),linewidth =0.2, width=0.2)+
+    guides(fill=guide_legend(title="Treatment"))+
+  ggtitle("% colonizacion en T5 \nMean and SD", subtitle= paste(""))+
+    theme(
+    plot.title = element_text(size = 12),
+    plot.subtitle = element_text(size = 11),
+    plot.caption = element_text(size = 9))
+colonizationt5 
+#entre time
+shapiro.test(amf_soil$colonization)#data no normal
+amf_soil %>% group_by(time) %>% shapiro_test(colonization) #all normal in each time
+leveneTest(colonization~ treatment, data=amf_soil) #equal variance
+colonization_time_lm <- lm(colonization~ treatment*time, data=amf_soil)
+anov_colonization_time_lm <- anova(colonization_time_lm)
+anov_colonization_time_lm 
+
+colonization_time <- amf_soil_mean %>% ggplot(aes(x=factor(treatment, level= treat.order), y= colonization_mean))+
+  geom_col(aes(fill= time), col= "black", position= "dodge")+
+  xlab("")+
+  ylab("% colonization")+
+  theme_classic2()+
+  scale_x_discrete(labels= treat.labels)+
+  scale_fill_manual(values = c("#A1D5D2", "#8C8380"))+
+  ggtitle("Colonization % \nMean and SD", subtitle= paste(""))+
+  geom_errorbar(data=amf_soil_mean, aes(ymin=colonization_mean-colonization_sd, 
+            ymax=colonization_mean+colonization_sd, group= time),position=position_dodge(0.9),
+                                            size =0.2, width=0.2)+
+  guides(fill=guide_legend(title="Time"))+
+  theme(
+    plot.title = element_text(size = 12),
+    plot.subtitle = element_text(size = 11),
+    plot.caption = element_text(size = 9))
+colonization_time
+
+```
+
