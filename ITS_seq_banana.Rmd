@@ -317,15 +317,11 @@ ggqqplot(data=data, "richness", facet.by= "treatment")
 
 ### Statistical analysis
 
-```{r stats}
-
+```{r stats for all time points}
 #########SHANNON###############
 lmer.shannon <- lmer(shannon ~ time*treatment+(1|treat.pot) , data = data)
-glmer.shannon <- glmer(shannon~time* treatment+(1|treat.pot), data= data)
 #Repeated measures anova
 anova.shannon <- anova(lmer.shannon) %>% as.data.frame()
-anova.glmer.shannon <- anova(glmer.shannon)
-summary(glmer.shannon)
 #extract pvalue and other stats
 pval.shannon <- anova.shannon %>% rownames_to_column(var= "Variable")
 #adjust the format
@@ -341,17 +337,15 @@ pval.shannon
 time.pval.shannon <- pval.shannon$p.value[1]
 treat.pval.shannon <- pval.shannon$p.value[2]
 int.pval.shannon <- pval.shannon$p.value[3]
-#convert into kable
-#pval.shannon <- kableExtra::kable_styling(kable(pval.shannon, caption= "Repeated measures ANOVA", align = "c"),full_width = F)
 
-emmeans.shannon.treatment <- cld(emmeans(lmer.shannon, ~treatment), Letters = letters, reversed= TRUE)
+emmeans.shannon.treatment <- cld(emmeans(lmer.shannon, ~treatment), Letters = letters, reversed= TRUE) %>%
+  data.frame %>% rename_at(".group", ~"group")
 
 
 ########## RICHNESS###############
 lmer.richness <- lmer(richness ~ time*treatment+(1|treat.pot) , data = data)
 #Repeated measures anova
 anova.richness <- anova(lmer.richness) %>% as.data.frame()
-
 #extract pvalue and other stats
 pval.richness <- anova.richness %>% rownames_to_column(var= "Variable")
 #adjust the format
@@ -368,14 +362,13 @@ time.pval.richness <- pval.richness$p.value[1]
 treat.pval.richness <- pval.richness$p.value[2]
 int.pval.richness <- pval.richness$p.value[3]
 
-
-emmeans.richness.treatment <- cld(emmeans(lmer.richness, ~treatment), Letters = letters, reversed= TRUE)
+emmeans.richness.treatment <- cld(emmeans(lmer.richness, ~treatment), Letters = letters, reversed= TRUE) %>%
+  data.frame %>% rename_at(".group", ~"group")
 
 #########EVENNESS###########
 lmer.evenness <- lmer(evenness ~ time*treatment+(1|treat.pot) , data = data)
 #Repeated measures anova
 anova.evenness <- anova(lmer.evenness) %>% as.data.frame()
-
 #extract pvalue and other stats
 pval.evenness <- anova.evenness %>% rownames_to_column(var= "Variable")
 #adjust the format
@@ -392,10 +385,49 @@ time.pval.evenness <- pval.evenness$p.value[1]
 treat.pval.evenness <- pval.evenness$p.value[2]
 int.pval.evenness <- pval.evenness$p.value[3]
 
-emmeans.evenness.treatment <- cld(emmeans(lmer.evenness, ~treatment), Letters = letters, reversed= TRUE)
+emmeans.evenness.treatment <- cld(emmeans(lmer.evenness, ~treatment), Letters = letters, reversed= TRUE) %>%
+  data.frame %>% rename_at(".group", ~"group")
 
 ```
 
+```{r stats for delta T}
+#Creation of the data set
+
+data.t0 <- subset(data, data$time == "T0")
+data.t5 <- subset(data, data$time == "T5")
+data.delta <- data.frame("treatment"=data.t0$treatment,
+                         "rep"= data.t0$rep, 
+                         "sample_ID" = data.t0$sample_ID, 
+                         "treat.pot"= data.t0$treat.pot, 
+                         "d.shannon" =data.t5$shannon - data.t0$shannon,
+                         "d.rich" =data.t5$richness - data.t0$richness,
+                         "d.even" =data.t5$evenness - data.t0$evenness)
+#########SHANNON###############
+lm.d.shannon <- lm(d.shannon ~ 0+treatment, data = data.delta)
+d.pval.shannon <- summary(lm.d.shannon)$coefficient %>% 
+  as.data.frame() %>%
+  rownames_to_column(var= "treatment")
+d.pval.shannon$treatment <- sub("treatment", "", d.pval.shannon$treatment)
+d.pval.shannon$sign <- ifelse(d.pval.shannon$`Pr(>|t|)`<0.05, "*", "ns")
+
+
+#########rich###############
+lm.d.rich <- lm(d.rich ~ 0+treatment, data = data.delta)
+d.pval.rich <- summary(lm.d.rich)$coefficient  %>%
+  as.data.frame() %>% 
+  rownames_to_column(var= "treatment")
+d.pval.rich$treatment <- sub("treatment", "", d.pval.rich$treatment)
+d.pval.rich$sign <- ifelse(d.pval.rich$`Pr(>|t|)`<0.05, "*", "ns")
+
+#########even###############
+lm.d.even <- lm(d.even ~ 0+treatment, data = data.delta)
+d.pval.even <- summary(lm.d.even)$coefficient%>%
+  as.data.frame()%>%
+  rownames_to_column(var= "treatment")
+d.pval.even$treatment <- sub("treatment", "", d.pval.even$treatment)
+d.pval.even$sign <- ifelse(d.pval.even$`Pr(>|t|)`<0.05, "*", "ns")
+
+```
 
 ### Shannon
 
@@ -408,7 +440,8 @@ shannon_time_facet <- data %>% ggplot(aes(x= factor(treatment, level= treat.orde
   stat_summary(aes(x= treatment, y = shannon, group = treatment, col= treatment),fun= mean, geom = "crossbar")+
   scale_x_discrete(labels= treat.labels)+
   xlab(NULL)+ylab("Shannon index")+
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom")+
+  ggtitle("Shannon index evolution", subtitle = paste("p-value for all treatments accross all times:", treat.pval.shannon, "\np-value for all times together:", time.pval.shannon, "\np-value time x treatment:", int.pval.shannon))
 shannon_time_facet
 ggsave(shannon_time_facet, file= "ITS_results/shannon_time_facet.png", width = 4000, unit= "px")
 
@@ -423,15 +456,8 @@ shannon_treat_facet <- data %>% ggplot(aes(x= time, y= shannon, color= treatment
 shannon_treat_facet
 ggsave(shannon_treat_facet, file= "ITS_results/shannon_treat_facet.png", width = 3000, unit= "px")
 
-#Create an empty plot (theme_void()) to plot the table using geom_table() and add it to the multiplot in grid.arrange()
-df <- tibble(x = 0, y = 0, tb = list(pval.shannon))
 
-stat.table <- ggplot()+
-  geom_table(data=df, aes(x=x, y=y, label= tb),size= 10, table.theme = ttheme_gtsimple(size= 10))+
-  theme_void()
-stat.table
-
-shannon.plots <- grid.arrange(shannon_treat_facet, shannon_time_facet,stat.table,layout_matrix = rbind(c(1,1,1),c(1,1,1),c(1,3,3), c(2,2,2),c(2,2,2)))
+shannon.plots <- grid.arrange(shannon_treat_facet, shannon_time_facet,ncol=1)
 ggsave(shannon.plots, file="ITS_results/shannon_all_facet.png", width=4000, height= 4000, units = "px")
 ```
 
@@ -440,6 +466,29 @@ ggsave(shannon.plots, file="ITS_results/shannon_all_facet.png", width=4000, heig
 ![](ITS_results/shannon_time_facet.png)
 
 ![](ITS_results/shannon_all_facet.png)
+
+```{r}
+d.pval.shannon$size <- ifelse(d.pval.shannon$sign== "*", 8, 4)
+d.pval.shannon$size <- as.numeric(d.pval.shannon$size)
+d.shannon.plot <- data.delta %>% ggplot(aes( factor(treatment, level= treat.order), d.shannon))+
+  geom_point(shape= 23, size = 4, col= "black", aes(fill= treatment))+
+  geom_hline(yintercept = 0, linetype= 2 )+
+  geom_text(data= d.pval.shannon,aes(treatment, -0.7, label = sign),
+            size=d.pval.shannon$size)+
+  ylab("\u0394Shannon index (T5-T0)")+
+  xlab("Treatment")+
+  scale_fill_manual(values= treat.colors)+
+  scale_color_manual(values= treat.colors)+
+  scale_x_discrete(label= treat.labels)+
+  stat_summary(aes(x= treatment, y = d.shannon, group = treatment, col= treatment),fun= mean, geom = "crossbar", linewidth= 0.5, show.legend = FALSE)+
+  theme_classic2()+
+  ggtitle("Variation in Shannon index")+
+  guides(fill=guide_legend(title="Treatment"))
+d.shannon.plot
+ggsave(d.shannon.plot, file= "ITS_results/delta/delta_shannon.png", unit= "px", width= 1900, height= 1200)
+```
+
+
 
 ### Evenness
 
@@ -501,6 +550,27 @@ ggsave(evenness.plots, file="ITS_results/evenness_all_facet.png", width=4000, he
 
 ![](ITS_results/evenness_all_facet.png)
 
+
+```{r}
+d.pval.even$size <- ifelse(d.pval.even$sign== "*", 8, 4)
+d.pval.even$size <- as.numeric(d.pval.even$size)
+d.even.plot <- data.delta %>% ggplot(aes( factor(treatment, level= treat.order), d.even))+
+  geom_point(shape= 23, size = 4, col= "black", aes(fill= treatment))+
+  geom_hline(yintercept = 0, linetype= 2 )+
+  geom_text(data= d.pval.even,aes(treatment, 0.02, label = sign),
+            size=d.pval.even$size)+
+  ylab("\u0394evenness (T5-T0)")+
+  xlab("Treatment")+
+  scale_fill_manual(values= treat.colors)+
+  scale_color_manual(values= treat.colors)+
+  scale_x_discrete(label= treat.labels)+
+  stat_summary(aes(x= treatment, y = d.even, group = treatment, col= treatment),fun= mean, geom = "crossbar", linewidth= 0.5, show.legend = FALSE)+
+  theme_classic2()+
+  ggtitle("Variation in evenness")+
+  guides(fill=guide_legend(title="Treatment"))
+d.even.plot
+ggsave(d.even.plot, file= "ITS_results/delta/delta_even.png", unit= "px", width= 1900, height= 1200)
+```
 ### Richnness
 
 ```{r richness}
@@ -561,114 +631,105 @@ ggsave(richness.plots, file="ITS_results/richness_all_facet.png", width=4000, he
 
 ![](ITS_results/richness_all_facet.png)
 
-Is the diversity the same at the beginning that at the end? t5-t0 for each treatment
 
-```{r delta t for shannon}
-
-datat0 <- subset(data, data$time== "T0")
-datat5<- subset(data, data$time== "T5")
-stopifnot(identical(datat5$treat.pot, datat0$treat.pot))
-d.time <- data.frame(datat0[, c("time", "treatment", "rep", "treat.pot","shannon", "richness", "evenness")], datat5[, c("time", "shannon", "richness", "evenness")])
-row.names(d.time) <- NULL
-d.time <- rename(d.time, shannon.t0= shannon, richness.t0= richness, evenness.t0= evenness,shannon.t5= shannon.1, richness.t5= richness.1, evenness.t5= evenness.1)
-d.time$delta.shannon <- d.time$shannon.t5-d.time$shannon.t0
-d.time$delta.richness<- d.time$richness.t5-d.time$richness.t0
-d.time$delta.evenness<- d.time$evenness.t5-d.time$evenness.t0
-
-
-
-divt5t0 <- filter(data, time == "T0"| time == "T5")
-
-
-
-diff.div.shannon <- divt5t0 %>% ggplot(aes(x= factor(treatment, level= treat.order), y= shannon)) +
-                                        geom_boxplot(aes(fill=treatment, alpha= time),position= "dodge")+
-  scale_fill_manual(values= treat.colors)
-
-diff.div.shannon
+```{r}
+d.pval.rich$size <- ifelse(d.pval.rich$sign== "*", 8, 4)
+d.pval.rich$size <- as.numeric(d.pval.rich$size)
+d.rich.plot <- data.delta %>% ggplot(aes( factor(treatment, level= treat.order), d.rich))+
+  geom_point(shape= 23, size = 4, col= "black", aes(fill= treatment))+
+  geom_hline(yintercept = 0, linetype= 2 )+
+  geom_text(data= d.pval.rich,aes(treatment,-150, label = sign),
+            size=d.pval.rich$size)+
+  ylab("\u0394richness (T5-T0)")+
+  xlab("Treatment")+
+  scale_fill_manual(values= treat.colors)+
+  scale_color_manual(values= treat.colors)+
+  scale_x_discrete(label= treat.labels)+
+  stat_summary(aes(x= treatment, y = d.rich, group = treatment, col= treatment),fun= mean, geom = "crossbar", linewidth= 0.5, show.legend = FALSE)+
+  theme_classic2()+
+  ggtitle("Variation in richness")+
+  guides(fill=guide_legend(title="Treatment"))
+d.rich.plot
+ggsave(d.rich.plot, file= "ITS_results/delta/delta_rich.png", unit= "px", width= 1900, height= 1200)
 ```
+
 
 # Beta diversity (CLR PCA)
 
 
-```{r CLR transformation, include=FALSE}
-#Work with relative abundances
+```{r, include=TRUE}
 zotu.rel<-  transform_sample_counts(zotu97, function(x) x / sum(x))
-zotu.rel %>% otu_table()
+#SUBSET BY TIME
+zotu.rel.t0<- subset_samples(zotu.rel, time== "T0")
+zotu.rel.t5<- subset_samples(zotu.rel, time== "T5")
+zotu.rel.t0.t5 <- subset_samples(zotu.rel, time =="T0" | time =="T5")
 
-sample.data.pca <- sample_data(zotu.rel) %>% data.frame() 
-rownames(sample.data.pca) <- NULL
-sample.data.pca <- column_to_rownames(sample.data.pca, var= "sample_ID")
-t.otu <- zotu.rel %>% otu_table() %>% data.frame() %>% t()
+##### T0 + T5
+t.otu <- zotu.rel.t0.t5 %>% otu_table() %>% data.frame() %>% t()
 t.otu.clr <- decostand(t.otu, method = "clr", pseudocount = 1)
 pca.clr <- prcomp(t.otu.clr, scale=TRUE)
-plot(pca.clr)
-pca.simple <- PCA(t.otu.clr)
-pca.clr$center
-pca_scores <- as.data.frame(pca.clr$x)
-pca_scores$sample_ID <- rownames(pca_scores)
-pca_scores$sample_ID <- gsub("\\.", "-", pca_scores$sample_ID)
-rownames(pca_scores) <- pca_scores$sample_ID
+scores <- data.frame(pca.clr$x)
+t0.t5.pca <- data.frame(scores, sample_data(zotu.rel.t0.t5))
+variance_perc <- pca.clr$sdev^2 / sum(pca.clr$sdev^2) * 100 
 
-pca_scores <- merge(pca_scores, sample.data.pca, by = 0)
-merg
-dist.pca <- vegdist(data.frame(pca.clr$x),na.rm=TRUE)
+
+
+pca.plot.t0.t5.time <- ggplot(t0.t5.pca, aes(PC1, PC2, col= treatment, shape= time))+
+  geom_point(size= 3)+
+  scale_color_manual(values= treat.colors)+
+  scale_shape_manual(values=c(1,16))+
+  labs(title= "T0 and T5 CLR transformed",
+       x= sprintf("PC1 (%.1f%%)", variance_perc[1]), 
+       y= sprintf("PC2 (%.1f%%)", variance_perc[2]))+
+  stat_ellipse(aes(group =time, fill= time), level = 0.95, geom = "polygon", alpha = 0.2)
+pca.plot.t0.t5.time
+
+
+##### T0 
+t.otu <- zotu.rel.t0 %>% otu_table() %>% data.frame() %>% t()
+t.otu.clr <- decostand(t.otu, method = "clr", pseudocount = 1)
+pca.clr <- prcomp(t.otu.clr, scale=TRUE)
+scores <- data.frame(pca.clr$x)
+t0.pca <- data.frame(scores, sample_data(zotu.rel.t0))
+variance_perc <- pca.clr$sdev^2 / sum(pca.clr$sdev^2) * 100 
+
+pca.plot.t0 <- ggplot(t0.pca, aes(PC1, PC2, col= treatment))+
+  geom_point(size= 3, shape= 1)+
+  scale_color_manual(values= treat.colors)+
+  labs(title= "T0 CLR transformed",
+       x= sprintf("PC1 (%.1f%%)", variance_perc[1]), 
+       y= sprintf("PC2 (%.1f%%)", variance_perc[2]))+
+  geom_polygon(aes(fill =  treatment, group = interaction(time, treatment)),alpha= 0.5)+
+  scale_fill_manual(values= treat.colors)
+pca.plot.t0
+
+
+##### T5
+t.otu <- zotu.rel.t5 %>% otu_table() %>% data.frame() %>% t()
+t.otu.clr <- decostand(t.otu, method = "clr", pseudocount = 1)
+pca.clr <- prcomp(t.otu.clr, scale=TRUE)
+scores <- data.frame(pca.clr$x)
+t5.pca <- data.frame(scores, sample_data(zotu.rel.t5))
+variance_perc <- pca.clr$sdev^2 / sum(pca.clr$sdev^2) * 100 
+
+pca.plot.t5 <- ggplot(t5.pca, aes(PC1, PC2, col= treatment))+
+  geom_point(size= 3, shape= 16)+
+  scale_color_manual(values= treat.colors)+
+  labs(title= "T5 CLR transformed",
+       x= sprintf("PC1 (%.1f%%)", variance_perc[1]), 
+       y= sprintf("PC2 (%.1f%%)", variance_perc[2]))+
+  geom_polygon(aes(fill =  treatment, group = interaction(time, treatment)),alpha= 0.5)+
+  scale_fill_manual(values= treat.colors)
+pca.plot.t5
+
+pca.multiplot <- grid.arrange(pca.plot.t0 + guides(fill= "none", col= "none"),
+                              pca.plot.t5+ guides(fill= "none", col= "none"),
+                              pca.plot.t0.t5.time+guides(fill= "none", alpha =                              "none")+
+                                theme_classic()+
+                                theme(legend.position = "bottom"),
+                              layout_matrix= rbind(c(1,2), c(1,2), c(3,3), c(3,3), c(3,3)))
+
+ggsave(pca.multiplot, file= "ITS_results/PCA/pca_all.png")
 ```
 
-
-```{r CLR transformed PCA, include=FALSE}
-# Plot PCA scores using the first two principal components
-ggplot(pca_scores, aes(PC1, PC2, color = time)) +
-  geom_point() +
-  labs(x = "PC1", y = "PC2", title = "PCA Plot")
-
-scaled_otu_abundance <- scale(t.otu.clr)
-correlation <- cor(scaled_otu_abundance, pca_scores[, 2:3])
-
-
-ggplot(pca_scores, aes(PC1, PC2, color = treatment)) +
-  geom_point() +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "gray50") +
-  geom_text(data = as.data.frame(correlation), aes(label = rownames(correlation)), 
-            size = 2, hjust = -0.2, vjust = -0.2, color = "red") +
-  labs(x = "PC1", y = "PC2", title = "Biplot")
-
-pca
-fviz_eig(pca.clr)
-contrib1 <- fviz_contrib(pca.clr, axes = c(1), "var",fill ="coral3",color = "coral3", top = 200)
-
-contrib1.data <- contrib1$data 
-contrib1.data <- contrib1.data %>% arrange(-contrib) %>% subset(., contrib> 100/nrow(contrib1.data))
-contrib1.data$OTU <- contrib1.data$name
-
-
-contrib2 <- fviz_contrib(pca.clr, axes = c(2), "var",fill ="blue3",top = 200)
-
-contrib2.data <- contrib2$data 
-contrib2.data <- contrib2.data %>% arrange(-contrib) %>% subset(., contrib> 200/nrow(contrib2.data))
-contrib2.data$OTU <- contrib2.data$name
-
-contrib1.2 <- fviz_contrib(pca.clr, axes = c(1,2), "var",fill ="purple3",top = 50)
-grid.arrange(contrib1,contrib1.2, contrib2, ncol=3)
-```
-
-
-```{r}
-biplot.treat<- fviz_pca_biplot(pca.clr, 
-                geom = c("point"),
-                col.ind = sample_data(zotu.rel)$treatment,
-                repel = TRUE,
-                pointshape=16,pointsize=(size = 5),
-                select.var = list(contrib = 5),
-                invisible= "quali",
-                label= "var",
-                col.var= "gray4",
-                title = "Treatment",
-                addEllipses = TRUE, labelsize= 5)+
-  theme_gray() +
-  guides(color = guide_legend(override.aes = list(size = 4)))+
-    theme(title = element_text(size=30) ,axis.text.x = element_text(size = 15),  axis.text.y = element_text(size = 15), legend.text=element_text(size=15))
-  biplot.treat
-```
 
