@@ -621,82 +621,87 @@ basal_t0t4plot
 ggsave(basal_t0t4plot, file="soil_respiration_result/interac_basal_t4.png", width= 3800,height= 2200, units= "px")
 
 #induced
+
 shapiro.test(respirationt0t4$mg_co_induced)# no normal data, but all data of each time of induced are normal
 leveneTest(mg_co_induced ~ time * treatment, data=respirationt0t4) #equal variances
+#modelo 
+model_respi_inducet0t4 <- lmer(mg_co_induced~ time*treatment + (1|treat.pot), data=respirationt0t4)
+summary(model_respi_inducet0t4)
 
-#anova_inducedt0t4 <- aov(mg_co_induced~ time + treatment, data=respirationt0t4) #anova two ways
-#summary(anova_inducedt0t4)
-anova_inducedt0t4int <- aov(mg_co_induced ~ time * treatment + rep, data=respirationt0t4) # interaction between them? # p-value 0.1037
-summary(anova_inducedt0t4int)
+anova_model_respi_inducet0t4 <- anova(model_respi_inducet0t4)
+anova_model_respi_inducet0t4 #p value 0.0001959 time:treatment
+emm_respi_inducet0t4 <- emmeans(model_respi_inducet0t4, pairwise ~ time | treatment)
+summary(emm_respi_inducet0t4)
 
-inducedt0t4lm <- lm(mg_co_induced~ time*treatment +rep, data=respirationt0t4)#model
-anova(inducedt0t4lm)
-emm_inducedt0t4 <- emmeans(inducedt0t4lm, pairwise ~ time | treatment)#emmeans
-emm_inducedt0t4$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)#el adjust es para el metodo de los pvalues
 
-inducedt0t4contras <- data.frame(emm_inducedt0t4$contrasts)#data frame para sacar el valor del contraste 
+emm_respi_inducet0t4$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)#el adjust es para el metodo de los pvalues
+inducet0t4contraste <- data.frame(emm_respi_inducet0t4$contrasts)#data frame para sacar el valor del contraste 
+inducet0t4contraste
+inducet0t4emmeans <- data.frame(emm_respi_inducet0t4$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")
+inducet0t4emmeans
 
-inducedt0t4contras
-
-inducedt0t4emmeans <- data.frame(emm_inducedt0t4$emmeans) %>% group_by(treatment) %>% summarise(across(.cols= "emmean",.fns=mean),.groups = "drop")
-inducedt0t4emmeans
-
-emm_inducedt0t4 <- cld(emmeans(inducedt0t4lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE) #add letters
-emm_inducedt0t4
-pval_inducedt0t4_time <- data.frame(treatment= inducedt0t4contras$treatment, pval= inducedt0t4contras$p.value, emmean= inducedt0t4emmeans$emmean)
-pval_inducedt0t4_time$sign <- ifelse(pval_inducedt0t4_time$pval>0.05, paste("ns"),
-                                 ifelse(pval_inducedt0t4_time$pval>0.01, paste("*"),
-                                        ifelse(pval_inducedt0t4_time$pval> 0.001,
+emm_respi_inducet0t4 <- cld(emmeans(model_respi_inducet0t4, specs = pairwise~treatment), Letters= letters, reversed= TRUE) #add letters
+emm_respi_inducet0t4
+pval_inducet0t4_time <- data.frame(treatment= inducet0t4contraste$treatment, pval= inducet0t4contraste$p.value, emmean= inducet0t4emmeans$emmean)
+pval_inducet0t4_time$sign <- ifelse(pval_inducet0t4_time$pval>0.05, paste("ns"),
+                                 ifelse(pval_inducet0t4_time$pval>0.01, paste("*"),
+                                        ifelse(pval_inducet0t4_time$pval> 0.001,
                                                paste("**"), paste("***"))))
-inducedt0t4_time <- respirationt0t4mean %>% ggplot(aes(x=factor(treatment, level= treat.order), y= mg_co_induced_mean))+
-  geom_col(aes(fill= time),position= "dodge")+
+inducet0t4_time <- respirationt0t4mean %>% ggplot(aes(x=factor(treatment, level= treat.order), y= mg_co_induced_mean))+
+  geom_col(aes(fill= time), col= "black", position= "dodge")+
+  geom_text(data = pval_inducet0t4_time, aes(x= treatment, y= emmean, label= sign), nudge_x= 0, nudge_y= 10)+
   xlab("")+
-  ylab("induced mg C-CO2/kg dry soil")+
+  ylab("mg C-CO2/kg dry soil")+
   theme_classic2()+
-  labs(subtitle = "" , caption = "Different letters indicate statistically significant differences between Time (T0 and T4).\nMean and SD of each treatment")+
-  ggtitle("Interaction between induced respiration at T0 and T4", subtitle= "ANOVA (Tukey-Interac-Time) p-value:0.1037 de time ??? \nEmmeans model") +
   scale_x_discrete(labels= treat.labels)+
-  geom_text(data = pval_inducedt0t4_time, aes(x= treatment, y= emmean, label= sign), nudge_x= 0, nudge_y= 25)+
-  geom_errorbar(data=respirationt0t4mean, aes(ymin=mg_co_induced_mean-mg_co_induced_sd, ymax=mg_co_induced_mean+mg_co_induced_sd, group= time), position=position_dodge(0.9), size =0.2, width=0.2)
+  scale_fill_manual(values = c("#A1D5D2", "#8C8380"))+
+  labs(subtitle = "" , caption = "Different (*) indicates differences between the levels of the treatment factor at each time (T0-T4).\n caculated by Estimated Marginal Means posthoc -Tukey's adjustment method") +
+  ggtitle("Induced respiration in T0 and T4\nMean and SD", subtitle= paste("LMEs-Anova III-Time:Treatment(Tukey) p-value: ", format(anova_model_respi_inducet0t4$`Pr(>F)`[[3]], scientific= TRUE, digits=2 ), sep= ""))+
+  geom_errorbar(data=respirationt0t4mean, aes(ymin=mg_co_induced_mean-mg_co_induced_sd, 
+            ymax=mg_co_induced_mean+mg_co_induced_sd, group= time),position=position_dodge(0.9),
+                                            size =0.2, width=0.2)+
+  guides(fill=guide_legend(title="Time"))+
+  theme(
+    plot.title = element_text(size = 12),
+    plot.subtitle = element_text(size = 11),
+    plot.caption = element_text(size = 9))
 
-inducedt0t4_time
-
+inducet0t4_time
+ggsave(inducet0t4_time, file="soil_parameters_result/inducet0t4_time.png", width= 1900,height= 1200, units= "px")
 #delta
+delta_inducet0t4 <- data.frame (treatment=respirationt0$treatment, t4= respirationt4$mg_co_induced, t0=respirationt0$mg_co_induced)
+delta_inducet0t4$delta <- delta_inducet0t4$t4-delta_inducet0t4$t0
+delta_inducet0t4
 
-delta_inducedt0t4 <- data.frame (treatment=respirationt0$treatment, t4= respirationt4$mg_co_induced, t0=respirationt0$mg_co_induced)
-delta_inducedt0t4$delta <- delta_inducedt0t4$t4-delta_inducedt0t4$t0
+delta_inducet0t4_modelo <- lm(delta~ treatment, data=delta_inducet0t4)#model
+anova_delta_inducet0t4_modelo<-anova(delta_inducet0t4_modelo)
 
-delta_inducedt0t4
-
-delta_inducedt0t4_lm <- lm(delta~ treatment, data=delta_inducedt0t4)#model
-anova(delta_inducedt0t4_lm) #pval 0.002363
-
-emm.delta.inducedt0t4 <- emmeans(delta_inducedt0t4_lm, pairwise ~  treatment)
-emm.delta.inducedt0t4
-emm.delta.inducedt0t4$contrasts %>% rbind(adjust= "fdr") %>% 
+emm.delta.inducet0t4 <- emmeans(delta_inducet0t4_modelo, pairwise ~  treatment)
+emm.delta.inducet0t4
+emm.delta.inducet0t4$contrasts %>% rbind(adjust= "fdr") %>% 
   summary(infer = TRUE)
-emm.delta.inducedt0t4 <- cld(emmeans(delta_inducedt0t4_lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
-emm.delta.inducedt0t4$.group
+emm.delta._inducet0t4 <- cld(emmeans(delta_inducet0t4_modelo, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
 
-plotdelta_inducedt0t4 <- delta_inducedt0t4 %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
-  geom_point(pch= 21, size= 7)+
+plotdelta_inducet0t4 <- delta_inducet0t4 %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 24, size= 7)+
   xlab("")+
   ylab("Delta variation between t4-t0")+
   geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
   scale_fill_manual(values= treat.colors)+
-  geom_text(data= emm.delta.inducedt0t4, aes(x= treatment, y= emmean, label= `.group`), nudge_x = 0.2, nudge_y = 0.2)+
+  geom_text(data= emm.delta._inducet0t4, aes(x= treatment, y= emmean, label= `.group`), nudge_x = 0.2, nudge_y = 0.2)+
   scale_x_discrete(labels= treat.labels)+
-  labs(subtitle = "" , caption = "Different letters indicate statistically significant differences \nbetween delta variation in each treatment between T0 and T4")+
-  ggtitle("Δ Respiration induced at T0 and T4", subtitle= "ANOVA Δ (Tukey) p-value : 0.002363\nEmmeans model")+
-  theme_classic2()
+  labs(subtitle = "" , caption = "Different letters indicates differences between the levels of the treatment factor in delta variation (T4-T0).\n caculated by Estimated Marginal Means post hoc -Tukey's adjustment method.")+
+  ggtitle("Δ Induced Respiration at T0 and T4", subtitle= paste("LinealModel-Anova Treatment(Tukey) p-value: ", format(anova_delta_inducet0t4_modelo$`Pr(>F)`[[1]], scientific= TRUE, digits=2 ), sep= ""))+
+  theme_classic2()+
+  guides(fill=guide_legend(title="Treatment"))
+plotdelta_inducet0t4
 
-plotdelta_inducedt0t4
-induced_t0t4plot <- ggarrange(inducedt0t4_time, plotdelta_inducedt0t4+ guides(fill= "none") , ncol = 2)
+induce_t0t4plot <- ggarrange(inducet0t4_time, plotdelta_inducet0t4+ guides(fill= "none"), ncol = 2)
+induce_t0t4plot
+#_induce_t0t4plot <- annotate_figure(_induce_t0t4plot, top = text_grob("_induce respiration", color = "black", face = "bold", size = 10),bottom = text_grob("Interaction and variation between beginning and end of the experiment", size=10)) para dar titulo
 
-#induced_t0t4plot <- annotate_figure(induced_t0t4plot, top = text_grob("Induced respiration", color = "black", face = "bold", size = 10),bottom = text_grob("Interaction and variation between beginning and end of the experiment", size=10))
+ggsave(induce_t0t4plot, file="soil_respiration_result/interac_inducet0t4.png", width= 3800,height= 2200, units= "px")
 
-induced_t0t4plot
-ggsave(induced_t0t4plot, file="soil_respiration_result/interac_induced_t4.png", width= 1900,height= 1200, units= "px")
 
 ```
 
