@@ -57,7 +57,7 @@ library(ggthemes)
 
 
 ```{r colors, include= FALSE}
-treat.colors <- c("control"= "green4" ,"control.amf"  = "darkseagreen" , "chicken.manure"= "royalblue1", "cow.manure" = "red3","mo.pellet"= "darkorchid1","compost"="chocolate4","control.legumes"="darkolivegreen4")
+treat.colors <- c("control"= "green4" ,"control.amf"  = "darkseagreen" , "chicken.manure"= "royalblue1", "cow.manure" = "red3","mo.pellet"= "darkorchid1","compost"="chocolate4","control.legume"="darkolivegreen4")
 treat.colors
 treat.order <- c('control', 'control.amf', 'control.legume', "compost", "chicken.manure", "cow.manure", "mo.pellet") 
 treat.labels <- c("Control", "Control\nAMF", "Control\nLegume", "Compost", "Chicken\nmanure", "Cow\nmanure", "Pellet")
@@ -68,7 +68,7 @@ treat.labels <- c("Control", "Control\nAMF", "Control\nLegume", "Compost", "Chic
 
 
 ```{r stast, include= FALSE}
-plant_nutrition <- readxl::read_excel("C:/Users/raquel.correa/Documents/banana_microbiome/raw_files/plant_nutricion.xlsx")
+plant_nutrition <- readxl::read_excel("raw_files/plant_nutricion.xlsx")
 
 plant_nutrition_mean <- plant_nutrition %>% group_by(treatment) %>% 
   summarise(across(.cols=everything(),.fns=list(mean = mean, sd = sd)),.groups = "drop")
@@ -97,12 +97,20 @@ corrplot(plant_cor_matrix, p.mat=plant_cor_mat_test$p, sig.level = 0.05, order= 
 
 ```
 
+La representacion con boxplot representa la distribución de tus datos a lo largo de diferentes percentiles. Aquí está cómo interpretar los elementos clave de un boxplot:
+
+Caja (Box): La caja en el medio del gráfico representa el rango intercuartílico (IQR), que es la diferencia entre el tercer cuartil (Q3) y el primer cuartil (Q1). El 50% central de tus datos se encuentra dentro de esta caja. La línea dentro de la caja generalmente representa la mediana.
+
+Bigotes (Whiskers): Los bigotes se extienden desde la caja hasta los valores extremos, que son puntos más allá de los cuales se consideran atípicos. La longitud de los bigotes es típicamente 1.5 veces el rango intercuartílico.
+
+Outliers (Valores atípicos): Puntos individuales fuera de los bigotes se consideran valores atípicos y se muestran como puntos separados. Sin embargo, algunos programas o paquetes estadísticos pueden tener criterios diferentes para identificar valores atípicos.
 
 ```{r stats, echo=FALSE}
 plant_nutrition %>% group_by(treatment) %>% shapiro_test(nitrogen)#not normal, just chicken.manure. The data are correct
 
 #nitrogen
 plant_nutrition %>% group_by(treatment) %>% shapiro_test(nitrogen)#not normal
+leveneTest(nitrogen~ treatment, data=plant_nutrition) #equal Variance 
 ggqqplot(data= plant_nutrition, "nitrogen", facet.by = "treatment")
 plant_nutrition$inv_nitrogen <- 2/(plant_nutrition$nitrogen)
 plant_nutrition$log_nitrogen <- log10(plant_nutrition$nitrogen)
@@ -112,18 +120,20 @@ plant_nutrition %>% group_by(treatment) %>% shapiro_test(inv_nitrogen)
 shapiro.test(plant_nutrition$inv_nitrogen)
 ggqqplot(data= plant_nutrition, "inv_nitrogen", facet.by = "treatment")
 
-anova_nitrogen <- aov(inv_nitrogen~treatment, data= plant_nutrition)
-anova_nitrogen <- summary(aov(inv_nitrogen~treatment, data= plant_nutrition)) #diff sig.
+anova_nitrogentrans <- aov(inv_nitrogen~treatment, data= plant_nutrition)
+anova_nitrogentrans <- summary(aov(inv_nitrogen~treatment, data= plant_nutrition)) #diff sig.
 
-pvalue_nitrogen <- anova_nitrogen[[1]][["Pr(>F)"]][1] #se tiene que sacar del summary el p-value
+anova_nitrogenoriginal <-aov(nitrogen~treatment, data= plant_nutrition)
+anova_nitrogenoriginal
+pvalue_nitrogen <- anova_nitrogenoriginal[[1]][["Pr(>F)"]][1] #se tiene que sacar del summary el p-value
 pvalue_nitrogen
 
-tukey_nitrogen <- HSD.test(aov(inv_nitrogen~treatment, data= plant_nutrition), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_nitrogen <- HSD.test(aov(nitrogen~treatment, data= plant_nutrition), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 tukey_nitrogen
 
-plot_nitrogen <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= treat.order), y= inv_nitrogen, fill= treatment))+
+plot_nitrogenorig <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= treat.order), y= nitrogen, fill= treatment))+
   geom_boxplot(col= "black")+
-  geom_point(size= 2, pch= 17, col= "black", aes(fill= treatment))+
+  geom_point(size= 2, pch= 21, col= "black", aes(fill= treatment))+
   scale_fill_manual(values= treat.colors)+
   scale_color_manual(values= treat.colors)+
   theme_classic2()+
@@ -134,11 +144,11 @@ plot_nitrogen <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= trea
   theme(axis.title.y = element_text(size=11))+
   guides(fill=guide_legend(title="Treatment"))+
   ggtitle("Nitrogen mg/Kg", subtitle= paste("ANOVA(HSDTukey) p-value: ", format(pvalue_nitrogen, scientific= TRUE, digits=2 ), sep= ""))+
-  labs(caption="Normal data by transformation. All data normal, except Control ")+
-  geom_text(data= tukey_nitrogen, aes(x= treatment, y= inv_nitrogen , label= groups), nudge_x= 0.2, nudge_y= 0.01)
+  labs(caption="Statistical based on transformed data. Graph with original data.  ")+
+  geom_text(data= tukey_nitrogen, aes(x= treatment, y= nitrogen , label= groups), nudge_x= 0.2, nudge_y= 1.5)
 
-plot_nitrogen
-ggsave(plot_nitrogen, file="plant_nutrition_result/nitrogen.png", width= 1900,height= 1200, units= "px")
+plot_nitrogenorig
+ggsave(plot_nitrogenorig, file="plant_nutrition_result/nitrogen_notrans.png", width= 1900,height= 1200, units= "px")
 
 
 #phosphorus
@@ -148,18 +158,20 @@ ggqqplot(data= plant_nutrition, "phosphorus", facet.by = "treatment")
 plant_nutrition$inv_phosphorus <- 1/(plant_nutrition$phosphorus) #trans 
 shapiro.test(plant_nutrition$inv_phosphorus) #data normal
 
-anova_phospho <- aov(inv_phosphorus~treatment, data= plant_nutrition)
-anova_phospho <- summary(aov(inv_phosphorus~treatment, data= plant_nutrition)) #diff sig.
+anova_phosphotrans <- aov(inv_phosphorus~treatment, data= plant_nutrition)
+anova_phosphotrans <- summary(aov(inv_phosphorus~treatment, data= plant_nutrition)) #diff sig.
+anova_phosphoorigi <- aov(phosphorus~treatment, data= plant_nutrition)
+anova_phosphoorigi<- summary(aov(phosphorus~treatment, data= plant_nutrition)) #diff sig.
 
-pvalue_phospho <- anova_phospho[[1]][["Pr(>F)"]][1] #se tiene que sacar del summary el p-value
+pvalue_phospho <- anova_phosphoorigi[[1]][["Pr(>F)"]][1] #se tiene que sacar del summary el p-value
 pvalue_phospho
 
-tukey_phospho <- HSD.test(aov(inv_phosphorus~treatment, data= plant_nutrition), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
+tukey_phospho <- HSD.test(aov(phosphorus~treatment, data= plant_nutrition), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 tukey_phospho
 
-plot_phosphorus <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= treat.order), y= inv_phosphorus, fill= treatment))+
+plot_phosphorusorig <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= treat.order), y= phosphorus, fill= treatment))+
   geom_boxplot(col= "black")+
-  geom_point(size= 2, pch= 17, col= "black", aes(fill= treatment))+
+  geom_point(size= 2, pch= 21, col= "black", aes(fill= treatment))+
   scale_fill_manual(values= treat.colors)+
   scale_color_manual(values= treat.colors)+
   theme_classic2()+
@@ -171,10 +183,10 @@ plot_phosphorus <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= tr
   guides(fill=guide_legend(title="Treatment"))+
   ggtitle("Phosphorus mg/Kg", subtitle= paste("ANOVA(HSDTukey) p-value: ", format(pvalue_phospho, scientific= TRUE, digits=2 ), sep= ""))+
   labs(caption="Normal data by transformation")+
-  geom_text(data= tukey_phospho, aes(x= treatment, y= inv_phosphorus , label= groups), nudge_x= 0.2, nudge_y= 0.06)
+  geom_text(data= tukey_phospho, aes(x= treatment, y= phosphorus , label= groups), nudge_x= 0.2, nudge_y= 0.9)
 
-plot_phosphorus
-ggsave(plot_phosphorus, file="plant_nutrition_result/phosphorus.png", width= 1900,height= 1200, units= "px")
+plot_phosphorusorig
+ggsave(plot_phosphorusorig, file="plant_nutrition_result/phosphorusnotrans.png", width= 1900,height= 1200, units= "px")
 
 #calcium
 plant_nutrition %>% group_by(treatment) %>% shapiro_test(calcium) #normal
@@ -190,7 +202,7 @@ tukey_calcium
 
 plot_calcium <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= treat.order), y= calcium, fill= treatment))+
   geom_boxplot(col= "black")+
-  geom_point(size= 2, pch= 17, col= "black", aes(fill= treatment))+
+  geom_point(size= 2, pch= 21, col= "black", aes(fill= treatment))+
   scale_fill_manual(values= treat.colors)+
   scale_color_manual(values= treat.colors)+
   theme_classic2()+
@@ -220,7 +232,7 @@ tukey_magnesium
 
 plot_magnesium <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= treat.order), y= magnesium, fill= treatment))+
   geom_boxplot(col= "black")+
-  geom_point(size= 2, pch= 17, col= "black", aes(fill= treatment))+
+  geom_point(size= 2, pch= 21, col= "black", aes(fill= treatment))+
   scale_fill_manual(values= treat.colors)+
   scale_color_manual(values= treat.colors)+
   theme_classic2()+
@@ -251,7 +263,7 @@ tukey_sodium
 
 plot_sodium <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= treat.order), y= sodium, fill= treatment))+
   geom_boxplot(col= "black")+
-  geom_point(size= 2, pch= 17, col= "black", aes(fill= treatment))+
+  geom_point(size= 2, pch= 21, col= "black", aes(fill= treatment))+
   scale_fill_manual(values= treat.colors)+
   scale_color_manual(values= treat.colors)+
   theme_classic2()+
@@ -283,7 +295,7 @@ tukey_potassium
 
 plot_potassium <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= treat.order), y= potassium, fill= treatment))+
   geom_boxplot(col= "black")+
-  geom_point(size= 2, pch= 17, col= "black", aes(fill= treatment))+
+  geom_point(size= 2, pch= 21, col= "black", aes(fill= treatment))+
   scale_fill_manual(values= treat.colors)+
   scale_color_manual(values= treat.colors)+
   theme_classic2()+
@@ -312,7 +324,7 @@ tukey_iron
 
 plot_iron <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= treat.order), y= iron, fill= treatment))+
   geom_boxplot(col= "black")+
-  geom_point(size= 2, pch= 17, col= "black", aes(fill= treatment))+
+  geom_point(size= 2, pch= 21, col= "black", aes(fill= treatment))+
   scale_fill_manual(values= treat.colors)+
   scale_color_manual(values= treat.colors)+
   theme_classic2()+
@@ -323,7 +335,7 @@ plot_iron <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= treat.or
   guides(fill=guide_legend(title="Treatment"))+
   ggtitle("Iron mg/Kg", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_iron, scientific= TRUE, digits=2 ), sep= ""))+
   labs(caption="")+
-  geom_text(data= tukey_iron, aes(x= treatment, y= iron , label= groups), nudge_x= 0.2, nudge_y= 2.5)
+  geom_text(data= tukey_iron, aes(x= treatment, y= iron , label= groups), nudge_x= 0.2, nudge_y= 4.5)
 
 plot_iron
 ggsave(plot_iron, file="plant_nutrition_result/iron.png", width= 1900,height= 1200, units= "px")
@@ -335,19 +347,21 @@ shapiro.test(plant_nutrition$manganeso)# no normal
 plant_nutrition$log_manganeso <- log10(plant_nutrition$manganeso) #trans
 shapiro.test(plant_nutrition$log_manganeso)#normal data
 
-anova_manganeso <- aov(log_manganeso~treatment, data= plant_nutrition)
-anova_manganeso
-anova_manganeso <- summary(aov(manganeso~treatment, data= plant_nutrition)) #diff sig.
+anova_manganesotrans <- aov(log_manganeso~treatment, data= plant_nutrition)
+anova_manganesotrans
+anova_manganesotrans <- summary(aov(log_manganeso~treatment, data= plant_nutrition)) #diff sig.
 
-pvalue_manganeso <- anova_manganeso[[1]][["Pr(>F)"]][1]
+anova_manganesoorig<-aov(manganeso~treatment, data= plant_nutrition)
+anova_manganesoorig <- summary(aov(manganeso~treatment, data= plant_nutrition))
+pvalue_manganeso <- anova_manganesoorig[[1]][["Pr(>F)"]][1]
 pvalue_manganeso
 
 tukey_manganeso <- HSD.test(aov(manganeso~treatment, data= plant_nutrition), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 tukey_manganeso
 
-plot_manganeso <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= treat.order), y= manganeso, fill= treatment))+
+plot_manganesoorig <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= treat.order), y=manganeso, fill= treatment))+
   geom_boxplot(col= "black")+
-  geom_point(size= 2, pch= 17, col= "black", aes(fill= treatment))+
+  geom_point(size= 2, pch= 21, col= "black", aes(fill= treatment))+
   scale_fill_manual(values= treat.colors)+
   scale_color_manual(values= treat.colors)+
   theme_classic2()+
@@ -358,28 +372,31 @@ plot_manganeso <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= tre
   guides(fill=guide_legend(title="Treatment"))+
   ggtitle("Manganeso mg/Kg", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_manganeso, scientific= TRUE, digits=2 ), sep= ""))+
   labs(caption="")+
-  geom_text(data= tukey_manganeso, aes(x= treatment, y= manganeso , label= groups), nudge_x= 0.2, nudge_y= 10.5)
+  geom_text(data= tukey_manganeso, aes(x= treatment, y= manganeso , label= groups), nudge_x= 0.2, nudge_y= 3)
 
-plot_manganeso
-ggsave(plot_manganeso, file="plant_nutrition_result/manganeso.png", width= 1900,height= 1200, units= "px")
+plot_manganesoorig
+ggsave(plot_manganeso, file="plant_nutrition_result/manganesonotrans.png", width= 1900,height= 1200, units= "px")
 #zinc
 shapiro.test(plant_nutrition$zinc)#no normal
 plant_nutrition$log_zinc <- log10(plant_nutrition$zinc) #trans
 shapiro.test(plant_nutrition$log_zinc) #normal 
 
-anova_zinc <- aov(log_zinc~treatment, data= plant_nutrition)
-anova_zinc
-anova_zinc <- summary(aov(zinc~treatment, data= plant_nutrition)) #diff sig.
+anova_zinctrans <- aov(log_zinc~treatment, data= plant_nutrition)
+anova_zinctrans
+anova_zinctrans <- summary(aov(log_zinc~treatment, data= plant_nutrition)) #diff sig.
+anova_zincorig<-aov(zinc~treatment, data= plant_nutrition)
+anova_zincorig
+anova_zincorig <- summary(aov(zinc~treatment, data= plant_nutrition)) #diff sig.
 
-pvalue_zinc <- anova_zinc[[1]][["Pr(>F)"]][1]
+pvalue_zinc <- anova_zincorig[[1]][["Pr(>F)"]][1]
 pvalue_zinc
 
 tukey_zinc <- HSD.test(aov(zinc~treatment, data= plant_nutrition), "treatment", alpha = 0.05)$groups %>% rownames_to_column(var= "treatment")
 tukey_zinc
 
-plot_zinc <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= treat.order), y= zinc, fill= treatment))+
+plot_zincorig <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= treat.order), y= zinc, fill= treatment))+
   geom_boxplot(col= "black")+
-  geom_point(size= 2, pch= 17, col= "black", aes(fill= treatment))+
+  geom_point(size= 2, pch= 21, col= "black", aes(fill= treatment))+
   scale_fill_manual(values= treat.colors)+
   scale_color_manual(values= treat.colors)+
   theme_classic2()+
@@ -391,7 +408,7 @@ plot_zinc <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= treat.or
   ggtitle("Zinc mg/Kg", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_zinc, scientific= FALSE, digits=2 ), sep= ""))+
   labs(caption="")+
   geom_text(data= tukey_zinc, aes(x= treatment, y= zinc , label= groups), nudge_x= 0.2, nudge_y= 5)
-plot_zinc
+plot_zincorig
 ggsave(plot_zinc, file="plant_nutrition_result/zinc.png", width= 1900,height= 1200, units= "px")
 #copper
 shapiro.test(plant_nutrition$copper) #normal

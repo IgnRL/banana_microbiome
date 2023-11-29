@@ -610,6 +610,12 @@ delta.calcium$delta <- delta.calcium$t4-delta.calcium$t0
 delta.calcium
 
 delta.calcium.lm <- lm(delta ~ treatment, data=delta.calcium) #modelo normal 
+#delta.calcium.lm0 <- lm(delta ~ 0 + treatment, data=delta.calcium) #modelo normal 
+summary(delta.calcium.lm0)
+
+anova.calciumlmo0<-anova(delta.calcium.lm0)
+summary(anova.calciumlmo0)
+
 delta.calcium.lm 
 anova_deltacalciumt0t4 <-anova(delta.calcium.lm)#p value 0.0004265
 anova_deltacalciumt0t4
