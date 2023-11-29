@@ -182,7 +182,7 @@ plot_phosphorusorig <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level
   theme(axis.title.y = element_text(size=11))+
   guides(fill=guide_legend(title="Treatment"))+
   ggtitle("Phosphorus mg/Kg", subtitle= paste("ANOVA(HSDTukey) p-value: ", format(pvalue_phospho, scientific= TRUE, digits=2 ), sep= ""))+
-  labs(caption="Normal data by transformation")+
+  labs(caption="Statistical based on transformed data. Graph with original data")+
   geom_text(data= tukey_phospho, aes(x= treatment, y= phosphorus , label= groups), nudge_x= 0.2, nudge_y= 0.9)
 
 plot_phosphorusorig
@@ -371,7 +371,7 @@ plot_manganesoorig <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level=
   theme(axis.title.y = element_text(size=11))+
   guides(fill=guide_legend(title="Treatment"))+
   ggtitle("Manganeso mg/Kg", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_manganeso, scientific= TRUE, digits=2 ), sep= ""))+
-  labs(caption="")+
+  labs(caption="Statistical based on transformed data. Graph with original data")+
   geom_text(data= tukey_manganeso, aes(x= treatment, y= manganeso , label= groups), nudge_x= 0.2, nudge_y= 3)
 
 plot_manganesoorig
@@ -406,10 +406,10 @@ plot_zincorig <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= trea
   theme(axis.title.y = element_text(size=11))+
   guides(fill=guide_legend(title="Treatment"))+
   ggtitle("Zinc mg/Kg", subtitle= paste("ANOVA (HSDTukey) p-value: ", format(pvalue_zinc, scientific= FALSE, digits=2 ), sep= ""))+
-  labs(caption="")+
+  labs(caption="Statistical based on transformed data. Graph with original data")+
   geom_text(data= tukey_zinc, aes(x= treatment, y= zinc , label= groups), nudge_x= 0.2, nudge_y= 5)
 plot_zincorig
-ggsave(plot_zinc, file="plant_nutrition_result/zinc.png", width= 1900,height= 1200, units= "px")
+ggsave(plot_zincorig, file="plant_nutrition_result/zincsintrans.png", width= 1900,height= 1200, units= "px")
 #copper
 shapiro.test(plant_nutrition$copper) #normal
 anova_copper <- aov(copper~treatment, data= plant_nutrition)
@@ -424,7 +424,7 @@ tukey_copper
 
 plot_copper <- plant_nutrition %>% ggplot(aes(x= factor(treatment, level= treat.order), y= copper, fill= treatment))+
   geom_boxplot(col= "black")+
-  geom_point(size= 2, pch= 17, col= "black", aes(fill= treatment))+
+  geom_point(size= 2, pch= 21, col= "black", aes(fill= treatment))+
   scale_fill_manual(values= treat.colors)+
   scale_color_manual(values= treat.colors)+
   theme_classic2()+
@@ -442,9 +442,9 @@ ggsave(plot_copper, file="plant_nutrition_result/copper.png", width= 1900,height
 
 ```{r plot junto, echo=FALSE}
 
-plant_nutrition_all1 <- grid.arrange(plot_nitrogen, plot_phosphorus, plot_potassium, plot_sodium, plot_calcium)
+plant_nutrition_all1 <- grid.arrange(plot_nitrogenorig, plot_phosphorusorig, plot_potassium, plot_sodium, plot_calcium)
 
-plant_nutrition_all2 <- grid.arrange(plot_zinc, plot_copper, plot_iron, plot_magnesium, plot_manganeso)
+plant_nutrition_all2 <- grid.arrange(plot_zincorig, plot_copper, plot_iron, plot_magnesium, plot_manganesoorig)
 
 
 ggsave(plant_nutrition_all1, file="plant_nutrition_result/plant_nutrition_all1.png", width= 3800, height= 3600, units= "px")
