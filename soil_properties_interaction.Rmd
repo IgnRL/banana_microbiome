@@ -181,14 +181,14 @@ delta.mat.org
 #delta.mat.org$time <- rep(c("t0", "t4"), length.out = nrow(delta.mat.org))
 
 
-delta.org.lm <- lm(delta ~ treatment, data=delta.mat.org) #modelo normal 
+delta.org.lm <- lm(delta ~ 0+treatment, data=delta.mat.org) #modelo normal respecto a 0
 delta.org.lm 
-anova_deltaorgt0t4 <-anova(delta.org.lm)#p value 6.927e-06
+anova_deltaorgt0t4 <-anova(delta.org.lm)#3.973e-06 ***
 anova_deltaorgt0t4
 emm_delta_org_lm <- emmeans(delta.org.lm, pairwise ~  treatment)
 emm_delta_org_lm
 emm_delta_org_lm$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)
-emm_delta_org_lm <- cld(emmeans(delta.org.lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+#emm_delta_org_lm <- cld(emmeans(delta.org.lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
 emm_delta_org_lm
 
 
@@ -214,7 +214,6 @@ plotdeltaorg
 #Negative values in the delta column indicate a decrease in org.matter from t0 to t4.
 ggsave(plotdeltaorg, file="soil_parameters_result/deltaorgmattert0t4.png", width= 1900,height= 1200, units= "px")
 
-#ver cuanto de diferente ha sido la variacion delta con respecto a 0
 
 #unir los dos graficos
 orgt0t4 <- ggarrange(orgmattert0t4_time, plotdeltaorg)
@@ -223,6 +222,78 @@ orgt0t4
 ggsave(orgt0t4, file="soil_parameters_result/orgt0t4.png", width= 3800,height= 2200, units= "px")
 
 ```
+
+
+
+```{r delta nuevo, echo=TRU}
+delta.mat.org
+delta.org.lm0 <- lm(delta ~ 0+treatment, data=delta.mat.org) #modelo normal respecto a 0
+summary(delta.org.lm0) 
+newanova_deltaorgt0t4 <-anova(delta.org.lm)#3.973e-06 ***
+newanova_deltaorgt0t4
+dp_val_orgt0t4 <- summary(delta.org.lm0)$coefficient%>%
+  as.data.frame()%>%
+  rownames_to_column(var= "treatment")
+dp_val_orgt0t4
+dp_val_orgt0t4$treatment<-sub("treatment", "", dp_val_orgt0t4$treatment)#add sig. que no sean lettras
+dp_val_orgt0t4$sign <- ifelse(dp_val_orgt0t4$`Pr(>|t|)`<0.05, "*", "ns")
+dp_val_orgt0t4$sign <- ifelse(dp_val_orgt0t4$`Pr(>|t|)`>0.05, paste("ns"),
+                                 ifelse(dp_val_orgt0t4$`Pr(>|t|)`>0.01, paste("*"),
+                                        ifelse(dp_val_orgt0t4$`Pr(>|t|)`> 0.001,
+                                               paste("**"), paste("***"))))#para add la
+
+dp_val_orgt0t4
+#dp_val_orgt0t4$size <- ifelse(dp_val_orgt0t4$sign== "*", 8, 4)
+#dp_val_orgt0t4$size <- as.numeric(dp_val_orgt0t4$size)
+dp_val_orgt0t4
+
+
+plotdeltaorgnew <- delta.mat.org %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 23, size= 7)+
+  xlab("")+
+  ylab("OM (%)\u0394 variation between t4-t0")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
+  scale_fill_manual(values= treat.colors)+
+  geom_text(data = dp_val_orgt0t4, aes(x = treatment, y = Estimate, label = sign),
+            position = position_dodge(width = 0.8), vjust = -0.5, size = 8)+
+  guides(fill=guide_legend(title="Treatment"))+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()+
+  stat_summary(fun=mean, aes(x= treatment, y = delta),geom= "crossbar", width=0.5, colour= "grey20", data=delta.mat.org)+
+  labs(title = "", subtitle = "", caption = "Different letters indicates differences between the levels of the treatment factor in delta variation (T4-T0).\n caculated by Estimated Marginal Means post hoc -Tukey's adjustment method.", size = 10)+
+  ggtitle("OM (%) Δ variation T0 between T4", subtitle= paste("LinealModel-Anova Treatment(Tukey) p-value: ", format(anova_deltaorgt0t4$`Pr(>F)`[[1]], scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
+
+plotdeltaorgnew
+
+
+
+
+d.pval.even$size <- ifelse(d.pval.even$sign== "*", 8, 4)
+d.pval.even$size <- as.numeric(d.pval.even$size)
+d.even.plot <- data.delta %>% ggplot(aes( factor(treatment, level= treat.order), d.even))+
+  geom_point(shape= 23, size = 4, col= "black", aes(fill= treatment))+
+  geom_hline(yintercept = 0, linetype= 2 )+
+  geom_text(data= d.pval.even,aes(treatment, 0.02, label = sign),
+            size=d.pval.even$size)+
+  ylab("\u0394evenness (T5-T0)")+
+  xlab("Treatment")+
+  scale_fill_manual(values= treat.colors)+
+  scale_color_manual(values= treat.colors)+
+  scale_x_discrete(label= treat.labels)+
+  stat_summary(aes(x= treatment, y = d.even, group = treatment, col= treatment),fun= mean, geom = "crossbar", linewidth= 0.5, show.legend = FALSE)+
+  theme_classic2()+
+  ggtitle("Variation in evenness")+
+  guides(fill=guide_legend(title="Treatment"))
+d.even.plot
+
+
+```
+
+
 
 
 ```{r stas phosphorus t0t4, echo=FALSE}
