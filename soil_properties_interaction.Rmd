@@ -177,18 +177,14 @@ delta.mat.org$delta <- delta.mat.org$t4-delta.mat.org$t0
 #delta.mat.org$ratio <- delta.mat.org$t4/delta.mat.org$t0
 delta.mat.org
 
-# Create a 'time' variable
-#delta.mat.org$time <- rep(c("t0", "t4"), length.out = nrow(delta.mat.org))
-
-
-delta.org.lm <- lm(delta ~ treatment, data=delta.mat.org) #modelo normal 
+delta.org.lm <- lm(delta ~ 0+treatment, data=delta.mat.org) #modelo normal respecto a 0
 delta.org.lm 
-anova_deltaorgt0t4 <-anova(delta.org.lm)#p value 6.927e-06
+anova_deltaorgt0t4 <-anova(delta.org.lm)#3.973e-06 ***
 anova_deltaorgt0t4
 emm_delta_org_lm <- emmeans(delta.org.lm, pairwise ~  treatment)
 emm_delta_org_lm
 emm_delta_org_lm$contrasts %>% rbind(adjust= "fdr") %>% summary(infer = TRUE)
-emm_delta_org_lm <- cld(emmeans(delta.org.lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
+#emm_delta_org_lm <- cld(emmeans(delta.org.lm, specs = pairwise~treatment), Letters= letters, reversed= TRUE)
 emm_delta_org_lm
 
 
@@ -212,17 +208,67 @@ plotdeltaorg <- delta.mat.org %>% ggplot(aes(x=factor(treatment, level= treat.or
 plotdeltaorg
 #Positive values in the delta column indicate an increase in org.matter from t0 to t4.
 #Negative values in the delta column indicate a decrease in org.matter from t0 to t4.
-ggsave(plotdeltaorg, file="soil_parameters_result/deltaorgmattert0t4.png", width= 1900,height= 1200, units= "px")
+#ggsave(plotdeltaorg, file="soil_parameters_result/deltaorgmattert0t4.png", width= 1900,height= 1200, units= "px")
 
-#ver cuanto de diferente ha sido la variacion delta con respecto a 0
 
 #unir los dos graficos
 orgt0t4 <- ggarrange(orgmattert0t4_time, plotdeltaorg)
 orgt0t4
 
-ggsave(orgt0t4, file="soil_parameters_result/orgt0t4.png", width= 3800,height= 2200, units= "px")
+#ggsave(orgt0t4, file="soil_parameters_result/orgt0t4.png", width= 3800,height= 2200, units= "px")
 
 ```
+
+
+
+```{r delta nuevo, echo=TRU}
+delta.mat.org
+delta.org.lm0 <- lm(delta ~ 0+treatment, data=delta.mat.org) #modelo normal respecto a 0
+summary(delta.org.lm0) 
+newanova_deltaorgt0t4 <-anova(delta.org.lm)#3.973e-06 ***
+newanova_deltaorgt0t4
+dp_val_orgt0t4 <- summary(delta.org.lm0)$coefficient%>%
+  as.data.frame()%>%
+  rownames_to_column(var= "treatment")
+dp_val_orgt0t4
+dp_val_orgt0t4$treatment<-sub("treatment", "", dp_val_orgt0t4$treatment)#add sig. que no sean lettras
+dp_val_orgt0t4$sign <- ifelse(dp_val_orgt0t4$`Pr(>|t|)`<0.05, "*", "ns")
+dp_val_orgt0t4$sign <- ifelse(dp_val_orgt0t4$`Pr(>|t|)`>0.05, paste("ns"),
+                                 ifelse(dp_val_orgt0t4$`Pr(>|t|)`>0.01, paste("*"),
+                                        ifelse(dp_val_orgt0t4$`Pr(>|t|)`> 0.001,
+                                               paste("**"), paste("***"))))#para add la
+
+dp_val_orgt0t4
+#dp_val_orgt0t4$size <- ifelse(dp_val_orgt0t4$sign== "*", 8, 4)
+#dp_val_orgt0t4$size <- as.numeric(dp_val_orgt0t4$size)
+dp_val_orgt0t4
+
+
+plotdeltaorgnew <- delta.mat.org %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 23, size= 7)+
+  xlab("")+
+  ylab("OM (%)\u0394 variation between t4-t0")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
+  scale_fill_manual(values= treat.colors)+
+  geom_text(data = dp_val_orgt0t4, aes(x = treatment, y = Estimate, label = sign),
+            position = position_dodge(width = 0.8), vjust = -0.5, size = 8)+
+  guides(fill=guide_legend(title="Treatment"))+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()+
+  stat_summary(fun=mean, aes(x= treatment, y = delta),geom= "crossbar", width=0.5, colour= "grey20", data=delta.mat.org)+
+  labs(title = "", subtitle = "", caption = "Different (*) indicates differences between the delta T4-T0 variation.\n Cross bar meaning the mean of delta.", size = 10)+
+  ggtitle("OM (%) Δ variation T0 between T4", subtitle= paste("LinealModel-Anova Treatment(Tukey) p-value: ", format(anova_deltaorgt0t4$`Pr(>F)`[[1]], scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
+
+plotdeltaorgnew
+ggsave(plotdeltaorgnew, file="soil_parameters_result/plotdeltaorgnew.png", width= 1900,height= 1200, units= "px")
+
+```
+
+
 
 
 ```{r stas phosphorus t0t4, echo=FALSE}
@@ -319,14 +365,58 @@ plotdeltaphospho <- delta.phospho %>% ggplot(aes(x=factor(treatment, level= trea
 plotdeltaphospho
 #Positive values in the delta column indicate an increase in org.matter from t0 to t4.
 #Negative values in the delta column indicate a decrease in org.matter from t0 to t4.
-ggsave(plotdeltaphospho, file="soil_parameters_result/plotdeltaphosphot0t4.png", width= 1900,height= 1200, units= "px")
-
-#ver cuanto de diferente ha sido la variacion delta con respecto a 0
+#ggsave(plotdeltaphospho, file="soil_parameters_result/plotdeltaphosphot0t4.png", width= 1900,height= 1200, units= "px")
 
 #unir los dos graficos
 phosphot0t4 <- ggarrange(phosphot0t4_time, plotdeltaphospho)
 phosphot0t4
 ggsave(phosphot0t4, file="soil_parameters_result/phosphot0t4.png", width= 3800,height= 2200, units= "px")
+####delta nuevo######
+delta.phospho
+delta.phospho.lm0 <- lm(delta ~ 0+treatment, data=delta.phospho) #modelo normal 
+delta.phospho.lm0
+
+summary(delta.phospho.lm0) 
+newanova_deltaphosphot0t4 <-anova(delta.phospho.lm)#3.973e-06 ***
+newanova_deltaphosphot0t4
+dp_val_phosphot0t4 <- summary(delta.phospho.lm0)$coefficient%>%
+  as.data.frame()%>%
+  rownames_to_column(var= "treatment")
+dp_val_phosphot0t4
+dp_val_phosphot0t4$treatment<-sub("treatment", "", dp_val_phosphot0t4$treatment)#add sig. que no sean lettras
+dp_val_phosphot0t4$sign <- ifelse(dp_val_phosphot0t4$`Pr(>|t|)`<0.05, "*", "ns")
+dp_val_phosphot0t4$sign <- ifelse(dp_val_phosphot0t4$`Pr(>|t|)`>0.05, paste("ns"),
+                                 ifelse(dp_val_phosphot0t4$`Pr(>|t|)`>0.01, paste("*"),
+                                        ifelse(dp_val_phosphot0t4$`Pr(>|t|)`> 0.001,
+                                               paste("**"), paste("***"))))#para add la
+
+dp_val_phosphot0t4
+#dp_val_phosphot0t4$size <- ifelse(dp_val_phosphot0t4$sign== "*", 8, 4)
+#dp_val_phosphot0t4$size <- as.numeric(dp_val_phosphot0t4$size)
+dp_val_phosphot0t4
+
+
+plotdeltaphosphonew <- delta.phospho %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 23, size= 7)+
+  xlab("")+
+  ylab("phosphorus variation between t4-t0")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
+  scale_fill_manual(values= treat.colors)+
+  geom_text(data = dp_val_phosphot0t4, aes(x = treatment, y = Estimate, label = sign),
+            position = position_dodge(width = 0.8), vjust = -0.5, size = 8)+
+  guides(fill=guide_legend(title="Treatment"))+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()+
+  stat_summary(fun=mean, aes(x= treatment, y = delta),geom= "crossbar", width=0.5, colour= "grey20", data=delta.phospho)+
+  labs(title = "", subtitle = "", caption = "Different (*) indicates differences between the delta T4-T0 variation.\n Cross bar meaning the mean of delta.", size = 10)+
+  ggtitle("phosphorus \u0394 variation T0 between T4", subtitle= paste("LinealModel-Anova Treatment(Tukey) p-value: ", format(newanova_deltaphosphot0t4$`Pr(>F)`[[1]], scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
+
+plotdeltaphosphonew
+ggsave(plotdeltaphosphonew, file="soil_parameters_result/plotdeltaphosphonew.png", width= 1900,height= 1200, units= "px")
 
 ```
 
@@ -427,14 +517,65 @@ plotdeltaph.water <- delta.ph.water %>% ggplot(aes(x=factor(treatment, level= tr
 plotdeltaph.water
 #Positive values in the delta column indicate an increase in org.matter from t0 to t4.
 #Negative values in the delta column indicate a decrease in org.matter from t0 to t4.
-ggsave(plotdeltaph.water, file="soil_parameters_result/plotdeltaph_water.png", width= 1900,height= 1200, units= "px")
+#ggsave(plotdeltaph.water, file="soil_parameters_result/plotdeltaph_water.png", width= 1900,height= 1200, units= "px")
 
 #ver cuanto de diferente ha sido la variacion delta con respecto a 0
 
 #unir los dos graficos
 ph.watert0t4 <- ggarrange(ph.watert0t4_time, plotdeltaph.water)
 ph.watert0t4
-ggsave(ph.watert0t4, file="soil_parameters_result/ph_watert0t4.png", width= 3800,height= 2200, units= "px")
+#ggsave(ph.watert0t4, file="soil_parameters_result/ph_watert0t4.png", width= 3800,height= 2200, units= "px")
+########################delta new####################
+delta.ph.water
+delta.ph.water.lm0 <- lm(delta ~ 0+treatment, data=delta.ph.water) #modelo normal 
+delta.ph.water.lm0
+
+summary(delta.ph.water.lm0) 
+newanova_deltaph.watert0t4 <-anova(delta.ph.water.lm0)#3.973e-06 ***
+newanova_deltaph.watert0t4
+dp_val_ph.watert0t4 <- summary(delta.ph.water.lm0)$coefficient%>%
+  as.data.frame()%>%
+  rownames_to_column(var= "treatment")
+dp_val_ph.watert0t4
+dp_val_ph.watert0t4$treatment<-sub("treatment", "", dp_val_ph.watert0t4$treatment)#add sig. que no sean lettras
+dp_val_ph.watert0t4$sign <- ifelse(dp_val_ph.watert0t4$`Pr(>|t|)`<0.05, "*", "ns")
+dp_val_ph.watert0t4$sign <- ifelse(dp_val_ph.watert0t4$`Pr(>|t|)`>0.05, paste("ns"),
+                                 ifelse(dp_val_ph.watert0t4$`Pr(>|t|)`>0.01, paste("*"),
+                                        ifelse(dp_val_ph.watert0t4$`Pr(>|t|)`> 0.001,
+                                               paste("**"), paste("***"))))#para add la
+
+dp_val_ph.watert0t4
+#dp_val_ph.watert0t4$size <- ifelse(dp_val_ph.watert0t4$sign== "*", 8, 4)
+#dp_val_ph.watert0t4$size <- as.numeric(dp_val_ph.watert0t4$size)
+dp_val_ph.watert0t4
+
+
+plotdeltaph.waternew <- delta.ph.water %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 23, size= 7)+
+  xlab("")+
+  ylab("ph.water \u0394")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
+  scale_fill_manual(values= treat.colors)+
+  geom_text(data = dp_val_ph.watert0t4, aes(x = treatment, y = Estimate, label = sign),
+            position = position_dodge(width = 0.8), vjust = -0.5, size = 8)+
+  guides(fill=guide_legend(title="Treatment"))+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()+
+  stat_summary(fun=mean, aes(x= treatment, y = delta),geom= "crossbar", width=0.5, colour= "grey20", data=delta.ph.water)+
+  labs(title = "", subtitle = "", caption = "Different (*) indicates differences between the delta T4-T0 variation.\n Cross bar meaning the mean of delta.", size = 10)+
+  ggtitle("ph.water \u0394 variation T0 between T4", subtitle= paste("LinealModel-Anova Treatment(Tukey) p-value: ", format(newanova_deltaph.watert0t4$`Pr(>F)`[[1]], scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
+
+plotdeltaph.waternew
+ggsave(plotdeltaph.waternew, file="soil_parameters_result/plotdeltaph_waternew.png", width= 1900,height= 1200, units= "px")
+
+
+
+
+
 ```
 
 ```{r stats conductivity t0t4, echo=FALSE}
@@ -544,6 +685,54 @@ conduct0t4 <- ggarrange(conduct0t4_time, plotdeltaconduc)
 conduct0t4
 ggsave(conduct0t4, file="soil_parameters_result/conduct0t4.png", width= 3800,height= 2200, units= "px")
 
+########################delta new####################
+delta.conduc
+delta.conduc.lm0 <- lm(delta ~ 0+treatment, data=delta.conduc) #modelo normal 
+delta.conduc.lm0
+
+summary(delta.conduc.lm0) 
+newanova_deltaconduct0t4 <-anova(delta.conduc.lm0)#3.973e-06 ***
+newanova_deltaconduct0t4
+dp_val_conduct0t4 <- summary(delta.conduc.lm0)$coefficient%>%
+  as.data.frame()%>%
+  rownames_to_column(var= "treatment")
+dp_val_conduct0t4
+dp_val_conduct0t4$treatment<-sub("treatment", "", dp_val_conduct0t4$treatment)#add sig. que no sean lettras
+dp_val_conduct0t4$sign <- ifelse(dp_val_conduct0t4$`Pr(>|t|)`<0.05, "*", "ns")
+dp_val_conduct0t4$sign <- ifelse(dp_val_conduct0t4$`Pr(>|t|)`>0.05, paste("ns"),
+                                 ifelse(dp_val_conduct0t4$`Pr(>|t|)`>0.01, paste("*"),
+                                        ifelse(dp_val_conduct0t4$`Pr(>|t|)`> 0.001,
+                                               paste("**"), paste("***"))))#para add la
+
+dp_val_conduct0t4
+#dp_val_conduct0t4$size <- ifelse(dp_val_conduct0t4$sign== "*", 8, 4)
+#dp_val_conduct0t4$size <- as.numeric(dp_val_conduct0t4$size)
+dp_val_conduct0t4
+
+
+plotdeltaconducnew <- delta.conduc %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 23, size= 7)+
+  xlab("")+
+  ylab("conduc \u0394")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
+  scale_fill_manual(values= treat.colors)+
+  geom_text(data = dp_val_conduct0t4, aes(x = treatment, y = Estimate, label = sign),
+            position = position_dodge(width = 0.8), vjust = -0.5, size = 8)+
+  guides(fill=guide_legend(title="Treatment"))+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()+
+  stat_summary(fun=mean, aes(x= treatment, y = delta),geom= "crossbar", width=0.5, colour= "grey20", data=delta.conduc)+
+  labs(title = "", subtitle = "", caption = "Different (*) indicates differences between the delta T4-T0 variation.\n Cross bar meaning the mean of delta.", size = 10)+
+  ggtitle("conduc \u0394 variation T0 between T4", subtitle= paste("LinealModel-Anova Treatment(Tukey) p-value: ", format(newanova_deltaconduct0t4$`Pr(>F)`[[1]], scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
+
+plotdeltaconducnew
+ggsave(plotdeltaconducnew, file="soil_parameters_result/plotdeltaph_waternew.png", width= 1900,height= 1200, units= "px")
+
+
 ```
 
 
@@ -647,7 +836,55 @@ plotdeltacalcium
 ggsave(plotdeltacalcium, file="soil_parameters_result/plotdeltacalcium.png", width= 1900,height= 1200, units= "px")
 calciumt0t4 <- ggarrange(calciumt0t4_time, plotdeltacalcium)
 calciumt0t4
-ggsave(calciumt0t4, file="soil_parameters_result/calciumt0t4.png", width= 3800,height= 2200, units= "px")
+#ggsave(calciumt0t4, file="soil_parameters_result/calciumt0t4.png", width= 3800,height= 2200, units= "px")
+
+########################delta new####################
+delta.calcium
+delta.calcium.lm0 <- lm(delta ~ 0+treatment, data=delta.calcium) #modelo normal 
+delta.calcium.lm0
+
+summary(delta.calcium.lm0) 
+newanova_deltacalciumt0t4 <-anova(delta.calcium.lm0)#3.973e-06 ***
+newanova_deltacalciumt0t4
+dp_val_calciumt0t4 <- summary(delta.calcium.lm0)$coefficient%>%
+  as.data.frame()%>%
+  rownames_to_column(var= "treatment")
+dp_val_calciumt0t4
+dp_val_calciumt0t4$treatment<-sub("treatment", "", dp_val_calciumt0t4$treatment)#add sig. que no sean lettras
+dp_val_calciumt0t4$sign <- ifelse(dp_val_calciumt0t4$`Pr(>|t|)`<0.05, "*", "ns")
+dp_val_calciumt0t4$sign <- ifelse(dp_val_calciumt0t4$`Pr(>|t|)`>0.05, paste("ns"),
+                                 ifelse(dp_val_calciumt0t4$`Pr(>|t|)`>0.01, paste("*"),
+                                        ifelse(dp_val_calciumt0t4$`Pr(>|t|)`> 0.001,
+                                               paste("**"), paste("***"))))#para add la
+
+dp_val_calciumt0t4
+#dp_val_calciumt0t4$size <- ifelse(dp_val_calciumt0t4$sign== "*", 8, 4)
+#dp_val_calciumt0t4$size <- as.numeric(dp_val_calciumt0t4$size)
+dp_val_calciumt0t4
+
+
+plotdeltacalciumnew <- delta.calcium %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 23, size= 7)+
+  xlab("")+
+  ylab("calcium \u0394")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
+  scale_fill_manual(values= treat.colors)+
+  geom_text(data = dp_val_calciumt0t4, aes(x = treatment, y = Estimate, label = sign),
+            position = position_dodge(width = 0.8), vjust = -0.5, size = 8)+
+  guides(fill=guide_legend(title="Treatment"))+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()+
+  stat_summary(fun=mean, aes(x= treatment, y = delta),geom= "crossbar", width=0.5, colour= "grey20", data=delta.calcium)+
+  labs(title = "", subtitle = "", caption = "Different (*) indicates differences between the delta T4-T0 variation.\n Cross bar meaning the mean of delta.", size = 10)+
+  ggtitle("calcium \u0394 variation T0 between T4", subtitle= paste("LinealModel-Anova Treatment(Tukey) p-value: ", format(newanova_deltacalciumt0t4$`Pr(>F)`[[1]], scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
+
+plotdeltacalciumnew
+ggsave(plotdeltacalciumnew, file="soil_parameters_result/plotdeltacalciumnew.png", width= 1900,height= 1200, units= "px")
+
 ```
 
 ```{r stats sodium t0t4, echo=FALSE}
@@ -742,10 +979,60 @@ plotdeltasodium <- delta.sodium %>% ggplot(aes(x=factor(treatment, level= treat.
     plot.caption = element_text(size = 8))
 
 plotdeltasodium
-ggsave(plotdeltasodium, file="soil_parameters_result/plotdeltasodium.png", width= 1900,height= 1200, units= "px")
+#ggsave(plotdeltasodium, file="soil_parameters_result/plotdeltasodium.png", width= 1900,height= 1200, units= "px")
 sodiumt0t4 <- ggarrange(sodiumt0t4_time, plotdeltasodium)
 sodiumt0t4
 ggsave(sodiumt0t4, file="soil_parameters_result/sodiumt0t4.png", width= 3800,height= 2200, units= "px")
+
+########################delta new####################
+delta.sodium
+delta.sodium.lm0 <- lm(delta ~ 0+treatment, data=delta.sodium) #modelo normal 
+delta.sodium.lm0
+
+summary(delta.sodium.lm0) 
+newanova_deltasodiumt0t4 <-anova(delta.sodium.lm0)#3.973e-06 ***
+newanova_deltasodiumt0t4
+dp_val_sodiumt0t4 <- summary(delta.sodium.lm0)$coefficient%>%
+  as.data.frame()%>%
+  rownames_to_column(var= "treatment")
+dp_val_sodiumt0t4
+dp_val_sodiumt0t4$treatment<-sub("treatment", "", dp_val_sodiumt0t4$treatment)#add sig. que no sean lettras
+dp_val_sodiumt0t4$sign <- ifelse(dp_val_sodiumt0t4$`Pr(>|t|)`<0.05, "*", "ns")
+dp_val_sodiumt0t4$sign <- ifelse(dp_val_sodiumt0t4$`Pr(>|t|)`>0.05, paste("ns"),
+                                 ifelse(dp_val_sodiumt0t4$`Pr(>|t|)`>0.01, paste("*"),
+                                        ifelse(dp_val_sodiumt0t4$`Pr(>|t|)`> 0.001,
+                                               paste("**"), paste("***"))))#para add la
+
+dp_val_sodiumt0t4
+#dp_val_sodiumt0t4$size <- ifelse(dp_val_sodiumt0t4$sign== "*", 8, 4)
+#dp_val_sodiumt0t4$size <- as.numeric(dp_val_sodiumt0t4$size)
+dp_val_sodiumt0t4
+
+
+plotdeltasodiumnew <- delta.sodium %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 23, size= 7)+
+  xlab("")+
+  ylab("sodium \u0394")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
+  scale_fill_manual(values= treat.colors)+
+  geom_text(data = dp_val_sodiumt0t4, aes(x = treatment, y = Estimate, label = sign),
+            position = position_dodge(width = 0.8), vjust = -0.5, size = 8)+
+  guides(fill=guide_legend(title="Treatment"))+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()+
+  stat_summary(fun=mean, aes(x= treatment, y = delta),geom= "crossbar", width=0.5, colour= "grey20", data=delta.sodium)+
+  labs(title = "", subtitle = "", caption = "Different (*) indicates differences between the delta T4-T0 variation.\n Cross bar meaning the mean of delta.", size = 10)+
+  ggtitle("sodium \u0394 variation T0 between T4", subtitle= paste("LinealModel-Anova Treatment(Tukey) p-value: ", format(newanova_deltasodiumt0t4$`Pr(>F)`[[1]], scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
+
+plotdeltasodiumnew
+ggsave(plotdeltasodiumnew, file="soil_parameters_result/plotdeltasodiumnew.png", width= 1900,height= 1200, units= "px")
+
+
+
 
 ```
 
@@ -844,7 +1131,54 @@ ggsave(plotdeltapotassium, file="soil_parameters_result/plotdeltapotassium.png",
 
 potassiumt0t4 <- ggarrange(potassiumt0t4_time, plotdeltapotassium)
 potassiumt0t4
-ggsave(potassiumt0t4, file="soil_parameters_result/potassiumt0t4.png", width= 3800,height= 2200, units= "px")
+#ggsave(potassiumt0t4, file="soil_parameters_result/potassiumt0t4.png", width= 3800,height= 2200, units= "px")
+
+########################delta new####################
+delta.potassium
+delta.potassium.lm0 <- lm(delta ~ 0+treatment, data=delta.potassium) #modelo normal 
+delta.potassium.lm0
+
+summary(delta.potassium.lm0) 
+newanova_deltapotassiumt0t4 <-anova(delta.potassium.lm0)#3.973e-06 ***
+newanova_deltapotassiumt0t4
+dp_val_potassiumt0t4 <- summary(delta.potassium.lm0)$coefficient%>%
+  as.data.frame()%>%
+  rownames_to_column(var= "treatment")
+dp_val_potassiumt0t4
+dp_val_potassiumt0t4$treatment<-sub("treatment", "", dp_val_potassiumt0t4$treatment)#add sig. que no sean lettras
+dp_val_potassiumt0t4$sign <- ifelse(dp_val_potassiumt0t4$`Pr(>|t|)`<0.05, "*", "ns")
+dp_val_potassiumt0t4$sign <- ifelse(dp_val_potassiumt0t4$`Pr(>|t|)`>0.05, paste("ns"),
+                                 ifelse(dp_val_potassiumt0t4$`Pr(>|t|)`>0.01, paste("*"),
+                                        ifelse(dp_val_potassiumt0t4$`Pr(>|t|)`> 0.001,
+                                               paste("**"), paste("***"))))#para add la
+
+dp_val_potassiumt0t4
+#dp_val_potassiumt0t4$size <- ifelse(dp_val_potassiumt0t4$sign== "*", 8, 4)
+#dp_val_potassiumt0t4$size <- as.numeric(dp_val_potassiumt0t4$size)
+dp_val_potassiumt0t4
+
+
+plotdeltapotassiumnew <- delta.potassium %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 23, size= 7)+
+  xlab("")+
+  ylab("potassium \u0394")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
+  scale_fill_manual(values= treat.colors)+
+  geom_text(data = dp_val_potassiumt0t4, aes(x = treatment, y = Estimate, label = sign),
+            position = position_dodge(width = 0.8), vjust = -0.5, size = 8)+
+  guides(fill=guide_legend(title="Treatment"))+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()+
+  stat_summary(fun=mean, aes(x= treatment, y = delta),geom= "crossbar", width=0.5, colour= "grey20", data=delta.potassium)+
+  labs(title = "", subtitle = "", caption = "Different (*) indicates differences between the delta T4-T0 variation.\n Cross bar meaning the mean of delta.", size = 10)+
+  ggtitle("potassium \u0394 variation T0 between T4", subtitle= paste("LinealModel-Anova Treatment(Tukey) p-value: ", format(newanova_deltapotassiumt0t4$`Pr(>F)`[[1]], scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
+
+plotdeltapotassiumnew
+ggsave(plotdeltapotassiumnew, file="soil_parameters_result/plotdeltapotassiumnew.png", width= 1900,height= 1200, units= "px")
 
 
 ```
@@ -945,6 +1279,54 @@ ggsave(plotdeltanitrogen, file="soil_parameters_result/plotdeltanitrogen.png", w
 nitrogent0t4 <- ggarrange(nitrogent0t4_time, plotdeltanitrogen)
 nitrogent0t4
 ggsave(nitrogent0t4, file="soil_parameters_result/nitrogent0t4.png", width= 3800,height= 2200, units= "px")
+
+
+########################delta new####################
+delta.nitrogen
+delta.nitrogen.lm0 <- lm(delta ~ 0+treatment, data=delta.nitrogen) #modelo normal 
+delta.nitrogen.lm0
+
+summary(delta.nitrogen.lm0) 
+newanova_deltanitrogent0t4 <-anova(delta.nitrogen.lm0)#3.973e-06 ***
+newanova_deltanitrogent0t4
+dp_val_nitrogent0t4 <- summary(delta.nitrogen.lm0)$coefficient%>%
+  as.data.frame()%>%
+  rownames_to_column(var= "treatment")
+dp_val_nitrogent0t4
+dp_val_nitrogent0t4$treatment<-sub("treatment", "", dp_val_nitrogent0t4$treatment)#add sig. que no sean lettras
+dp_val_nitrogent0t4$sign <- ifelse(dp_val_nitrogent0t4$`Pr(>|t|)`<0.05, "*", "ns")
+dp_val_nitrogent0t4$sign <- ifelse(dp_val_nitrogent0t4$`Pr(>|t|)`>0.05, paste("ns"),
+                                 ifelse(dp_val_nitrogent0t4$`Pr(>|t|)`>0.01, paste("*"),
+                                        ifelse(dp_val_nitrogent0t4$`Pr(>|t|)`> 0.001,
+                                               paste("**"), paste("***"))))#para add la
+
+dp_val_nitrogent0t4
+#dp_val_nitrogent0t4$size <- ifelse(dp_val_nitrogent0t4$sign== "*", 8, 4)
+#dp_val_nitrogent0t4$size <- as.numeric(dp_val_nitrogent0t4$size)
+dp_val_nitrogent0t4
+
+
+plotdeltanitrogennew <- delta.nitrogen %>% ggplot(aes(x=factor(treatment, level= treat.order), y= delta, fill= treatment))+
+  geom_point(pch= 23, size= 7)+
+  xlab("")+
+  ylab("nitrogen \u0394")+
+  geom_hline(yintercept= 0, linetype = "dashed", color = "red")+
+  scale_fill_manual(values= treat.colors)+
+  geom_text(data = dp_val_nitrogent0t4, aes(x = treatment, y = Estimate, label = sign),
+            position = position_dodge(width = 0.8), vjust = -0.5, size = 8)+
+  guides(fill=guide_legend(title="Treatment"))+
+  scale_x_discrete(labels= treat.labels)+
+  theme_classic2()+
+  stat_summary(fun=mean, aes(x= treatment, y = delta),geom= "crossbar", width=0.5, colour= "grey20", data=delta.nitrogen)+
+  labs(title = "", subtitle = "", caption = "Different (*) indicates differences between the delta T4-T0 variation.\n Cross bar meaning the mean of delta.", size = 10)+
+  ggtitle("nitrogen \u0394 variation T0 between T4", subtitle= paste("LinealModel-Anova Treatment(Tukey) p-value: ", format(newanova_deltanitrogent0t4$`Pr(>F)`[[1]], scientific= TRUE, digits=2 ), sep= ""))+
+  theme(
+    plot.title = element_text(size = 11),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8))
+
+plotdeltanitrogennew
+ggsave(plotdeltanitrogennew, file="soil_parameters_result/plotdeltanitrogennew.png", width= 1900,height= 1200, units= "px")
 
 ```
 
