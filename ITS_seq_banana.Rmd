@@ -654,8 +654,9 @@ ggsave(d.rich.plot, file= "ITS_results/delta/delta_rich.png", unit= "px", width=
 ```
 
 
-# Beta diversity (CLR PCA)
+# Beta diversity (CLR PCA) {.tabset}
 
+## T5 vs T0
 
 ```{r, include=TRUE}
 zotu.rel<-  transform_sample_counts(zotu97, function(x) x / sum(x))
@@ -663,6 +664,8 @@ zotu.rel<-  transform_sample_counts(zotu97, function(x) x / sum(x))
 zotu.rel.t0<- subset_samples(zotu.rel, time== "T0")
 zotu.rel.t5<- subset_samples(zotu.rel, time== "T5")
 zotu.rel.t0.t5 <- subset_samples(zotu.rel, time =="T0" | time =="T5")
+data.t0.t5 <- sample_data(zotu.rel.t0.t5) %>% data.frame()
+data.t0.t5$treat.pot <- paste(data.t0.t5$treatment, data.t0.t5$rep, sep= "_")
 
 ##### T0 + T5
 t.otu <- zotu.rel.t0.t5 %>% otu_table() %>% data.frame() %>% t()
@@ -672,20 +675,47 @@ scores <- data.frame(pca.clr$x)
 t0.t5.pca <- data.frame(scores, sample_data(zotu.rel.t0.t5))
 variance_perc <- pca.clr$sdev^2 / sum(pca.clr$sdev^2) * 100 
 
+#PERMANOVA 
 
+### Set the type of permutations to account for random error of repeated measures
+library("permute")
+h <- how(plots = Plots(strata = data.t0.t5$treat.pot, type = "none"), nperm = 999)
+
+
+eu.distances <- vegdist(scores, method= "euclidean")
+
+
+eu.permanova <- adonis2(eu.distances ~ time*treatment, data = data.t0.t5, permutations = h) %>% data.frame()
+
+
+perm.time <- paste("Time:                        Treatment:                        Time x Treatment:\n", 
+                   "R2=", round(eu.permanova["time", "R2"], 2),"                 R2=",round(eu.permanova["treatment", "R2"], 2), "                         R2=",round(eu.permanova["time:treatment", "R2"], 2),"\n",
+                   "F=", round(eu.permanova["time", "F"], 2),"                    F=",round(eu.permanova["treatment", "F"], 2), "                           F=",round(eu.permanova["time:treatment", "F"], 2),"\n",
+                   "p-value=", eu.permanova["time", "Pr..F."],"         p-value=",eu.permanova["treatment", "Pr..F."], "                 p-value=",eu.permanova["time:treatment", "Pr..F."])
+
+
+#PLOT
 
 pca.plot.t0.t5.time <- ggplot(t0.t5.pca, aes(PC1, PC2, col= treatment, shape= time))+
   geom_point(size= 3)+
   scale_color_manual(values= treat.colors)+
-  scale_shape_manual(values=c(1,16))+
-  labs(title= "T0 and T5 CLR transformed",
-       x= sprintf("PC1 (%.1f%%)", variance_perc[1]), 
+  scale_shape_manual(values=c(0,16))+
+  labs(x= sprintf("PC1 (%.1f%%)", variance_perc[1]), 
        y= sprintf("PC2 (%.1f%%)", variance_perc[2]))+
-  stat_ellipse(aes(group =time, fill= time), level = 0.95, geom = "polygon", alpha = 0.2)
+  ggtitle("Community composition at T0 and T5 CLR transformed", subtitle= perm.time)+
+  stat_ellipse(aes(group =time, fill= time), level = 0.95,geom= "polygon", alpha = 0.3, show.legend = FALSE)+
+  scale_fill_manual(values= c("gold", "gray50"))+
+  geom_polygon(aes(group= interaction(time, treatment),col= treatment), alpha= 0, show.legend = TRUE)+
+  theme_classic2()
 pca.plot.t0.t5.time
 
+```
 
-##### T0 
+## T0 
+
+```{r, include=TRUE}
+
+#PCA
 t.otu <- zotu.rel.t0 %>% otu_table() %>% data.frame() %>% t()
 t.otu.clr <- decostand(t.otu, method = "clr", pseudocount = 1)
 pca.clr <- prcomp(t.otu.clr, scale=TRUE)
@@ -693,43 +723,80 @@ scores <- data.frame(pca.clr$x)
 t0.pca <- data.frame(scores, sample_data(zotu.rel.t0))
 variance_perc <- pca.clr$sdev^2 / sum(pca.clr$sdev^2) * 100 
 
+#PERMANOVA
+eu.distances <- vegdist(scores, method = "euclidean")
+eu.permanova <- adonis2(eu.distances ~ treatment, data = data.frame(sample_data(zotu.rel.t0)), parallel=3, na.action=na.omit)
+eu.permanova <- eu.permanova %>% as.data.frame()
+
+perm.t0 <- paste( "PERMANOVA treatment: \n", 
+                  "R2=",round(eu.permanova["treatment", "R2"],2),";",
+                  "F=", round(eu.permanova["treatment", "F"],2),";",
+                  "p-value=",eu.permanova["treatment", "Pr(>F)"])
+
+#PLOT
 pca.plot.t0 <- ggplot(t0.pca, aes(PC1, PC2, col= treatment))+
-  geom_point(size= 3, shape= 1)+
+  geom_point(size= 3, shape= 0)+
   scale_color_manual(values= treat.colors)+
-  labs(title= "T0 CLR transformed",
-       x= sprintf("PC1 (%.1f%%)", variance_perc[1]), 
+  labs(x= sprintf("PC1 (%.1f%%)", variance_perc[1]), 
        y= sprintf("PC2 (%.1f%%)", variance_perc[2]))+
-  geom_polygon(aes(fill =  treatment, group = interaction(time, treatment)),alpha= 0.5)+
-  scale_fill_manual(values= treat.colors)
+  geom_polygon(aes(fill =  treatment, group = interaction(time, treatment)),alpha= 0.5, show.legend = FALSE)+
+  scale_fill_manual(values= treat.colors)+
+  ggtitle("CLR transformed abundances at T0", subtitle = perm.t0)+
+  theme_classic2()
 pca.plot.t0
+```
 
+## T5
 
-##### T5
+```{r, include=TRUE}
+#PCA
 t.otu <- zotu.rel.t5 %>% otu_table() %>% data.frame() %>% t()
 t.otu.clr <- decostand(t.otu, method = "clr", pseudocount = 1)
 pca.clr <- prcomp(t.otu.clr, scale=TRUE)
 scores <- data.frame(pca.clr$x)
 t5.pca <- data.frame(scores, sample_data(zotu.rel.t5))
 variance_perc <- pca.clr$sdev^2 / sum(pca.clr$sdev^2) * 100 
+#PERMANOVA
+eu.distances <- vegdist(scores, method = "euclidean")
+eu.permanova <- adonis2(eu.distances ~ treatment, data = data.frame(sample_data(zotu.rel.t5)), parallel=3, na.action=na.omit)
+eu.permanova <- eu.permanova %>% as.data.frame()
+#PLOT
+perm.t5 <- paste( "PERMANOVA treatment: \n", 
+                  "R2=",round(eu.permanova["treatment", "R2"],2),";",
+                  "F=", round(eu.permanova["treatment", "F"],2),";",
+                  "p-value=",eu.permanova["treatment", "Pr(>F)"])
 
 pca.plot.t5 <- ggplot(t5.pca, aes(PC1, PC2, col= treatment))+
   geom_point(size= 3, shape= 16)+
   scale_color_manual(values= treat.colors)+
-  labs(title= "T5 CLR transformed",
-       x= sprintf("PC1 (%.1f%%)", variance_perc[1]), 
+  labs(x= sprintf("PC1 (%.1f%%)", variance_perc[1]), 
        y= sprintf("PC2 (%.1f%%)", variance_perc[2]))+
-  geom_polygon(aes(fill =  treatment, group = interaction(time, treatment)),alpha= 0.5)+
-  scale_fill_manual(values= treat.colors)
+  geom_polygon(aes(fill =  treatment, group = interaction(time, treatment)),alpha= 0.5, show.legend = FALSE)+
+  scale_fill_manual(values= treat.colors)+
+  ggtitle("CLR transformed abundances at T5", subtitle = perm.t5)+
+  theme_classic2()
 pca.plot.t5
 
-pca.multiplot <- grid.arrange(pca.plot.t0 + guides(fill= "none", col= "none"),
-                              pca.plot.t5+ guides(fill= "none", col= "none"),
-                              pca.plot.t0.t5.time+guides(fill= "none", alpha =                              "none")+
-                                theme_classic()+
-                                theme(legend.position = "bottom"),
-                              layout_matrix= rbind(c(1,2), c(1,2), c(3,3), c(3,3), c(3,3)))
-
-ggsave(pca.multiplot, file= "ITS_results/PCA/pca_all.png")
 ```
 
+## PERMANOVA
+
+```{r}
+eu.distances <- vegdist(scores, method = "euclidean")
+
+eu.permanova <- adonis2(eu.distances ~ time*treatment, data = data.frame(sample_data(zotu.rel.t0.t5)), parallel=3, na.action=na.omit)
+eu.permanova <- eu.permanova %>% as.data.frame()  
+permanova.response <- adonis2(eu.distances~ RRI, data= sample.data.pca, parallel = 3, na.action=na.omit)
+
+```
+
+```{r}
+install.packages("devtools")
+library(devtools)
+install_github("vqv/ggbiplot")
+
+library(ggbiplot)
+biplot <- ggbiplot(pca.clr)
+ggbiplot()
+```
 
