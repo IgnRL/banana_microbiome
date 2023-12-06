@@ -37,6 +37,18 @@ library(emmeans)
 library(multcomp)
 library(FactoMineR)
 library(factoextra)
+library(ALDEx2)
+library(ggrepel)
+library(ggforce)
+library(scales)
+reverselog_trans <- function(base = exp(1)) {
+    trans <- function(x) -log(x, base)
+    inv <- function(x) base^(-x)
+    trans_new(paste0("reverselog-", format(base)), trans, inv, 
+              log_breaks(base = base), 
+              domain = c(1e-100, Inf))
+}#create function for inversed log10 axis
+
 ```
 
 
@@ -45,9 +57,6 @@ treat.colors <- c("control"= "green4" ,"control_amf"  = "darkseagreen" , "chicke
 time.colors <- c("T0"="#66c2a5", "T1"="#fc8d62", "T2"="#8da0cb", "T3"="#e78ac3", "T4"="#a6d854", "T5"="#ffd92f")
 time.colors <- c("T0"="#BFD3E6", "T1"="#9ECAE1", "T2"="#6BAED6", "T3"="#4292C6", "T4"="#2171B5", "T5"="#08519C")
  time.colors <- c("#BFD3E6", "#9ECAE1", "#6BAED6", "#4292C6", "#2171B5", "#08519C")
-
-
-
 
 treat.order <- c('control', 'control_amf', 'control_legumes', "compost", "chicken", "cow", "pellet") 
 treat.labels <- c("Control", "Control\nAMF", "Control\nLegume", "Compost", "Chicken\nmanure", "Cow\nmanure", "Pellet")
@@ -685,7 +694,7 @@ h <- how(plots = Plots(strata = data.t0.t5$treat.pot, type = "none"), nperm = 99
 eu.distances <- vegdist(scores, method= "euclidean")
 
 
-eu.permanova <- adonis2(eu.distances ~ time*treatment, data = data.t0.t5, permutations = h) %>% data.frame()
+eu.permanova <- adonis2(eu.distances ~ time*treatment+rep, data = data.t0.t5, permutations = h) %>% data.frame()
 
 
 perm.time <- paste("Time:                        Treatment:                        Time x Treatment:\n", 
@@ -699,22 +708,20 @@ perm.time <- paste("Time:                        Treatment:                     
 pca.plot.t0.t5.time <- ggplot(t0.t5.pca, aes(PC1, PC2, col= treatment, shape= time))+
   geom_point(size= 3)+
   scale_color_manual(values= treat.colors)+
-  scale_shape_manual(values=c(0,16))+
+  scale_shape_manual(values=c(17,16))+
   labs(x= sprintf("PC1 (%.1f%%)", variance_perc[1]), 
        y= sprintf("PC2 (%.1f%%)", variance_perc[2]))+
   ggtitle("Community composition at T0 and T5 CLR transformed", subtitle= perm.time)+
-  stat_ellipse(aes(group =time, fill= time), level = 0.95,geom= "polygon", alpha = 0.3, show.legend = FALSE)+
+  stat_ellipse(aes(group =time, fill= treatment), level = 0.95,geom= "polygon", alpha = 0.3, show.legend = TRUE)+
   scale_fill_manual(values= c("gold", "gray50"))+
-  geom_polygon(aes(group= interaction(time, treatment),col= treatment), alpha= 0, show.legend = TRUE)+
+  geom_polygon(aes(group= interaction(time, treatment),col= treatment), alpha= 0, show.legend = FALSE)+
   theme_classic2()
 pca.plot.t0.t5.time
-
 ```
 
 ## T0 
 
 ```{r, include=TRUE}
-
 #PCA
 t.otu <- zotu.rel.t0 %>% otu_table() %>% data.frame() %>% t()
 t.otu.clr <- decostand(t.otu, method = "clr", pseudocount = 1)
@@ -790,13 +797,64 @@ permanova.response <- adonis2(eu.distances~ RRI, data= sample.data.pca, parallel
 
 ```
 
-```{r}
-install.packages("devtools")
-library(devtools)
-install_github("vqv/ggbiplot")
+```{r preparations for aldex}
+ald.zotu <- subset_samples(zotu97, time =="T0" | time =="T5")
 
-library(ggbiplot)
-biplot <- ggbiplot(pca.clr)
-ggbiplot()
+ald.zotu<- prune_taxa(taxa_sums(ald.zotu) > 1, ald.zotu)
+#Remove singletons and zotus with less than 4 sequences in 4 samples 
+cleaning.function <- function(x) { x >  4}
+keep_taxa <- genefilter_sample(ald.zotu, cleaning.function, A = 4)
+ald.zotu<- prune_taxa(keep_taxa, ald.zotu)
+otu.table <- ald.zotu%>% otu_table() %>% data.frame()
+
+#create vectors that contain the variables to guide the aldex.clr() "conds" argument
+time.vector <- sample_data(ald.zotu)$time
+treat.vector <- sample_data(ald.zotu)$treatment
+rep.vector <- sample_data(ald.zotu)$rep
 ```
 
+
+## DAA
+
+```{r}
+estimates.treat <- aldex.clr(otu.table, denom= "all", conds= treat.vector,mc.samples = 128)
+ald.kw.treat <- aldex.kw(estimates.treat)
+p.val.aldex.treat <- subset(ald.kw.treat, ald.kw.treat$glm.eBH < 0.05)
+
+ald.clr <- aldex.clr(otu.table, denom= "all")
+clr.abu <- ald.clr@reads#get the clr transformed abundance  data and divide it in times t0 and t5
+clr.abu.t0 <- clr.abu[,1:21]
+clr.abu.t5 <- clr.abu[,22:42]
+log2fc <- log2(clr.abu.t0/clr.abu.t5)
+log2fc$log2 <- rowMeans(log2fc)
+log2fc <- log2fc%>% rownames_to_column(var= "OTU")
+log2fc <- log2fc[,c("OTU","log2")]
+
+estimates.time@reads$S001
+estimates.time <- aldex.clr(otu.table, denom= "all", conds= time.vector,mc.samples = 128)
+ald.kw.time <- aldex.kw(estimates.time)
+estimates.time
+ald.effect.time<- aldex.effect(estimates.time)
+ald.effect.time <- rownames_to_column(ald.effect.time, var= "OTU")
+ald.effect.time <- ald.effect.time[,c("OTU", "effect")]
+
+ald.ttest.time <- aldex.ttest(estimates.time, paired.test = TRUE)
+#ald.ttest.time <- subset(ald.ttest.time, ald.ttest.time$wi.eBH < 0.05)
+ald.ttest.time <- rownames_to_column(ald.ttest.time, var= "OTU")
+ald.ttest.time <- ald.ttest.time[,c("OTU", "wi.eBH")]
+
+daa.time <- inner_join(log2fc, ald.ttest.time, by= "OTU")
+
+daa.time %>%  ggplot(aes(x= log2, y= wi.eBH, label = OTU))+
+  geom_point(aes( colour = log2 ), size=5)+
+  scale_colour_gradientn("log2 change", colours = c("blue", "gray", "red"),
+                       values = scales::rescale(c(-2,-0.5,0.5,2.33 ))) +
+  geom_texthline(yintercept = 0.05, hjust= 0.05 ,label="p-value < 0.05")+
+  ggtitle(label="Volcano plot for T0 vs. T5 Differential Abundance of the OTUs")+
+ geom_text_repel(aes(label=ifelse(wi.eBH>0.05,"",ifelse(abs(log2)<1.5, "",as.character(OTU)))), size= 5, nudge_x = 0.5)+
+  ylab("p-value")+
+  xlab("log2 fold change")+
+  scale_y_continuous(trans=reverselog_trans(10), breaks =seq(from=0, to=1, by= 0.1))+
+  theme_classic2()
+seq
+```
